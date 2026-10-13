@@ -158,8 +158,36 @@
   "profile.loadError": "Unable to load your profile information.",
   "profile.reload": "Reload",
   "profile.logout": "Sign Out",
-  "profile.phoneHint": "Your mobile number can only be changed after SMS verification."
+  "profile.phoneHint": "Your mobile number can only be changed after SMS verification.",
+
+
+
+
+  
+  "blog.title": "Blog",
+  "blog.home": "Home",
+  "blog.latest": "Latest Updates",
+  "blog.heading": "Find the Latest News and Updates Here.",
+  "blog.loading": "Loading articles...",
+  "blog.empty": "No articles are available at the moment.",
+  "blog.error": "Unable to load articles. Please try again.",
+  "blog.retry": "Try Again",
+  "blog.readArticle": "Read Article",
+
+
+  
+  "blog.details.page": "Dental Blog",
+  "blog.details.breadcrumb": "Blog Details",
+  "blog.details.categories": "Categories",
+  "blog.details.recent": "Recent Posts",
+  "blog.details.loading": "Loading article...",
+  "blog.details.notFound": "The requested article was not found.",
+  "blog.details.error": "Unable to load the article.",
+  "blog.details.retry": "Try Again",
+  "blog.details.back": "Back to Blog"
+
 }
+
 
 
 

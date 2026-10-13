@@ -165,7 +165,32 @@
   "profile.loadError": "دریافت اطلاعات پروفایل با خطا مواجه شد.",
   "profile.reload": "بارگذاری مجدد",
   "profile.logout": "خروج از حساب",
-  "profile.phoneHint": "شماره موبایل فقط پس از تأیید کد پیامکی قابل تغییر است."
+  "profile.phoneHint": "شماره موبایل فقط پس از تأیید کد پیامکی قابل تغییر است.",
+
+
+
+  
+  "blog.title": "وبلاگ",
+  "blog.home": "خانه",
+  "blog.latest": "تازه‌ترین مطالب",
+  "blog.heading": "جدیدترین مقالات و مطالب دندان‌پزشکی را اینجا بخوانید.",
+  "blog.loading": "در حال دریافت مقالات...",
+  "blog.empty": "در حال حاضر مقاله‌ای برای نمایش وجود ندارد.",
+  "blog.error": "دریافت مقالات با مشکل مواجه شد. لطفاً دوباره تلاش کنید.",
+  "blog.retry": "تلاش مجدد",
+  "blog.readArticle": "مطالعه مقاله",
+
+
+
+  "blog.details.page": "مقالات دندان‌پزشکی",
+  "blog.details.breadcrumb": "جزئیات مقاله",
+  "blog.details.categories": "دسته‌بندی‌ها",
+  "blog.details.recent": "مقالات اخیر",
+  "blog.details.loading": "در حال دریافت مقاله...",
+  "blog.details.notFound": "مقاله موردنظر پیدا نشد.",
+  "blog.details.error": "دریافت اطلاعات مقاله با مشکل مواجه شد.",
+  "blog.details.retry": "تلاش مجدد",
+  "blog.details.back": "بازگشت به مقالات"
 }
 
 

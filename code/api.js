@@ -341,3 +341,26 @@ export const profileApi = {
     );
   },
 };
+// ============================================
+// BLOG API — PUBLIC
+// ============================================
+
+export const blogApi = {
+  list(lang = 'en', signal = null) {
+    const language = lang === 'fa' ? 'fa' : 'en';
+
+    return apiGet(
+      `/v1/blogs?lang=${language}`,
+      { signal }
+    );
+  },
+
+  show(slug, lang = 'en', signal = null) {
+    const language = lang === 'fa' ? 'fa' : 'en';
+
+    return apiGet(
+      `/v1/blogs/${encodeURIComponent(slug)}?lang=${language}`,
+      { signal }
+    );
+  },
+};
