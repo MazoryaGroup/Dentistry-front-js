@@ -1,0 +1,32 @@
+/* Shared FA/EN switch; all other styles stay scoped to the current direction. */
+.dentistry-lang-switch { display:inline-flex; flex:0 0 auto; align-items:center; justify-content:center; gap:5px; padding:4px; border:1px solid rgba(31,94,89,.25); border-radius:999px; background:#ffffff5c; direction:ltr; vertical-align:middle; z-index:5; }
+.dentistry-lang-switch button { appearance:none; border:none; background:transparent; min-height:32px; min-width:39px; padding:4px 9px; border-radius:99px; color:#496e6c; font:700 12px/1 system-ui,sans-serif; cursor:pointer; transition:background .2s,color .2s; }
+.dentistry-lang-switch button.is-active { background:#4c7696; color:white; }
+.dentistry-lang-switch button:focus-visible { outline:2px solid #39a797; outline-offset:2px; }
+.dentistry-lang-divider {height:14px;width:1px;background:#adc8c4;}
+.navbar-main-wrapper > .dentistry-lang-switch {margin-inline-start:auto;margin-inline-end:12px;}
+.dentistry-portal .dentistry-lang-switch {font-family:system-ui,sans-serif;}
+.dp-auth-panel-inner > .dentistry-lang-switch {display:flex;margin:0 0 18px auto; width:max-content;}
+.dp-topbar-right > .dentistry-lang-switch { margin-inline-end:12px; }
+html[lang="fa"] body { direction:rtl; font-family:"Vazirmatn",Tahoma,Arial,sans-serif; }
+html[lang="fa"] .dentistry-portal { direction:rtl; font-family:"Vazirmatn",Tahoma,Arial,sans-serif; }
+html[lang="fa"] .navbar .nav-menu-block { direction:rtl; }
+html[lang="fa"] .dentistry-portal .dp-auth-visual,
+html[lang="fa"] .dentistry-portal .dp-auth-panel {text-align:right;}
+html[lang="fa"] .dentistry-portal .dp-field-icon {right:auto;left:16px;}
+html[lang="fa"] .dentistry-portal .dp-password-toggle {right:auto;left:11px;}
+html[lang="fa"] .dentistry-portal .dp-input-wrap:has(.dp-field-icon) > input {padding-right:16px;padding-left:48px;}
+html[lang="fa"] .dentistry-portal .dp-input-wrap:has(.dp-password-toggle) > input {padding-right:16px;padding-left:83px;}
+html[lang="fa"] .dentistry-portal .dp-input-wrap:has(.dp-password-toggle) > .dp-field-icon {right:auto;left:54px;}
+html[lang="fa"] .dentistry-portal input[type="email"],
+html[lang="fa"] .dentistry-portal input[type="tel"],
+html[lang="fa"] .dentistry-portal input[type="date"] { direction:ltr; text-align:right; }
+html[lang="fa"] .dentistry-portal .dp-auth-wordmark,
+html[lang="fa"] .dentistry-portal .dp-dash-brand { direction:ltr; }
+html[lang="fa"] .dentistry-portal .dp-dash-hero,
+html[lang="fa"] .dentistry-portal .dp-auth-visual-copy {text-align:right;}
+html[lang="fa"] .dentistry-portal .dp-dash-topbar,
+html[lang="fa"] .dentistry-portal .dp-checkout-trail {direction:rtl;}
+html[lang="fa"] .dentistry-portal .dp-input-wrap input[readonly] {text-align:right;}
+@media(max-width:991px){.navbar-main-wrapper > .dentistry-lang-switch {margin-inline-start:auto;margin-inline-end:10px;}}
+@media(max-width:479px){.dentistry-lang-switch button {min-height:28px;min-width:33px;padding:3px 7px;}}

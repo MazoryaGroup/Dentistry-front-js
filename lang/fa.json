@@ -1,0 +1,172 @@
+{
+  
+
+  
+  "auth.shell.asideLabel": "معرفی سامانه بیماران",
+  "auth.shell.care": "مراقبت‌های دندان‌پزشکی",
+  "auth.shell.private": "حریم خصوصی شما محفوظ است",
+  "auth.shell.easy": "نوبت‌دهی آسان",
+  "auth.shell.priority": "لبخند شما، اولویت ماست",
+  "auth.shell.tagline": "تجربه بهتر دندان‌پزشکی از اینجا آغاز می‌شود",
+  "auth.shell.back": "بازگشت به وب‌سایت",
+  "auth.shell.portal": "پنل بیماران",
+  "auth.shell.loginLegal": "ورود با شماره موبایل و کد تأیید یا ایمیل و رمز عبور امکان‌پذیر است.",
+
+
+  "auth.login.title": "خوش برگشتید",
+  "auth.login.subtitle": "برای ورود به حساب کاربری، روش موردنظر خود را انتخاب کنید.",
+  "auth.login.sideTitle": "هر لبخند زیبا با مراقبت خوب آغاز می‌شود.",
+  "auth.login.sideCopy": "فضایی اختصاصی برای مدیریت نوبت‌ها و پیگیری روند درمان دندان‌های شما.",
+
+
+  "auth.login.methodPhone": "ورود با موبایل",
+  "auth.login.methodEmail": "ورود با ایمیل",
+
+  
+  "auth.login.phone": "شماره موبایل",
+  "auth.login.phonePlaceholder": "09123456789",
+  "auth.login.sendCode": "ارسال کد تأیید",
+  "auth.login.codeSentTo": "کد تأیید به این شماره ارسال شد:",
+  "auth.login.code": "کد تأیید ۶ رقمی",
+  "auth.login.codePlaceholder": "کد ۶ رقمی را وارد کنید",
+  "auth.login.codeValidity": "کد تأیید تا ۲ دقیقه معتبر است.",
+  "auth.login.verify": "تأیید و ورود",
+  "auth.login.editPhone": "تغییر شماره موبایل",
+  "auth.login.resend": "ارسال مجدد کد",
+
+  "auth.login.email": "آدرس ایمیل",
+  "auth.login.emailPlaceholder": "example@email.com",
+  "auth.login.password": "رمز عبور",
+  "auth.login.passwordPlaceholder": "رمز عبور خود را وارد کنید",
+  "auth.login.signIn": "ورود به حساب",
+  "auth.login.forgotPassword": "رمز عبور را فراموش کرده‌اید؟",
+
+ 
+  "auth.login.newPatient": "برای اولین‌بار مراجعه می‌کنید؟",
+  "auth.login.createAccount": "ایجاد حساب کاربری",
+
+  
+  "auth.login.invalidPhone": "لطفاً شماره موبایل معتبر وارد کنید.",
+  "auth.login.invalidEmail": "لطفاً یک آدرس ایمیل معتبر وارد کنید.",
+  "auth.login.enterPassword": "لطفاً رمز عبور را وارد کنید.",
+  "auth.login.invalidCredentials": "ایمیل یا رمز عبور اشتباه است.",
+  "auth.login.invalidCodeFormat": "لطفاً کد تأیید ۶ رقمی را وارد کنید.",
+  "auth.login.invalidCode": "کد تأیید اشتباه است یا منقضی شده است.",
+  "auth.login.noAccount": "حسابی با این شماره موبایل وجود ندارد. ابتدا ثبت‌نام کنید.",
+
+  
+  "auth.login.tooMany": "تعداد درخواست‌ها بیش از حد مجاز است. کمی بعد تلاش کنید.",
+  "auth.login.timeout": "زمان درخواست به پایان رسید. دوباره تلاش کنید.",
+  "auth.login.networkError": "ارتباط با سرور برقرار نشد. اتصال اینترنت را بررسی کنید.",
+  "auth.login.serverError": "سرور کلینیک موقتاً در دسترس نیست.",
+  "auth.login.sent": "کد تأیید با موفقیت ارسال شد.",
+  "auth.login.resent": "کد تأیید جدید ارسال شد.",
+  "auth.login.invalidApiToken": "ورود تأیید شد، اما توکن معتبر از سرور دریافت نشد.",
+
+
+  
+
+  "auth.register.title": "ثبت‌نام بیمار",
+  "auth.register.subtitle": "برای ایجاد حساب کاربری، اطلاعات خود را وارد کنید.",
+  "auth.register.sideTitle": "فضایی اختصاصی برای لبخندی سالم‌تر.",
+  "auth.register.sideCopy": "نوبت‌ها، طرح‌های درمان و پرداخت‌های خود را در یکجا مدیریت کنید.",
+
+  "auth.register.name": "نام و نام خانوادگی",
+  "auth.register.namePlaceholder": "نام و نام خانوادگی خود را وارد کنید",
+  "auth.register.phone": "شماره موبایل",
+  "auth.register.referral": "کد معرف (اختیاری)",
+  "auth.register.referralPlaceholder": "در صورت داشتن کد معرف وارد کنید",
+
+  "auth.register.sendCode": "ارسال کد تأیید",
+  "auth.register.codeSentTo": "کد تأیید به این شماره ارسال شد:",
+  "auth.register.code": "کد تأیید ۶ رقمی",
+  "auth.register.codePlaceholder": "کد ۶ رقمی را وارد کنید",
+  "auth.register.codeValidity": "کد تأیید به مدت ۲ دقیقه معتبر است.",
+  "auth.register.verify": "تأیید کد و ثبت‌نام",
+  "auth.register.editPhone": "ویرایش اطلاعات",
+  "auth.register.resend": "ارسال مجدد کد",
+
+  "auth.register.haveAccount": "قبلاً حساب کاربری ساخته‌اید؟",
+  "auth.register.signIn": "وارد شوید",
+  "auth.register.success": "حساب کاربری شما با موفقیت ایجاد شد.",
+  "auth.register.goToLogin": "ورود به حساب کاربری",
+
+  "auth.register.invalidName": "لطفاً نام و نام خانوادگی معتبر وارد کنید.",
+  "auth.register.invalidPhone": "لطفاً شماره موبایل معتبر وارد کنید.",
+  "auth.register.invalidCodeFormat": "لطفاً کد تأیید ۶ رقمی را وارد کنید.",
+  "auth.register.invalidCode": "کد تأیید اشتباه است یا منقضی شده است.",
+  "auth.register.invalidData": "اطلاعات ثبت‌نام معتبر نیست. لطفاً آن‌ها را بررسی کنید.",
+  "auth.register.alreadyRegistered": "این شماره موبایل قبلاً ثبت‌نام شده است.",
+  "auth.register.sessionExpired": "اطلاعات ثبت‌نام منقضی شده است. دوباره تلاش کنید.",
+
+  "auth.register.sent": "کد تأیید با موفقیت ارسال شد.",
+  "auth.register.resent": "کد تأیید جدید ارسال شد.",
+  "auth.register.tooMany": "تعداد درخواست‌ها بیش از حد مجاز است. کمی بعد تلاش کنید.",
+  "auth.register.timeout": "زمان درخواست به پایان رسید. دوباره تلاش کنید.",
+  "auth.register.networkError": "ارتباط با سرور برقرار نشد. اتصال اینترنت را بررسی کنید.",
+  "auth.register.serverError": "سرور کلینیک موقتاً در دسترس نیست.",
+  "auth.register.requestFailed": "در انجام درخواست مشکلی پیش آمد. دوباره تلاش کنید.",
+
+
+
+  
+  "auth.forgot.title": "بازیابی رمز عبور",
+  "auth.forgot.subtitle": "شماره موبایل خود را وارد کنید تا کد تأیید برایتان ارسال شود.",
+  "auth.forgot.sideTitle": "مراقبت از لبخند شما ادامه دارد.",
+  "auth.forgot.sideCopy": "بازیابی حساب کاربری خود را به‌سادگی و با امنیت بیشتر انجام دهید.",
+  "auth.forgot.phone": "شماره موبایل",
+  "auth.forgot.sendCode": "ارسال کد تأیید",
+  "auth.forgot.codeSentTo": "کد تأیید به شماره زیر ارسال شد:",
+  "auth.forgot.code": "کد تأیید ۶ رقمی",
+  "auth.forgot.codePlaceholder": "کد ۶ رقمی را وارد کنید",
+  "auth.forgot.verify": "تأیید کد",
+  "auth.forgot.changePhone": "تغییر شماره موبایل",
+  "auth.forgot.resend": "ارسال مجدد کد",
+  "auth.forgot.verifiedPhone": "شماره موبایل تأییدشده:",
+  "auth.forgot.newPassword": "رمز عبور جدید",
+  "auth.forgot.newPasswordPlaceholder": "حداقل ۸ کاراکتر",
+  "auth.forgot.confirmPassword": "تکرار رمز عبور جدید",
+  "auth.forgot.confirmPlaceholder": "رمز عبور جدید را دوباره وارد کنید",
+  "auth.forgot.resetPassword": "تغییر رمز عبور",
+  "auth.forgot.backToLogin": "بازگشت به ورود",
+  "auth.forgot.success": "رمز عبور شما با موفقیت تغییر کرد. اکنون می‌توانید وارد حساب خود شوید.",
+  "auth.forgot.invalidPhone": "لطفاً شماره موبایل معتبر وارد کنید.",
+  "auth.forgot.invalidCodeFormat": "کد تأیید باید ۶ رقمی باشد.",
+  "auth.forgot.invalidCode": "کد تأیید نامعتبر یا منقضی شده است.",
+  "auth.forgot.shortPassword": "رمز عبور باید حداقل ۸ کاراکتر داشته باشد.",
+  "auth.forgot.passwordMismatch": "رمز عبور و تکرار آن یکسان نیستند.",
+  "auth.forgot.sessionExpired": "اطلاعات بازیابی موجود نیست. دوباره درخواست کد کنید.",
+  "auth.forgot.invalidData": "اطلاعات واردشده معتبر نیست.",
+  "auth.forgot.sent": "کد تأیید با موفقیت ارسال شد.",
+  "auth.forgot.resent": "کد تأیید جدید ارسال شد.",
+  "auth.forgot.verified": "شماره موبایل تأیید شد. رمز عبور جدید را وارد کنید.",
+  "auth.forgot.tooMany": "تعداد درخواست‌ها بیش از حد مجاز است. کمی بعد تلاش کنید.",
+  "auth.forgot.timeout": "زمان درخواست به پایان رسید.",
+  "auth.forgot.serverError": "سرور موقتاً در دسترس نیست.",
+  "auth.forgot.networkError": "ارتباط با سرور برقرار نشد.",
+  "auth.forgot.requestFailed": "در انجام درخواست مشکلی پیش آمد. دوباره تلاش کنید.",
+  "auth.shell.privacyLegal": "اطلاعات حساب کاربری شما از طریق ارتباط امن با سرور پردازش می‌شود.",
+  "auth.forgot.resetTokenExpired": "مهلت بازیابی رمز عبور به پایان رسیده است. لطفاً دوباره کد تأیید دریافت کنید.",
+
+
+
+  "profile.dashboard": "داشبورد بیمار",
+  "profile.title": "پروفایل من",
+  "profile.subtitle": "اطلاعات حساب کاربری و مشخصات فردی شما.",
+  "profile.information": "اطلاعات شخصی",
+  "profile.name": "نام و نام خانوادگی",
+  "profile.email": "آدرس ایمیل",
+  "profile.phone": "شماره موبایل",
+  "profile.referral": "کد معرف",
+  "profile.notSet": "ثبت نشده",
+  "profile.loading": "در حال دریافت اطلاعات...",
+  "profile.loaded": "اطلاعات پروفایل به‌روز است.",
+  "profile.partial": "اطلاعات پایه دریافت شد؛ جزئیات پروفایل در دسترس نیست.",
+  "profile.loadError": "دریافت اطلاعات پروفایل با خطا مواجه شد.",
+  "profile.reload": "بارگذاری مجدد",
+  "profile.logout": "خروج از حساب",
+  "profile.phoneHint": "شماره موبایل فقط پس از تأیید کد پیامکی قابل تغییر است."
+}
+
+
+

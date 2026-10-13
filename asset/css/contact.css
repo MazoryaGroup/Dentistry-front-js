@@ -1,0 +1,267 @@
+/**
+ * Contact Us — page-scoped styling only.
+ * Preserves the Webflow class names and supports the original main.css.
+ */
+.dentistry-contact-page {
+  --contact-ink: #18333a;
+  --contact-muted: #647c80;
+  --contact-accent: #177c7a;
+  --contact-soft: #f6faf9;
+  --contact-border: #e3eeeb;
+  color: var(--contact-ink);
+  background: #fff;
+}
+.dentistry-contact-page *,
+.dentistry-contact-page *::before,
+.dentistry-contact-page *::after { box-sizing: border-box; }
+
+.dentistry-contact-page .container,
+.dentistry-contact-page .container-fluid {
+  width: 100%;
+  max-width: 1240px;
+  margin-inline: auto;
+  padding-inline: 24px;
+}
+.dentistry-contact-page .breadcrumb-section {
+  padding: 75px 0;
+  background: var(--contact-soft);
+  text-align: center;
+}
+.dentistry-contact-page .breadcrumb-title {
+  margin: 0 0 12px;
+  color: var(--contact-ink);
+  font-size: clamp(36px, 4.6vw, 64px);
+  line-height: 1.12;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+.dentistry-contact-page .breadcrumb-subtext-block {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.dentistry-contact-page .breadcrumb-subtext {
+  color: var(--contact-muted);
+  font-size: 14px;
+  text-decoration: none;
+  text-transform: capitalize;
+}
+.dentistry-contact-page a.breadcrumb-subtext:hover { color: var(--contact-accent); }
+
+.dentistry-contact-page .contact-section-one { padding: 84px 0 95px; }
+.dentistry-contact-page .contact-grid-one {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+}
+.dentistry-contact-page .contactus-info-inner-block {
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
+  gap: 20px;
+  padding: 30px 26px;
+  background: #fff;
+  border: 1px solid var(--contact-border);
+  border-radius: 18px;
+  box-shadow: 0 12px 32px rgba(19, 52, 52, .04);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.dentistry-contact-page .contactus-info-inner-block:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px rgba(19, 52, 52, .09);
+}
+.dentistry-contact-page .contactus-info-inner-icon-block {
+  display: grid;
+  flex: 0 0 64px;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  color: var(--contact-accent);
+  background: #ebf7f3;
+}
+.dentistry-contact-page .contactus-info-inner-icon-block svg {
+  display: block;
+  width: 34px;
+  height: 34px;
+}
+.dentistry-contact-page .contact-info-details-block { min-width: 0; padding-top: 4px; }
+.dentistry-contact-page .contact-title {
+  margin: 0 0 11px;
+  font-size: 19px;
+  line-height: 1.3;
+  font-weight: 650;
+  text-transform: capitalize;
+  color: var(--contact-ink);
+}
+.dentistry-contact-page .contact-link,
+.dentistry-contact-page .contact-subtext {
+  color: var(--contact-muted);
+  font-size: 15px;
+  line-height: 1.7;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.dentistry-contact-page a.contact-link:hover { color: var(--contact-accent); }
+
+.dentistry-contact-page .contact-form-section { padding: 0 0 90px; }
+.dentistry-contact-page .contact-form.container-fluid { max-width: 1392px; }
+.dentistry-contact-page .contact-grid-two {
+  display: grid;
+  grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr);
+  min-width: 0;
+  align-items: stretch;
+  border-radius: 24px;
+  background: var(--contact-soft);
+  overflow: hidden;
+}
+.dentistry-contact-page .contact-image-block { position: relative; min-height: 610px; }
+.dentistry-contact-page .contact-image-two {
+  display: block;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+  object-fit: cover;
+  object-position: center;
+}
+.dentistry-contact-page .contact-form-block-two {
+  min-width: 0;
+  padding: clamp(36px, 5vw, 72px);
+}
+.dentistry-contact-page .section-sub-text {
+  color: var(--contact-accent);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 700;
+  margin: 0 0 14px;
+}
+.dentistry-contact-page .section-title {
+  margin: 0;
+  color: var(--contact-ink);
+  font-size: clamp(30px, 3.3vw, 48px);
+  line-height: 1.16;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+.dentistry-contact-page .contact-title-block-two { margin-bottom: 30px; }
+.dentistry-contact-page .dentistry-contact-form { display: grid; gap: 18px; }
+.dentistry-contact-page .text-field-block {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.dentistry-contact-page .dentistry-contact-field { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.dentistry-contact-page .dentistry-contact-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--contact-ink);
+}
+.dentistry-contact-page .input-field,
+.dentistry-contact-page .text-area {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 16px 18px;
+  border: 1px solid #dce7e4;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--contact-ink);
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.4;
+  outline: none;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.dentistry-contact-page .input-field::placeholder,
+.dentistry-contact-page .text-area::placeholder { color: #899b9a; }
+.dentistry-contact-page .input-field:focus,
+.dentistry-contact-page .text-area:focus {
+  border-color: var(--contact-accent);
+  box-shadow: 0 0 0 3px rgba(23, 124, 122, .13);
+}
+.dentistry-contact-page .text-area { min-height: 165px; resize: vertical; }
+.dentistry-contact-page .button-submit { margin-top: 5px; }
+.dentistry-contact-page .dentistry-contact-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 26px;
+  min-width: 180px;
+  padding: 16px 20px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--contact-accent);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 650;
+  text-align: left;
+  transition: background-color .2s ease, transform .2s ease;
+}
+.dentistry-contact-page .dentistry-contact-submit .button-primary-text { color: inherit; }
+.dentistry-contact-page .dentistry-contact-submit:hover { background: #106562; transform: translateY(-2px); }
+.dentistry-contact-page .dentistry-contact-submit:focus-visible,
+.dentistry-contact-page .contact-link:focus-visible,
+.dentistry-contact-page .breadcrumb-subtext:focus-visible {
+  outline: 3px solid var(--contact-accent);
+  outline-offset: 3px;
+}
+.dentistry-contact-page .dentistry-contact-submit .button-icon-block { display: inline-flex; align-items: center; }
+.dentistry-contact-page .dentistry-contact-submit .button-icon { width: 17px; height: 17px; filter: brightness(0) invert(1); }
+.dentistry-contact-page .dentistry-contact-form-status {
+  margin: 0;
+  padding: 13px 15px;
+  border: 1px solid #d4e8e1;
+  border-radius: 10px;
+  background: #ebf7f3;
+  color: #1c625f;
+  line-height: 1.5;
+  font-size: 14px;
+}
+.dentistry-contact-page .dentistry-contact-form-status[hidden] { display: none !important; }
+
+.dentistry-contact-page .map-section { padding: 0 0 95px; }
+.dentistry-contact-page .map-main-block { overflow: hidden; border-radius: 20px; background: var(--contact-soft); }
+.dentistry-contact-page .map-image { display: block; width: 100%; height: auto; min-height: 230px; max-height: 490px; object-fit: cover; }
+
+@media (max-width: 1100px) {
+  .dentistry-contact-page .contact-grid-one { gap: 14px; }
+  .dentistry-contact-page .contactus-info-inner-block { padding: 23px 18px; gap: 14px; }
+  .dentistry-contact-page .contactus-info-inner-icon-block { flex-basis: 52px; width: 52px; height: 52px; }
+  .dentistry-contact-page .contactus-info-inner-icon-block svg { width: 28px; height: 28px; }
+}
+@media (max-width: 991px) {
+  .dentistry-contact-page .contact-grid-one { grid-template-columns: minmax(0, 1fr); }
+  .dentistry-contact-page .contactus-info-inner-block { align-items: center; }
+  .dentistry-contact-page .contact-grid-two { grid-template-columns: minmax(0, 1fr); }
+  .dentistry-contact-page .contact-image-block { min-height: 390px; }
+  .dentistry-contact-page .contact-form-block-two { padding: 44px 36px 54px; }
+}
+@media (max-width: 640px) {
+  .dentistry-contact-page .container,
+  .dentistry-contact-page .container-fluid { padding-inline: 18px; }
+  .dentistry-contact-page .breadcrumb-section { padding: 55px 0; }
+  .dentistry-contact-page .contact-section-one { padding: 54px 0 62px; }
+  .dentistry-contact-page .contact-grid-one { gap: 14px; }
+  .dentistry-contact-page .contactus-info-inner-block { padding: 19px 18px; }
+  .dentistry-contact-page .contact-image-block { min-height: 275px; }
+  .dentistry-contact-page .contact-form-block-two { padding: 35px 20px 42px; }
+  .dentistry-contact-page .contact-form-section { padding-bottom: 64px; }
+  .dentistry-contact-page .contact-title-block-two { margin-bottom: 26px; }
+  .dentistry-contact-page .text-field-block { grid-template-columns: minmax(0, 1fr); }
+  .dentistry-contact-page .map-section { padding-bottom: 65px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dentistry-contact-page .contactus-info-inner-block,
+  .dentistry-contact-page .dentistry-contact-submit,
+  .dentistry-contact-page .input-field,
+  .dentistry-contact-page .text-area { transition: none; }
+  .dentistry-contact-page .contactus-info-inner-block:hover,
+  .dentistry-contact-page .dentistry-contact-submit:hover { transform: none; }
+}

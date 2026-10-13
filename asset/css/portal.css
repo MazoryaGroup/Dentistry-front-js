@@ -1,0 +1,844 @@
+/* Dentistry patient portal — scoped styles for Login/Register/Forgot/Dashboard/Checkout only. */
+
+.dentistry-portal {
+
+  --dp-ink: #000000; --dp-dark: #74ADDA; --dp-darkest: #000000;
+
+  --dp-accent: rgba(116,173,218,.25); --dp-mint: rgba(116,173,218,.12); --dp-soft: #FFFFFF;
+
+  --dp-line: rgba(0,0,0,.12); --dp-muted: rgba(0,0,0,.6); --dp-error: #000000;
+
+  direction: ltr; font-family: 'Inter Tight', Inter, 'Segoe UI', Arial, sans-serif;
+
+  color: var(--dp-ink); background: #FFFFFF; font-size: 15px;
+
+  line-height: 1.55; min-height: 75vh; isolation: isolate;
+
+}
+
+.dentistry-portal *, .dentistry-portal *::before, .dentistry-portal *::after { box-sizing: border-box; }
+
+.dentistry-portal h1, .dentistry-portal h2, .dentistry-portal h3, .dentistry-portal p { margin: 0; }
+
+.dentistry-portal h1, .dentistry-portal h2, .dentistry-portal h3 { letter-spacing: -.038em; line-height: 1.13; color: var(--dp-ink); }
+
+.dentistry-portal a { color: inherit; text-decoration: none; }
+
+.dentistry-portal button, .dentistry-portal input, .dentistry-portal select, .dentistry-portal textarea { font: inherit; }
+
+.dentistry-portal button { cursor: pointer; }
+
+.dentistry-portal [hidden] { display: none !important; }
+
+.dentistry-portal :focus-visible { outline: 3px solid rgba(116,173,218,.45); outline-offset: 3px; }
+
+.dentistry-portal .dp-icon { width: 20px; height: 20px; flex-shrink: 0; display: inline-block; vertical-align: middle; }
+
+.dentistry-portal .dp-eyebrow { font-size: 11px; font-weight: 850; letter-spacing: .18em; color: #74ADDA; }
+
+.dentistry-portal .dp-pill { display: inline-flex; font-size: 10px; font-weight: 850; letter-spacing: .13em; padding: 7px 13px; background: rgba(116,173,218,.07); color: #000000; border-radius: 999px; }
+
+.dentistry-portal .dp-pill-light { background: rgba(255,255,255,.13); color: rgba(255,255,255,.84); border: 1px solid rgba(255,255,255,.26); }
+
+.dentistry-portal .dp-btn { display: inline-flex; align-items: center; justify-content: center; gap: 12px; padding: 15px 21px; min-height: 52px; border-radius: 11px; font-weight: 740; font-size: 14px; letter-spacing: -.01em; border: 1px solid transparent; transition: background .2s, transform .2s, border-color .2s, box-shadow .2s; white-space: normal; text-align: center; }
+
+.dentistry-portal .dp-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 20px rgba(0,0,0,.11); }
+
+.dentistry-portal .dp-btn-primary { background: var(--dp-dark); color:#000000; }
+
+.dentistry-portal .dp-btn-primary:hover { background:#000000; color:#FFFFFF; }
+
+.dentistry-portal .dp-btn-outline { border-color: rgba(0,0,0,.12); background:#FFFFFF; color:#000000; }
+
+.dentistry-portal .dp-btn-outline:hover { border-color: rgba(116,173,218,.45); background: #FFFFFF; }
+
+.dentistry-portal .dp-btn-white { background:#FFFFFF; color:#000000; border-color: rgba(0,0,0,.12); }
+
+.dentistry-portal .dp-btn-white:hover { background: var(--dp-accent); color: var(--dp-dark); }
+
+.dentistry-portal .dp-btn-block { display: flex; width: 100%; }
+
+.dentistry-portal .dp-btn-small { min-height: 40px; padding: 9px 14px; font-size: 12px; border-radius: 9px; }
+
+.dentistry-portal .dp-btn .dp-icon { width: 17px; height: 17px; }
+
+.dentistry-portal .dp-demo-note { display: flex; align-items: flex-start; gap: 9px; padding: 11px 14px; border: 1px solid rgba(0,0,0,.12); background:rgba(116,173,218,.12); border-radius: 10px; color:#000000; line-height: 1.6; font-size: 12px; }
+
+.dentistry-portal .dp-demo-note .dp-icon { width: 17px; height: 17px; margin-top: 2px; }
+
+.dentistry-portal .dp-form { display: flex; flex-direction: column; gap: 17px; }
+
+.dentistry-portal .dp-field { display: flex; flex-direction: column; gap: 8px; font-size: 13px; font-weight: 750; color: rgba(0,0,0,.60); min-width: 0; }
+
+.dentistry-portal .dp-input-wrap { display: flex; position: relative; align-items: center; }
+
+.dentistry-portal .dp-field input, .dentistry-portal .dp-field select, .dentistry-portal .dp-field textarea { background: #FFFFFF; color: #000000; border: 1px solid rgba(0,0,0,.12); border-radius: 10px; height: 52px; min-width: 0; width: 100%; padding: 0 16px; box-shadow: none; transition: border-color .2s, box-shadow .2s; appearance: none; }
+
+.dentistry-portal .dp-field input::placeholder, .dentistry-portal .dp-field textarea::placeholder { color: rgba(0,0,0,.60); opacity: 1; }
+
+.dentistry-portal .dp-field input:focus, .dentistry-portal .dp-field select:focus, .dentistry-portal .dp-field textarea:focus { outline: none; border-color:#74ADDA; box-shadow: 0 0 0 3px rgba(116,173,218,.13); }
+
+.dentistry-portal .dp-field input[readonly] { background: #FFFFFF; color: rgba(0,0,0,.60); }
+
+.dentistry-portal .dp-field-icon { position: absolute; display: flex; right: 16px; color: rgba(0,0,0,.60); pointer-events: none; }
+
+.dentistry-portal .dp-field-icon .dp-icon { width: 18px; height: 18px; }
+
+.dentistry-portal .dp-input-wrap:has(.dp-field-icon) > input { padding-right: 48px; }
+
+.dentistry-portal .dp-input-wrap:has(.dp-password-toggle) > input { padding-right: 83px; }
+
+.dentistry-portal .dp-password-toggle { position: absolute; right: 11px; height: 35px; width: 35px; padding: 7px; background: transparent; border: 0; color: rgba(0,0,0,.60); display: flex; align-items: center; justify-content: center; }
+
+.dentistry-portal .dp-input-wrap:has(.dp-password-toggle) > .dp-field-icon { right: 54px; }
+
+.dentistry-portal .dp-password-toggle .dp-icon { width: 19px; height: 19px; }
+
+.dentistry-portal .dp-checkbox { display: inline-flex; align-items: flex-start; gap: 9px; font-size: 12px; color: rgba(0,0,0,.60); font-weight: 550; cursor: pointer; }
+
+.dentistry-portal .dp-checkbox input { margin: 2px 0 0; height: 16px; width: 16px; accent-color: #000000; flex: none; }
+
+.dentistry-portal .dp-checkbox a, .dentistry-portal .dp-form-extras a, .dentistry-portal .dp-form-switch a { color: #74ADDA; font-weight: 750; }
+
+.dentistry-portal .dp-checkbox a:hover, .dentistry-portal .dp-form-extras a:hover, .dentistry-portal .dp-form-switch a:hover { text-decoration: underline; }
+
+.dentistry-portal .dp-form-feedback { border-radius: 9px; background: #FFFFFF; padding: 12px 13px; font-size: 12px; color: #000000; line-height: 1.6; }
+
+.dentistry-portal .dp-form-feedback[data-state="error"] { color: var(--dp-error); background:rgba(116,173,218,.12); border:1px solid #74ADDA; }
+
+.dentistry-portal .dp-form-extras { display: flex; justify-content: space-between; gap: 15px; align-items: center; margin: 0 0 6px; font-size: 12px; }
+
+.dentistry-portal .dp-form-switch { margin-top: 20px; text-align: center; color: rgba(0,0,0,.60); font-size: 13px; }
+
+.dentistry-portal .dp-form-switch .dp-icon { width: 16px; height: 16px; }
+
+/* Auth */
+
+.dentistry-portal.dp-auth-page { padding: 28px; background: #FFFFFF; }
+
+.dentistry-portal .dp-auth-layout { max-width: 1360px; margin: 0 auto; min-height: 820px; display: grid; grid-template-columns: minmax(360px, 1fr) minmax(440px, 1fr); overflow: hidden; border-radius: 23px; background: white; box-shadow: 0 18px 60px rgba(0,0,0,.075); }
+
+.dentistry-portal .dp-auth-visual { position: relative; padding: 42px 50px; background: radial-gradient(ellipse at 20% 70%, rgba(116,173,218,.25) 0%, transparent 45%), linear-gradient(138deg,#000000 0%,#000000 40%,#74ADDA 140%); color:#FFFFFF; display: flex; flex-direction: column; overflow: hidden; min-height: 750px; }
+
+.dentistry-portal .dp-auth-visual::after { content:''; position:absolute; width:430px;height:430px;right:-210px;bottom:-220px;border-radius:50%;background:#74ADDA;opacity:.1; }
+
+.dentistry-portal .dp-auth-wordmark { display: inline-flex; position: relative; z-index: 2; align-items: center; gap: 14px; align-self: flex-start; color: #FFFFFF; font-size: 15px; font-weight: 860; letter-spacing: .075em; line-height: 1.15; }
+
+.dentistry-portal .dp-auth-wordmark > .dp-icon { width: 44px; height: 44px; padding: 9px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2); border-radius: 12px; }
+
+.dentistry-portal .dp-auth-wordmark small { display: block; font-weight: 550; letter-spacing: .27em; margin-top: 6px; font-size: 9px; opacity: .63; }
+
+.dentistry-portal .dp-auth-art { position: relative; flex: 1; min-height: 360px; display: flex; justify-content: center; align-items: center; }
+
+.dentistry-portal .dp-auth-orbit { position: absolute; border: 1px solid rgba(255,255,255,.18); border-radius: 50%; width: 360px; height: 360px; }
+
+.dentistry-portal .dp-auth-orbit-b { width: 270px; height: 270px; border-color: rgba(255,255,255,.29); }
+
+.dentistry-portal .dp-auth-orbit-a::before, .dentistry-portal .dp-auth-orbit-a::after { content: ''; position: absolute; width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.13); left: 30px; top: 88px; }
+
+.dentistry-portal .dp-auth-orbit-a::after { left: auto; right: 25px; top: auto; bottom: 100px; width: 5px; height: 5px; }
+
+.dentistry-portal .dp-auth-tooth { display: grid; place-items: center; height: 218px; width: 218px; border-radius: 55px; transform: rotate(-9deg); background: linear-gradient(145deg,rgba(255,255,255,.24),rgba(116,173,218,.12)); border: 1px solid rgba(0,0,0,.33); box-shadow: inset 0 0 85px rgba(116,173,218,.06), 0 25px 70px rgba(0,0,0,.2); }
+
+.dentistry-portal .dp-auth-tooth .dp-icon { height: 136px; width: 136px; color: rgba(255,255,255,.84); stroke-width: 1; transform: rotate(9deg); filter: drop-shadow(0 10px 22px rgba(0,0,0,.35)); }
+
+.dentistry-portal .dp-auth-mini { position: absolute; z-index:2; display:flex; align-items:center; gap:10px; padding:11px 14px; background:rgba(255,255,255,.96); color:#000000; border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,.23); font-size:11px; font-weight:720; }
+
+.dentistry-portal .dp-auth-mini .dp-icon { width: 19px; height: 19px; color:#74ADDA; }
+
+.dentistry-portal .dp-auth-mini-one { left:0; top:24%; transform:rotate(-5deg); }
+
+.dentistry-portal .dp-auth-mini-two { right:0; bottom:19%; transform:rotate(4deg); }
+
+.dentistry-portal .dp-auth-visual-copy { position: relative; z-index:2; margin-top: 15px; max-width: 455px; }
+
+.dentistry-portal .dp-auth-visual-copy h2 { margin: 18px 0 18px; color: white; font-size: clamp(36px,3.7vw,53px); font-weight: 740; line-height: 1.12; }
+
+.dentistry-portal .dp-auth-visual-copy p { color: rgba(255,255,255,.84); font-size: 15px; line-height: 1.85; max-width: 365px; }
+
+.dentistry-portal .dp-auth-visual-footer { color: rgba(0,0,0,.55); margin-top: 40px; font-size: 11px; display: flex; justify-content: space-between; letter-spacing:.03em; }
+
+.dentistry-portal .dp-auth-visual-footer span { font-size: 21px; color: rgba(255,255,255,.84); }
+
+.dentistry-portal .dp-auth-panel { display: flex; align-items: center; justify-content: center; padding: 50px clamp(27px,5vw,75px); }
+
+.dentistry-portal .dp-auth-panel-inner { width: 100%; max-width: 430px; }
+
+.dentistry-portal .dp-mobile-logo { display: none; }
+
+.dentistry-portal .dp-back-link { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 720; color: rgba(0,0,0,.60); margin: 0 0 45px; }
+
+.dentistry-portal .dp-back-link:hover { color: #000000; }
+
+.dentistry-portal .dp-back-link .dp-icon { width: 16px; height: 16px; }
+
+.dentistry-portal .dp-auth-head { margin-bottom: 32px; }
+
+.dentistry-portal .dp-auth-head h1 { font-weight: 780; font-size: clamp(30px,3vw,42px); margin: 12px 0 13px; }
+
+.dentistry-portal .dp-auth-head p { color: rgba(0,0,0,.60); font-size: 14px; line-height: 1.8; max-width: 350px; }
+
+.dentistry-portal .dp-auth-panel-inner > .dp-demo-note { margin-top: 23px; }
+
+.dentistry-portal .dp-auth-legal { margin-top: 36px; padding-top: 18px; border-top: 1px solid rgba(0,0,0,.12); color: rgba(0,0,0,.60); font-size: 11px; text-align: center; line-height: 1.65; }
+
+.dentistry-portal .dp-divider-text { display: flex; align-items: center; gap: 15px; margin: 21px 0; color: rgba(0,0,0,.60); font-size: 10px; font-weight: 800; letter-spacing: .12em; }
+
+.dentistry-portal .dp-divider-text::before, .dentistry-portal .dp-divider-text::after { content:''; flex:1; height:1px; background:rgba(116,173,218,.07); }
+
+.dentistry-portal .dp-demo-link { display: flex; align-items: center; justify-content:center; gap:9px; margin-top: 17px; color: #74ADDA; font-weight: 750; font-size: 12px; }
+
+.dentistry-portal .dp-demo-link:hover { text-decoration:underline; }
+
+.dentistry-portal .dp-demo-link .dp-icon { width: 14px; height: 14px; }
+
+.dentistry-portal .dp-consent { line-height: 1.5; margin: 2px 0 3px; }
+
+.dentistry-portal .dp-recovery-icon { width: 56px; height: 56px; display: grid; place-items:center; border-radius: 16px; color:#000000; background:#FFFFFF; margin: -6px 0 24px; }
+
+.dentistry-portal .dp-recovery-icon .dp-icon { width: 28px; height: 28px; }
+
+/* Shared dashboard and checkout */
+
+.dentistry-portal .dp-white-card { border:1px solid rgba(0,0,0,.12); background:#FFFFFF; border-radius:18px; box-shadow: 0 6px 22px rgba(0,0,0,.027); min-width:0; }
+
+.dentistry-portal .dp-page-head { margin-bottom: 26px; }
+
+.dentistry-portal .dp-page-head h1 { font-size: clamp(30px,3.2vw,44px); margin: 9px 0 12px; font-weight:780; }
+
+.dentistry-portal .dp-page-head p { color: rgba(0,0,0,.60); font-size: 14px; line-height:1.8; }
+
+.dentistry-portal .dp-card-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:22px; }
+
+.dentistry-portal .dp-card-head h2 { margin-top:7px; font-size:19px; font-weight:760; }
+
+.dentistry-portal .dp-text-button { border:0; background:none; display:flex; align-items:center; gap:8px; color:#74ADDA; font-size:12px; font-weight:800; }
+
+.dentistry-portal .dp-text-button .dp-icon { width:15px;height:15px; }
+
+.dentistry-portal .dp-chip { display:inline-flex; align-items:center; padding:5px 10px; font-size:10px; font-weight:800; border-radius:100px; background:#FFFFFF; color:rgba(0,0,0,.60); white-space:nowrap; }
+
+.dentistry-portal .dp-chip-green { color:#74ADDA; background:#FFFFFF; }
+
+.dentistry-portal .dp-separator { margin:0 5px; }
+
+/* Dashboard */
+
+.dentistry-portal.dp-dashboard-page { background:#FFFFFF; }
+
+.dentistry-portal .dp-dashboard-layout { display:grid; grid-template-columns:255px minmax(0,1fr); min-height: 950px; }
+
+.dentistry-portal .dp-dash-sidebar { display:flex; flex-direction:column; padding: 32px 20px 28px; background:#000000; color:#FFFFFF; }
+
+.dentistry-portal .dp-dash-brand { display:flex; align-items:center; gap:12px; padding:4px 9px 42px; color:white; font-size:13px; font-weight:850; letter-spacing:.06em; line-height:1.3; }
+
+.dentistry-portal .dp-dash-brand .dp-icon { width:38px; height:38px; padding:7px; background:#000000; border-radius:12px; }
+
+.dentistry-portal .dp-dash-brand small { display:block; font-size:9px; font-weight:500; letter-spacing:.17em; color:rgba(255,255,255,.84); margin-top:4px; }
+
+.dentistry-portal .dp-sidebar-kicker { padding:0 13px; margin-bottom:13px; color:rgba(255,255,255,.84); font-size:10px; font-weight:780; letter-spacing:.15em; }
+
+.dentistry-portal .dp-dash-nav { display:flex; flex-direction:column; gap:6px; }
+
+.dentistry-portal .dp-dash-nav-item { background:transparent; border:0; width:100%; border-radius:9px; display:flex; align-items:center; text-align:left; gap:13px; padding:13px 12px; color:rgba(255,255,255,.77); font-size:12px; font-weight:670; position:relative; }
+
+.dentistry-portal .dp-dash-nav-item .dp-icon { width:18px;height:18px; opacity:.83; }
+
+.dentistry-portal .dp-dash-nav-item:hover, .dentistry-portal .dp-dash-nav-item.is-active { background:#74ADDA; color:#000000; }
+
+.dentistry-portal .dp-dash-nav-item.is-active::after { position:absolute; content:''; height:24px; width:3px; right:0; top:calc(50% - 12px); border-radius:3px; background:rgba(255,255,255,.13); }
+
+.dentistry-portal .dp-sidebar-bottom { margin-top:auto; padding-top:35px; }
+
+.dentistry-portal .dp-support-box { background:linear-gradient(135deg,#000000,#74ADDA 150%); border:1px solid rgba(116,173,218,.45); border-radius:13px; padding:22px 19px; }
+
+.dentistry-portal .dp-support-box>.dp-icon { width:25px;height:25px;color:rgba(255,255,255,.84); margin-bottom:12px; }
+
+.dentistry-portal .dp-support-box strong { display:block; color:#FFFFFF; font-size:13px; }
+
+.dentistry-portal .dp-support-box p { margin:8px 0 15px; font-size:11px; line-height:1.8;color:rgba(255,255,255,.84); }
+
+.dentistry-portal .dp-support-box a { display:flex;align-items:center;gap:8px; font-size:11px;color:rgba(255,255,255,.84);font-weight:800; }
+
+.dentistry-portal .dp-support-box a .dp-icon { width:14px; height:14px; }
+
+.dentistry-portal .dp-sidebar-back { display:flex;align-items:center;gap:10px; color:rgba(255,255,255,.84);font-size:11px; margin:28px 12px 0; }
+
+.dentistry-portal .dp-sidebar-back .dp-icon { width:16px;height:16px; }
+
+.dentistry-portal .dp-dash-topbar { min-height:78px; display:flex;align-items:center;justify-content:space-between;padding:0 clamp(20px,3.6vw,58px);border-bottom:1px solid rgba(0,0,0,.12);background:#FFFFFF; }
+
+.dentistry-portal .dp-topbar-breadcrumb { color:rgba(0,0,0,.60);font-size:12px; }
+
+.dentistry-portal .dp-topbar-breadcrumb span { padding:0 11px;color:rgba(0,0,0,.60); }
+
+.dentistry-portal .dp-topbar-breadcrumb strong { color:#000000;font-weight:720; }
+
+.dentistry-portal .dp-topbar-right { display:flex;align-items:center;gap:20px; }
+
+.dentistry-portal .dp-demo-tag { display:inline-flex;border:1px solid rgba(0,0,0,.12);background:#FFFFFF;color:#74ADDA;padding:5px 9px;border-radius:6px;font-size:9px;letter-spacing:.12em;font-weight:850; }
+
+.dentistry-portal .dp-avatar { width:37px;height:37px;display:grid;place-items:center;border-radius:50%;background:rgba(116,173,218,.07);color:#000000;font-size:12px;font-weight:850; }
+
+.dentistry-portal .dp-dash-mobile-menu, .dentistry-portal .dp-dash-mobile-tabs { display:none; }
+
+.dentistry-portal .dp-dash-pagebody { max-width:1340px; padding:35px clamp(20px,3.6vw,58px) 65px; margin:0 auto; }
+
+.dentistry-portal .dp-dash-pagebody > .dp-demo-note { margin-bottom:26px; }
+
+.dentistry-portal .dp-dash-greeting h1 em { color:#74ADDA; font-style:normal; }
+
+.dentistry-portal .dp-dash-greeting h1 span { color:#74ADDA;font-size:.75em; }
+
+.dentistry-portal .dp-dash-hero { min-height:255px; display:flex;justify-content:space-between;align-items:center;gap:24px; overflow:hidden; border-radius:18px;background:linear-gradient(115deg,#000000 0%,#000000 42%,#74ADDA 150%);padding:33px clamp(25px,4vw,49px); color:#FFFFFF; position:relative; }
+
+.dentistry-portal .dp-dash-hero::after { content:'';position:absolute; height:300px;width:300px;border-radius:50%;right:0;top:-150px;border:1px solid rgba(116,173,218,.45);opacity:.6; }
+
+.dentistry-portal .dp-dash-hero h2 { color:#FFFFFF;font-size:clamp(29px,3vw,40px);margin:16px 0 10px;font-weight:770; }
+
+.dentistry-portal .dp-dash-hero p { color:rgba(255,255,255,.84);font-size:12px;line-height:1.8;max-width:390px;margin-bottom:20px; }
+
+.dentistry-portal .dp-dash-hero .dp-btn { padding:10px 14px;min-height:43px; font-size:11px; }
+
+.dentistry-portal .dp-dash-hero-icon { flex:0 0 230px; display:grid;place-items:center;align-self:stretch; position:relative;z-index:1; }
+
+.dentistry-portal .dp-dash-hero-icon .dp-icon { width:165px;height:165px;stroke-width:1;color:rgba(255,255,255,.84);filter:drop-shadow(0 16px 30px rgba(0,0,0,.12)); }
+
+.dentistry-portal .dp-stats-grid { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:17px;margin:20px 0; }
+
+.dentistry-portal .dp-stat-card { display:flex;flex-direction:column;gap:7px;background:#FFFFFF;border:1px solid rgba(0,0,0,.12);border-radius:15px;padding:21px 24px;min-width:0; }
+
+.dentistry-portal .dp-stat-icon { display:grid;place-items:center;width:37px;height:37px;background:#FFFFFF;color:#74ADDA;border-radius:10px;margin-bottom:8px; }
+
+.dentistry-portal .dp-stat-card>span:not(.dp-stat-icon) { font-size:11px;color:rgba(0,0,0,.60); }
+
+.dentistry-portal .dp-stat-card strong { font-size:29px;font-weight:820;line-height:1.2; }
+
+.dentistry-portal .dp-stat-card small { font-size:10px;color:#74ADDA; }
+
+.dentistry-portal .dp-dash-two-col { display:grid;grid-template-columns:minmax(0,1.25fr) minmax(290px,.85fr);gap:19px; }
+
+.dentistry-portal .dp-dash-two-col>.dp-white-card, .dentistry-portal [data-dashboard-panel]:not([data-dashboard-panel="overview"])>.dp-white-card { padding:27px; }
+
+.dentistry-portal .dp-appointment-card { display:flex;gap:15px;align-items:center;padding:16px;border:1px solid rgba(0,0,0,.12);border-radius:13px;background:#FFFFFF;flex-wrap:wrap; }
+
+.dentistry-portal .dp-appointment-date { display:flex;gap:7px;align-items:center;background:rgba(116,173,218,.07);color:#000000;border-radius:11px;padding:13px; }
+
+.dentistry-portal .dp-appointment-date strong { font-size:27px;line-height:1;font-weight:850; }
+
+.dentistry-portal .dp-appointment-date span { font-size:10px;line-height:1.2;letter-spacing:.05em;font-weight:800; }
+
+.dentistry-portal .dp-appointment-main { flex:1;min-width:145px; }
+
+.dentistry-portal .dp-appointment-main h3 { font-size:15px;margin:8px 0 7px; }
+
+.dentistry-portal .dp-appointment-main p { display:flex;align-items:center;gap:5px;color:rgba(0,0,0,.60);font-size:10px; flex-wrap:wrap; }
+
+.dentistry-portal .dp-appointment-main p .dp-icon { width:13px;height:13px; }
+
+.dentistry-portal .dp-care-list { list-style:none;display:flex;flex-direction:column;gap:20px;margin:0;padding:4px 0; }
+
+.dentistry-portal .dp-care-list li { display:flex;align-items:center;gap:12px;font-size:12px;color:rgba(0,0,0,.60); }
+
+.dentistry-portal .dp-care-list li span { display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#FFFFFF;color:#74ADDA; }
+
+.dentistry-portal .dp-care-list li span .dp-icon { width:15px;height:15px; }
+
+.dentistry-portal [data-dashboard-panel]:not([data-dashboard-panel="overview"]) { max-width:1030px; }
+
+.dentistry-portal .dp-timeline, .dentistry-portal .dp-list-row { display:flex;flex-direction:column; }
+
+.dentistry-portal .dp-timeline-item, .dentistry-portal .dp-list-row { display:flex;align-items:center;gap:17px;padding:20px 0;border-top:1px solid rgba(0,0,0,.12); }
+
+.dentistry-portal .dp-timeline-item>div:nth-child(2), .dentistry-portal .dp-list-row>div:nth-child(2) { flex:1;min-width:0; }
+
+.dentistry-portal .dp-timeline-item strong, .dentistry-portal .dp-list-row strong { font-size:13px; }
+
+.dentistry-portal .dp-timeline-item p, .dentistry-portal .dp-list-row p { margin-top:5px;font-size:11px;color:rgba(0,0,0,.60); }
+
+.dentistry-portal .dp-dot { display:block;width:11px;height:11px;background:rgba(116,173,218,.26);border:3px solid rgba(0,0,0,.12);border-radius:50%; }
+
+.dentistry-portal .dp-dot-muted { background:rgba(116,173,218,.14); }
+
+.dentistry-portal .dp-record-icon { display:grid;place-items:center;width:39px;height:39px;border-radius:12px;background:#FFFFFF;color:#74ADDA; }
+
+.dentistry-portal .dp-billing-line { display:flex;gap:15px;justify-content:space-between;padding:18px 0;border-top:1px solid rgba(0,0,0,.12);font-size:13px;color:rgba(0,0,0,.60); }
+
+.dentistry-portal .dp-billing-line strong { color:#000000; }
+
+.dentistry-portal .dp-billing-total { font-weight:800; }
+
+.dentistry-portal .dp-tiny-muted { color:rgba(0,0,0,.60);font-size:11px;margin:8px 0 20px; }
+
+.dentistry-portal .dp-profile-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px; }
+
+.dentistry-portal .dp-profile-grid>div { display:flex;flex-direction:column;gap:6px;padding:16px 0;border-top:1px solid rgba(0,0,0,.12); }
+
+.dentistry-portal .dp-profile-grid>div span { color:rgba(0,0,0,.60);font-size:11px; }
+
+.dentistry-portal .dp-profile-grid>div strong { font-size:14px;overflow-wrap:anywhere; }
+
+/* Checkout */
+
+.dentistry-portal.dp-checkout-page { background:#FFFFFF;padding:30px 22px 75px; }
+
+.dentistry-portal .dp-checkout-container { max-width:1180px;margin:0 auto; }
+
+.dentistry-portal .dp-checkout-trail { display:flex;align-items:center;gap:12px;color:rgba(0,0,0,.60);font-size:11px;margin:0 0 23px; }
+
+.dentistry-portal .dp-checkout-trail strong { color:#000000;font-weight:800; }
+
+.dentistry-portal .dp-checkout-trail .dp-icon { width:12px;height:12px;opacity:.5; }
+
+.dentistry-portal .dp-checkout-container>.dp-demo-note { margin-bottom:30px; }
+
+.dentistry-portal .dp-checkout-heading { display:flex;justify-content:space-between;align-items:flex-end;gap:25px;margin-bottom:32px; }
+
+.dentistry-portal .dp-checkout-heading h1 { margin:10px 0 14px; font-size:clamp(34px,4.2vw,52px);font-weight:790; }
+
+.dentistry-portal .dp-checkout-heading h1 em { color:#74ADDA;font-style:normal; }
+
+.dentistry-portal .dp-checkout-heading p { color:rgba(0,0,0,.60);font-size:13px;line-height:1.8;max-width:550px; }
+
+.dentistry-portal .dp-checkout-steps { display:flex;gap:14px;align-items:center;margin-bottom:7px; }
+
+.dentistry-portal .dp-checkout-steps>span { background:rgba(116,173,218,.07);color:rgba(0,0,0,.60);width:33px;height:33px;display:grid;place-items:center;border-radius:50%;font-size:12px;font-weight:850;position:relative; }
+
+.dentistry-portal .dp-checkout-steps>span:not(:last-child)::after { content:'';position:absolute;width:14px;height:1px;background:rgba(116,173,218,.14);left:100%;top:50%; }
+
+.dentistry-portal .dp-checkout-steps>span.is-active { color:#000000;background:#74ADDA; }
+
+.dentistry-portal .dp-checkout-steps>span small { display:none; }
+
+.dentistry-portal .dp-checkout-grid { display:grid;grid-template-columns:minmax(0,1fr) 360px;align-items:start;gap:25px; }
+
+.dentistry-portal .dp-checkout-form-area { display:flex;flex-direction:column;gap:19px;min-width:0; }
+
+.dentistry-portal .dp-checkout-card { padding:29px 30px 30px; }
+
+.dentistry-portal .dp-checkout-card-heading { display:flex;gap:14px;align-items:flex-start;margin-bottom:23px; }
+
+.dentistry-portal .dp-num { display:grid;place-items:center;height:39px;width:39px;flex:none;border:1px solid rgba(0,0,0,.12);background:#FFFFFF;color:#74ADDA;border-radius:11px;font-size:12px;font-weight:880; }
+
+.dentistry-portal .dp-checkout-card-heading h2 { font-size:19px;margin:0 0 6px; }
+
+.dentistry-portal .dp-checkout-card-heading p { font-size:12px;color:rgba(0,0,0,.60); }
+
+.dentistry-portal .dp-form-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 17px; }
+
+.dentistry-portal .dp-form-grid .dp-field { font-size:12px; }
+
+.dentistry-portal .dp-form-grid .dp-field input, .dentistry-portal .dp-form-grid .dp-field select { height:48px; }
+
+.dentistry-portal .dp-field-full { grid-column:1/-1; }
+
+.dentistry-portal .dp-form-grid .dp-field textarea { resize:vertical;min-height:110px;padding:14px 16px; }
+
+.dentistry-portal .dp-field select { padding-right:36px; background-image:url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23000000" stroke-width="2" stroke-linecap="round"%3E%3Cpath d="m6 9 6 6 6-6"/%3E%3C/svg%3E');background-repeat:no-repeat;background-position:right 13px center; }
+
+.dentistry-portal .dp-helptext { margin-top:13px;color:rgba(0,0,0,.60);font-size:11px; }
+
+.dentistry-portal .dp-payment-choices { display:grid;gap:12px; }
+
+.dentistry-portal .dp-payment-choice { display:flex;align-items:center;gap:12px;cursor:pointer;border:1px solid rgba(0,0,0,.12);border-radius:12px;padding:16px 17px;position:relative; }
+
+.dentistry-portal .dp-payment-choice.is-selected { border-color:#74ADDA;background:rgba(116,173,218,.10); }
+
+.dentistry-portal .dp-payment-choice input { position:absolute;opacity:0; width:1px;height:1px; }
+
+.dentistry-portal .dp-payment-choice:has(input:focus-visible) { outline:3px solid rgba(116,173,218,.45);outline-offset:3px; }
+
+.dentistry-portal .dp-payment-choice-icon { display:grid;place-items:center;width:42px;height:42px;border-radius:10px;background:rgba(116,173,218,.07);color:#74ADDA; }
+
+.dentistry-portal .dp-payment-choice>span:nth-of-type(2) { display:flex;flex-direction:column;flex:1;gap:3px; }
+
+.dentistry-portal .dp-payment-choice strong { font-size:13px; }
+
+.dentistry-portal .dp-payment-choice small { color:rgba(0,0,0,.60);font-size:11px; }
+
+.dentistry-portal .dp-radio-mark { height:17px;width:17px;flex:none;border:2px solid rgba(116,173,218,.45);border-radius:50%; }
+
+.dentistry-portal .dp-payment-choice.is-selected .dp-radio-mark { border:5px solid rgba(116,173,218,.45); }
+
+.dentistry-portal .dp-checkout-summary { position:sticky;top:28px;overflow:hidden;border-radius:18px;background:#FFFFFF;border:1px solid rgba(0,0,0,.10);box-shadow:0 10px 35px rgba(0,0,0,.06); }
+
+.dentistry-portal .dp-summary-image { display:flex;align-items:center;gap:17px;background:linear-gradient(120deg,#000000 0%,#74ADDA 145%);padding:25px 22px;color:#FFFFFF; }
+
+.dentistry-portal .dp-summary-tooth { display:grid;place-items:center;width:64px;height:64px;border-radius:15px;background:#000000;color:rgba(255,255,255,.84); }
+
+.dentistry-portal .dp-summary-tooth .dp-icon { width:39px;height:39px;stroke-width:1.3; }
+
+.dentistry-portal .dp-summary-image span { color:rgba(255,255,255,.84);font-size:10px;letter-spacing:.12em;font-weight:800; }
+
+.dentistry-portal .dp-summary-image h2 { color:#FFFFFF;font-size:17px;margin-top:7px; }
+
+.dentistry-portal .dp-summary-body { padding:23px; }
+
+.dentistry-portal .dp-summary-meta { display:flex;flex-direction:column;gap:13px;margin:17px 0 19px;color:rgba(0,0,0,.60);font-size:12px; }
+
+.dentistry-portal .dp-summary-meta>span { display:flex;align-items:center;gap:9px; }
+
+.dentistry-portal .dp-summary-meta .dp-icon { width:16px;height:16px;color:#74ADDA; }
+
+.dentistry-portal .dp-summary-separator { height:1px;background:rgba(116,173,218,.07);margin:18px 0; }
+
+.dentistry-portal .dp-summary-line { display:flex;justify-content:space-between;gap:10px;margin:13px 0;font-size:12px;color:rgba(0,0,0,.60); }
+
+.dentistry-portal .dp-summary-line strong { color:rgba(0,0,0,.60);font-size:11px;white-space:nowrap; }
+
+.dentistry-portal .dp-summary-pay { display:flex;justify-content:space-between;align-items:center;gap:11px;margin-bottom:21px;font-size:12px;font-weight:750; }
+
+.dentistry-portal .dp-summary-pay strong { font-size:20px;white-space:nowrap; }
+
+.dentistry-portal .dp-summary-guarantee { display:flex;align-items:center;justify-content:center;gap:9px;color:rgba(0,0,0,.60);margin-top:19px;font-size:10px; }
+
+.dentistry-portal .dp-summary-guarantee .dp-icon { height:16px;width:16px; }
+
+.dentistry-portal .dp-summary-body>.dp-form-feedback { margin-top:15px; }
+
+.dentistry-portal .dp-checkout-preview { margin-top:14px;background:#FFFFFF;border:1px solid rgba(116,173,218,.45);border-radius:10px;padding:14px;color:#000000;font-size:12px;line-height:1.7; }
+
+.dentistry-portal .dp-checkout-preview strong { display:block;margin-bottom:5px; }
+
+@media (max-width:1100px) {
+
+  .dentistry-portal .dp-dash-two-col { grid-template-columns:1fr; }
+
+  .dentistry-portal .dp-checkout-grid { grid-template-columns:minmax(0,1fr) 325px;gap:17px; }
+
+  .dentistry-portal .dp-auth-visual { padding:38px 32px; }
+
+  .dentistry-portal .dp-auth-panel { padding:45px 30px; }
+
+}
+
+@media (max-width:900px) {
+
+  .dentistry-portal.dp-auth-page { padding:15px; }
+
+  .dentistry-portal .dp-auth-layout { grid-template-columns:minmax(0,1fr); min-height:0; }
+
+  .dentistry-portal .dp-auth-visual { display:none; }
+
+  .dentistry-portal .dp-auth-panel { min-height:670px;padding:40px 25px; }
+
+  .dentistry-portal .dp-auth-panel-inner { max-width:470px; }
+
+  .dentistry-portal .dp-mobile-logo { display:flex;align-items:center;gap:10px;font-size:15px;font-weight:850;color:#000000;margin-bottom:27px; }
+
+  .dentistry-portal .dp-mobile-logo .dp-icon { width:30px;height:30px; }
+
+  .dentistry-portal .dp-back-link { margin-bottom:26px; }
+
+  .dentistry-portal .dp-dashboard-layout { grid-template-columns:210px minmax(0,1fr); }
+
+  .dentistry-portal .dp-dash-sidebar { padding:26px 12px; }
+
+  .dentistry-portal .dp-dash-brand { font-size:11px;padding-left:4px; }
+
+  .dentistry-portal .dp-dash-pagebody { padding:27px 21px 50px; }
+
+  .dentistry-portal .dp-stats-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+
+  .dentistry-portal .dp-checkout-grid { grid-template-columns:1fr; }
+
+  .dentistry-portal .dp-checkout-summary { position:static;max-width:100%; }
+
+}
+
+@media (max-width:650px) {
+
+  .dentistry-portal.dp-auth-page { padding:0; }
+
+  .dentistry-portal .dp-auth-layout { border-radius:0;box-shadow:none; }
+
+  .dentistry-portal .dp-auth-panel { padding:28px 20px 38px; min-height:0; }
+
+  .dentistry-portal .dp-auth-head { margin-bottom:25px; }
+
+  .dentistry-portal .dp-auth-head h1 { font-size:32px; }
+
+  .dentistry-portal .dp-dashboard-layout { display:block; }
+
+  .dentistry-portal .dp-dash-sidebar { display:none; }
+
+  .dentistry-portal .dp-dash-topbar { padding:0 17px;min-height:65px;gap:12px; }
+
+  .dentistry-portal .dp-dash-mobile-menu { display:grid;place-items:center;height:36px;width:36px;border:1px solid rgba(0,0,0,.12);background:#FFFFFF;border-radius:9px;color:#000000; }
+
+  .dentistry-portal .dp-dash-mobile-tabs:not([hidden]) { display:flex;flex-wrap:wrap;gap:8px;padding:14px 18px;border-bottom:1px solid rgba(0,0,0,.12);background:#FFFFFF; }
+
+  .dentistry-portal .dp-dash-mobile-tabs button { border:1px solid rgba(0,0,0,.12);border-radius:100px;background:#FFFFFF;padding:8px 12px;color:#74ADDA;font-size:11px; }
+
+  .dentistry-portal .dp-topbar-right { gap:10px; }
+
+  .dentistry-portal .dp-dash-pagebody { padding:25px 15px 45px; }
+
+  .dentistry-portal .dp-page-head h1 { font-size:29px; }
+
+  .dentistry-portal .dp-dash-hero { padding:25px;min-height:0; }
+
+  .dentistry-portal .dp-dash-hero-icon { display:none; }
+
+  .dentistry-portal .dp-stats-grid { grid-template-columns:1fr;gap:12px; }
+
+  .dentistry-portal .dp-stat-card { padding:17px 19px; }
+
+  .dentistry-portal .dp-dash-two-col>.dp-white-card, .dentistry-portal [data-dashboard-panel]:not([data-dashboard-panel="overview"])>.dp-white-card { padding:19px; }
+
+  .dentistry-portal .dp-appointment-card>a { width:100%; }
+
+  .dentistry-portal .dp-profile-grid { grid-template-columns:1fr; }
+
+  .dentistry-portal.dp-checkout-page { padding:20px 13px 50px; }
+
+  .dentistry-portal .dp-checkout-heading { flex-direction:column;align-items:flex-start; }
+
+  .dentistry-portal .dp-checkout-card { padding:20px 17px; }
+
+  .dentistry-portal .dp-form-grid { grid-template-columns:1fr;gap:15px; }
+
+  .dentistry-portal .dp-checkout-heading h1 { font-size:35px; }
+
+}
+
+@media (prefers-reduced-motion:reduce) { .dentistry-portal .dp-btn, .dentistry-portal .dp-field input, .dentistry-portal .dp-field textarea, .dentistry-portal .dp-field select { transition:none; } }
+
+/* Black / white / #74ADDA palette — accessibility and consistent states. */
+.dentistry-portal :focus-visible { outline-color:#74ADDA; }
+.dentistry-portal .dp-auth-visual-copy h2,
+.dentistry-portal .dp-dash-hero h2,
+.dentistry-portal .dp-summary-image h2,
+.dentistry-portal .dp-support-box strong { color:#FFFFFF; }
+.dentistry-portal .dp-auth-visual-copy p,
+.dentistry-portal .dp-auth-visual-footer,
+.dentistry-portal .dp-dash-hero p,
+.dentistry-portal .dp-support-box p,
+.dentistry-portal .dp-support-box a { color:rgba(255,255,255,.82); }
+.dentistry-portal .dp-auth-mini { background:#FFFFFF; color:#000000; }
+.dentistry-portal .dp-auth-mini .dp-icon { color:#74ADDA; }
+.dentistry-portal .dp-sidebar-kicker,
+.dentistry-portal .dp-dash-brand small,
+.dentistry-portal .dp-sidebar-back { color:rgba(255,255,255,.65); }
+.dentistry-portal .dp-dash-nav-item:hover .dp-icon,
+.dentistry-portal .dp-dash-nav-item.is-active .dp-icon { color:#000000; opacity:1; }
+.dentistry-portal .dp-btn-primary:focus-visible { outline:3px solid #000000; outline-offset:3px; }
+.dentistry-portal .dp-checkout-steps>span.is-active { color:#000000; }
+.dentistry-portal .dp-demo-tag,
+.dentistry-portal .dp-chip-green,
+.dentistry-portal .dp-pill { background:rgba(116,173,218,.2);color:#000000; }
+.dentistry-portal .dp-pill-light { background:rgba(255,255,255,.17); color:#FFFFFF; }
+
+/* High-contrast hero label on the black/blue background. */
+.dentistry-portal .dp-dash-hero .dp-pill { color:#FFFFFF; background:rgba(255,255,255,.17); border:1px solid rgba(255,255,255,.22); }
+
+
+.dentistry-portal[data-portal-page="login"] .dp-login-methods {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+.dentistry-portal[data-portal-page="login"] .dp-login-methods .dp-btn {
+  min-height: 48px;
+  padding: 10px;
+  font-size: 12px;
+}
+
+.dentistry-portal[data-portal-page="login"] .dp-btn-primary {
+  background: #74adda;
+  color: #000;
+}
+
+.dentistry-portal[data-portal-page="login"] .dp-btn-primary:hover {
+  background: #000;
+  color: #fff;
+}
+
+.dentistry-portal[data-portal-page="login"] .dp-btn-outline {
+  background: #fff;
+  color: #000;
+  border-color: #74adda;
+}
+
+.dentistry-portal[data-portal-page="login"] .dp-form[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 480px) {
+  .dentistry-portal[data-portal-page="login"] .dp-login-methods {
+    gap: 8px;
+  }
+}
+
+.dentistry-portal[data-portal-page="register"]
+.dp-form[hidden],
+.dentistry-portal[data-portal-page="register"]
+[data-register-step][hidden] {
+  display: none !important;
+}
+
+.dentistry-portal[data-portal-page="register"]
+.dp-otp-hint {
+  color: #000;
+  opacity: 0.65;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.dentistry-portal[data-portal-page="register"]
+.dp-text-button {
+  border: 0;
+  background: transparent;
+  color: #000;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dentistry-portal[data-portal-page="register"]
+.dp-text-button:hover {
+  color: #74adda;
+}
+
+.dentistry-portal[data-portal-page="register"]
+.dp-text-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.dentistry-portal[data-portal-page="register"]
+.dp-btn-primary {
+  background: #74adda;
+  color: #000;
+}
+
+.dentistry-portal[data-portal-page="register"]
+.dp-btn-primary:hover {
+  background: #000;
+  color: #fff;
+}
+
+.dentistry-portal[data-portal-page="register"]
+.dp-demo-note {
+  background: rgba(116, 173, 218, 0.12);
+  border-color: #74adda;
+  color: #000;
+}
+
+.dentistry-portal[data-portal-page="register"]
+.dp-form-extras {
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.dentistry-portal[data-portal-page="forgot-password"]
+[data-forgot-step][hidden] {
+  display: none !important;
+}
+
+.dentistry-portal[data-portal-page="forgot-password"]
+.dp-form {
+  margin-top: 18px;
+}
+
+.dentistry-portal[data-portal-page="forgot-password"]
+.dp-otp-instruction {
+  font-size: 13px;
+  color: #000;
+  line-height: 1.8;
+}
+
+.dentistry-portal[data-portal-page="forgot-password"]
+.dp-text-button {
+  border: 0;
+  background: transparent;
+  color: #000;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dentistry-portal[data-portal-page="forgot-password"]
+.dp-text-button:hover {
+  color: #74adda;
+}
+
+.dentistry-portal[data-portal-page="forgot-password"]
+.dp-text-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dentistry-portal[data-portal-page="forgot-password"]
+.dp-btn-primary {
+  background: #74adda;
+  color: #000;
+}
+
+.dentistry-portal[data-portal-page="forgot-password"]
+.dp-btn-primary:hover {
+  background: #000;
+  color: #fff;
+}
+.dentistry-portal .dp-login-forgot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 18px;
+  margin-bottom: 20px;
+}
+
+.dentistry-portal .dp-login-forgot a {
+  color: #000000;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.dentistry-portal .dp-login-forgot a:hover {
+  color: #74adda;
+}
+
+.dentistry-portal .dp-patient-profile {
+  padding: 28px;
+}
+
+.dentistry-portal .dp-profile-status {
+  margin-bottom: 20px;
+  color: #000;
+  font-size: 12px;
+}
+
+.dentistry-portal .dp-profile-status[data-state="error"] {
+  color: #b42318;
+}
+
+.dentistry-portal .dp-profile-hint {
+  margin-top: 22px;
+  padding: 14px;
+  border: 1px solid #74adda;
+  border-radius: 10px;
+  background: rgba(116, 173, 218, 0.1);
+  color: #000;
+  font-size: 12px;
+}
+
+.dentistry-portal [data-dashboard-logout] {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: start;
+  font: inherit;
+}
+
+.dentistry-portal [data-dashboard-logout]:hover {
+  color: #74adda;
+}
+
+@media (max-width: 650px) {
+  .dentistry-portal .dp-patient-profile {
+    padding: 18px;
+  }
+}

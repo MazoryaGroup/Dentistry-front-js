@@ -1,0 +1,19 @@
+/* Fallback interaction styles only. The original Webflow main.css remains necessary. */
+.w-tab-pane:not(.w--tab-active) { display: none; }
+.w-tab-pane.w--tab-active { display: block; }
+.w-form-done, .w-form-fail { display: none; }
+.faq-tab-link .ans-box { overflow: hidden; }
+.faq-tab-link .plus { transition: transform 300ms ease; }
+.dentistry-demo-message { display: block; color: #a05225; font-size: 0.9rem; margin-top: 12px; }
+.dentistry-lightbox { max-width: min(95vw, 1080px); max-height: 93vh; background: #111; padding: 12px; border: 0; border-radius: 6px; }
+.dentistry-lightbox::backdrop { background: rgba(0,0,0,.85); }
+.dentistry-lightbox img { width: 100%; max-height: 85vh; object-fit: contain; display: block; }
+.dentistry-lightbox-close { position: absolute; right: 12px; top: 6px; border: 0; color: white; font: 30px sans-serif; background: rgba(0,0,0,.65); cursor: pointer; }
+.hamburger-menu-button { cursor: pointer; }
+@media (max-width: 991px) {
+  .navbar.w-nav { position: relative; }
+  .navbar .nav-menu-block.w-nav-menu { display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 100; background: #fff; padding: 15px 20px; box-shadow: 0 16px 30px rgba(0,0,0,.12); }
+  .navbar .nav-menu-block.w-nav-menu.w--open { display: block; }
+  .navbar .nav-menu-block.w-nav-menu .nav-link { display: block; }
+  .navbar .hamburger-menu-button { display: block; }
+}

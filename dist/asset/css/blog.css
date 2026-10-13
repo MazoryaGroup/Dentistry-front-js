@@ -1,0 +1,170 @@
+/**
+ * Blog-only styling for the standalone Dentistry frontend.
+ * Every selector is scoped to .dentistry-blog-page so other pages are unchanged.
+ * The original Webflow class names remain in the markup.
+ */
+.dentistry-blog-page {
+  --blog-ink: #18333a;
+  --blog-muted: #647c80;
+  --blog-accent: #177c7a;
+  --blog-bg: #f6faf9;
+  --blog-card: #ffffff;
+  --blog-border: #e4edeb;
+  color: var(--blog-ink);
+  background: #fff;
+}
+
+.dentistry-blog-page *,
+.dentistry-blog-page *::before,
+.dentistry-blog-page *::after { box-sizing: border-box; }
+
+.dentistry-blog-page .container,
+.dentistry-blog-page .container-fluid {
+  width: 100%;
+  max-width: 1240px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+.dentistry-blog-page .breadcrumb-section {
+  padding: 72px 0;
+  background: var(--blog-bg);
+  text-align: center;
+}
+
+.dentistry-blog-page .breadcrumb-title {
+  margin: 0 0 12px;
+  color: var(--blog-ink);
+  font-size: clamp(38px, 6vw, 70px);
+  font-weight: 700;
+  line-height: 1.12;
+  text-transform: capitalize;
+}
+
+.dentistry-blog-page .breadcrumb-subtext-block {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dentistry-blog-page .breadcrumb-subtext {
+  color: var(--blog-muted);
+  font-size: 15px;
+  text-decoration: none;
+  text-transform: capitalize;
+}
+.dentistry-blog-page a.breadcrumb-subtext:hover { color: var(--blog-accent); }
+.dentistry-blog-page [aria-current="page"].breadcrumb-subtext { color: var(--blog-accent); }
+
+.dentistry-blog-page .blog-section-one { padding: 92px 0 110px; }
+.dentistry-blog-page .section-title-main-block {
+  max-width: 750px;
+  margin: 0 auto 44px;
+  text-align: center;
+}
+
+.dentistry-blog-page .section-sub-text {
+  display: block;
+  margin-bottom: 14px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--blog-accent);
+}
+
+.dentistry-blog-page .section-title {
+  margin: 0;
+  font-size: clamp(28px, 3.7vw, 44px);
+  line-height: 1.22;
+  font-weight: 700;
+  color: var(--blog-ink);
+}
+
+.dentistry-blog-page .blog-one-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 32px 26px;
+  align-items: stretch;
+}
+
+.dentistry-blog-page .blog-one-list > .w-dyn-item { min-width: 0; }
+
+.dentistry-blog-page .blog-one-link {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--blog-border);
+  border-radius: 18px;
+  background: var(--blog-card);
+  color: inherit;
+  text-decoration: none;
+  box-shadow: 0 10px 30px rgba(19, 52, 52, 0.035);
+  transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+}
+
+.dentistry-blog-page .blog-one-link:hover,
+.dentistry-blog-page .blog-one-link:focus-visible {
+  transform: translateY(-5px);
+  border-color: #c3dad5;
+  box-shadow: 0 18px 40px rgba(19, 52, 52, .12);
+}
+.dentistry-blog-page .blog-one-link:focus-visible { outline: 3px solid var(--blog-accent); outline-offset: 3px; }
+
+.dentistry-blog-page .blog-one-image-block {
+  width: 100%;
+  aspect-ratio: 1.35 / 1;
+  overflow: hidden;
+  background: var(--blog-bg);
+}
+
+.dentistry-blog-page .blog-one-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .4s ease;
+}
+.dentistry-blog-page .blog-one-link:hover .blog-one-image { transform: scale(1.055); }
+
+.dentistry-blog-page .blog-date-block-one { padding: 23px 24px 0; }
+.dentistry-blog-page .blog-month-text {
+  color: var(--blog-accent);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.dentistry-blog-page .blog-title-block { padding: 10px 24px 28px; }
+.dentistry-blog-page .blog-name {
+  margin: 0;
+  color: var(--blog-ink);
+  font-size: clamp(19px, 2vw, 23px);
+  font-weight: 650;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.dentistry-blog-page .blog-one-link:hover .blog-name { color: var(--blog-accent); }
+
+@media (max-width: 991px) {
+  .dentistry-blog-page .blog-one-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+  .dentistry-blog-page .blog-section-one { padding: 72px 0 88px; }
+}
+@media (max-width: 640px) {
+  .dentistry-blog-page .container,
+  .dentistry-blog-page .container-fluid { padding-left: 18px; padding-right: 18px; }
+  .dentistry-blog-page .breadcrumb-section { padding: 55px 0; }
+  .dentistry-blog-page .section-title-main-block { margin-bottom: 30px; }
+  .dentistry-blog-page .blog-one-list { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  .dentistry-blog-page .blog-section-one { padding: 54px 0 70px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dentistry-blog-page .blog-one-link,
+  .dentistry-blog-page .blog-one-image { transition: none; }
+  .dentistry-blog-page .blog-one-link:hover { transform: none; }
+  .dentistry-blog-page .blog-one-link:hover .blog-one-image { transform: none; }
+}
