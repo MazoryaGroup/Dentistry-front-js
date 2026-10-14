@@ -1,0 +1,237 @@
+
+/* ============================================
+   DENTISTRY — DOCTOR PROFILE
+============================================ */
+
+.dp-team-details-page {
+  --team-blue: #74adda;
+  --team-dark: #142a3a;
+  --team-muted: #697681;
+}
+
+.dp-team-details-page *,
+.dp-team-details-page *::before,
+.dp-team-details-page *::after {
+  box-sizing: border-box;
+}
+
+.dp-team-details-page .breadcrumb-subtext {
+  text-decoration: none;
+}
+
+.dp-team-details-page a.breadcrumb-subtext:hover {
+  color: #397ba8;
+}
+
+.dp-team-details {
+  padding-top: 70px;
+  padding-bottom: 90px;
+}
+
+.dp-team-details .expert-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1.15fr);
+  align-items: start;
+  gap: clamp(35px, 5vw, 85px);
+}
+
+.dp-team-details .left-expert-grid,
+.dp-team-details .right-expert-grid {
+  min-width: 0;
+  width: 100%;
+}
+
+.dp-team-details .expert-image-block {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 20px;
+  background: #e6f0f6;
+}
+
+.dp-team-details .expert-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 470px;
+  object-fit: cover;
+  object-position: center top;
+  border-radius: 0;
+}
+
+.dp-team-details .expert-flex-block {
+  padding: 25px 0 16px;
+}
+
+.dp-team-details .expert-team-tilte {
+  margin: 0 0 8px;
+  font-size: clamp(25px, 3vw, 35px);
+  line-height: 1.5;
+  color: #172e40;
+}
+
+.dp-team-details .expert-designation {
+  color: #5d98bf;
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.dp-team-preview-badge {
+  display: inline-block;
+  padding: 7px 12px;
+  margin: 0 0 22px;
+  border: 1px solid #dce9f3;
+  border-radius: 8px;
+  background: #f0f7fc;
+  color: #557e9d;
+  font-size: 12px;
+}
+
+.dp-team-details .main-expert-duration {
+  padding: 22px 0;
+  border-top: 1px solid #e4ebf0;
+}
+
+.dp-team-details .inner-expert-title {
+  margin: 0 0 10px;
+  color: #21394a;
+  font-size: 17px;
+}
+
+.dp-team-specialty,
+.dp-team-info {
+  margin: 0;
+  color: #6b7c88;
+  font-size: 14px;
+  line-height: 2;
+}
+
+.dp-team-details .expert-button-block {
+  margin-top: 25px;
+}
+
+.dp-team-details .right-expert-sticky {
+  position: static;
+  width: 100%;
+}
+
+.dp-team-details .expert-richbox {
+  width: 100%;
+  color: #263c4e;
+}
+
+.dp-team-detail-eyebrow {
+  margin-bottom: 14px;
+  color: #609ac1;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.dp-team-details .expert-richbox h2 {
+  margin: 0 0 23px;
+  color: #132c40;
+  font-size: clamp(25px, 3vw, 38px);
+  line-height: 1.55;
+}
+
+.dp-team-details .expert-richbox h3 {
+  margin: 35px 0 14px;
+  color: #162e40;
+  font-size: 21px;
+}
+
+.dp-team-details .expert-richbox p {
+  margin: 0 0 20px;
+  color: #687c8b;
+  font-size: 15px;
+  line-height: 2.1;
+}
+
+.dp-team-detail-note {
+  margin-top: 35px;
+  padding: 17px 20px;
+  border-inline-start: 3px solid #74adda;
+  border-radius: 9px;
+  background: #f1f7fb;
+  color: #527086;
+  font-size: 13px;
+  line-height: 2;
+}
+
+.dp-team-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 29px;
+  color: #417eaa;
+  font-size: 14px;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.dp-team-back-link:hover {
+  color: #142f45;
+}
+
+.dp-team-back-arrow {
+  display: inline-flex;
+  transform: rotate(180deg);
+}
+
+.dp-team-not-found {
+  min-height: 45vh;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 120px 24px;
+  text-align: center;
+}
+
+.dp-team-not-found a {
+  color: #407fae;
+}
+
+/* RTL */
+
+html[dir="rtl"] .dp-team-details-page {
+  direction: rtl;
+}
+
+html[dir="rtl"] .dp-team-details .expert-richbox {
+  text-align: right;
+}
+
+html[dir="rtl"] .dp-team-back-arrow {
+  transform: none;
+}
+
+html[dir="rtl"] .dp-team-details .button-icon-block svg {
+  transform: scaleX(-1);
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 991px) {
+  .dp-team-details .expert-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 30px;
+  }
+}
+
+@media (max-width: 767px) {
+  .dp-team-details {
+    padding-top: 45px;
+    padding-bottom: 65px;
+  }
+
+  .dp-team-details .expert-grid {
+    grid-template-columns: 1fr;
+    gap: 35px;
+  }
+
+  .dp-team-details .expert-image {
+    max-height: 410px;
+  }
+
+  .dp-team-details .expert-richbox h3 {
+    margin-top: 25px;
+  }
+}

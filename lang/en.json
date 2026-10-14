@@ -241,9 +241,122 @@
   "footer.copyright": "All rights reserved.",
 
   "footer.backToTop": "Back to Top",
-   "footer.parentCompany": "Mazorya Group"
+   "footer.parentCompany": "Mazorya Group",
 
 
+
+
+
+  "about.breadcrumb": "About Us",
+  "about.home": "Home",
+  "about.imageAlt": "Dental clinic interior",
+
+  "about.introEyebrow": "About Us",
+  "about.introTitle": "A Thoughtful Approach to Your Smile",
+  "about.introDescription": "Oral health is an important part of overall well-being. Understanding preventive care, exploring treatment options, and asking informed questions can help patients make better decisions about their dental health.",
+
+  "about.feature1Title": "Information Before Decisions",
+  "about.feature1Description": "Understanding treatment steps and discussing concerns are important parts of making informed choices.",
+
+  "about.feature2Title": "Individual Treatment Needs",
+  "about.feature2Description": "Every patient has different oral health needs. Appropriate treatment depends on a professional examination and clinical assessment.",
+
+  "about.contactButton": "Contact Us",
+
+  "about.treatmentEyebrow": "Dental Services",
+  "about.treatmentTitle": "Explore Dental Treatments",
+  "about.treatmentDescription": "Discover the dental services currently listed by the clinic and visit each service page to learn more.",
+
+  "about.servicesLoading": "Loading services...",
+  "about.servicesEmpty": "No services are currently available.",
+  "about.servicesError": "Unable to load services.",
+  "about.retry": "Try Again",
+  "about.serviceDetails": "View Details",
+
+  "about.teamEyebrow": "Get in Touch",
+  "about.teamTitle": "We're Here for Your Questions",
+  "about.teamDescription": "Whether you want to learn more about available services, explore treatment options, or ask about visiting the clinic, you can reach out through our contact page.",
+
+  "about.teamButton": "Contact Us",
+
+  "about.faqEyebrow": "FAQ",
+  "about.faqTitle": "Frequently Asked Questions",
+
+  "about.faq1Question": "How often should I visit the dentist?",
+  "about.faq1Answer": "Regular dental checkups are recommended for many patients. The appropriate interval depends on your oral health needs and your dentist's assessment.",
+
+  "about.faq2Question": "What causes tooth decay?",
+  "about.faq2Answer": "Bacteria in dental plaque produce acids when they break down sugars and fermentable carbohydrates. Over time, these acids can remove minerals from tooth enamel and lead to cavities.",
+
+  "about.faq3Question": "How can I prevent gum disease?",
+  "about.faq3Answer": "Regular brushing with fluoride toothpaste, cleaning between teeth, routine dental checkups, and early attention to symptoms such as bleeding gums can help maintain gum health.",
+
+  "about.faq4Question": "Are teeth whitening treatments safe?",
+  "about.faq4Answer": "Professional whitening is generally safe when the method is appropriate and supervised by a dentist. Temporary sensitivity or gum irritation may occur, and whitening is not suitable for everyone.",
+
+  "about.faq5Question": "What are dental implants?",
+  "about.faq5Answer": "Dental implants are used to replace missing teeth. A post, typically made of titanium, is placed in the jawbone and later supports a dental restoration. Suitability depends on a professional examination and individual clinical conditions.",
+
+
+"about.teamPreview": "معرفی پزشکان این بخش پس از تکمیل اطلاعات تیم پزشکی نمایش داده می‌شود.",
+
+   
+
+  "about.demoTreatment1Title": "Smile Design",
+  "about.demoTreatment1Description": "Explore cosmetic dental options that may improve the appearance and harmony of your smile.",
+
+  "about.demoTreatment2Title": "Cosmetic Dentistry",
+  "about.demoTreatment2Description": "Discover aesthetic dental treatment options tailored to individual needs and goals.",
+
+  "about.demoTreatment3Title": "Dental Implants",
+  "about.demoTreatment3Description": "Learn about dental implants as an option for replacing missing teeth.",
+
+  "about.demoTreatment4Title": "Teeth Whitening",
+  "about.demoTreatment4Description": "Explore professional teeth whitening options under dental supervision.",
+
+  "about.demoTreatment5Title": "General Dentistry",
+  "about.demoTreatment5Description": "Routine examinations, preventive care, and assessment of common oral health concerns.",
+
+  "about.servicesDemoNote": "These services are currently displayed as a design preview.",
+
+
+
+
+
+"about.doctor1Name": "Dr. Fiona Park",
+"about.doctor1Role": "General Dentistry",
+
+"about.doctor2Name": "Dr. John Martin",
+"about.doctor2Role": "Cosmetic Dentistry",
+
+"about.doctor3Name": "Dr. Archie White",
+"about.doctor3Role": "Dental Care",
+
+"about.doctor4Name": "Dr. Maria Angel",
+"about.doctor4Role": "Restorative Dentistry",
+
+"about.teamDemoNote": "Names and images are for demonstration only and will be replaced with the actual medical team.",
+
+"teamDetails.home": "Home",
+"teamDetails.team": "Our Medical Team",
+"teamDetails.specialty": "Area of Practice",
+"teamDetails.information": "Doctor Information",
+"teamDetails.informationText": "Professional credentials, experience, and availability will be displayed after the clinic provides verified information.",
+"teamDetails.eyebrow": "Doctor Profile",
+"teamDetails.aboutTitle": "About",
+"teamDetails.aboutDescription": "Explore the general field of dental care associated with this profile. Individual professional information will be completed in the final version.",
+"teamDetails.focusTitle": "Areas of Dental Care",
+"teamDetails.focus1": "General dentistry includes examinations, preventive care, and assessment of common oral health conditions.",
+"teamDetails.focus2": "Cosmetic dentistry explores treatments that may improve smile appearance, tooth shape, and dental aesthetics.",
+"teamDetails.focus3": "Dental care includes oral hygiene, preventive education, and follow-up of patients' dental needs.",
+"teamDetails.focus4": "Restorative dentistry focuses on restoring damaged teeth and improving their appearance and function.",
+"teamDetails.approachTitle": "Choosing the Right Treatment",
+"teamDetails.approachDescription": "Appropriate treatment depends on a dental examination, clinical assessment, and the individual needs of each patient.",
+"teamDetails.previewBadge": "Demo Profile",
+"teamDetails.previewNotice": "This is a design preview. The displayed name, photo, and specialty are examples and do not establish that this doctor works at the clinic.",
+"teamDetails.backToDoctors": "Back to Our Doctors",
+"teamDetails.contactButton": "Contact the Clinic",
+"teamDetails.notFound": "Doctor profile not found."
 
 
 }
