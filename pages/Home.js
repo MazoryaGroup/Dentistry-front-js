@@ -1,1514 +1,587 @@
 /**
- * Dentistry — Home page converted from the supplied HTML.
- * Content is currently static. No backend/API calls are made here.
- * The original Webflow classes and DOM are preserved.
+ * Dentistry — Home page
+ * Bilingual FA/EN, Webflow layout, services/blog preview + API fallback.
+ * Shared Header and Footer are rendered by the SPA router.
+ * API: GET /api/v1/services?lang=fa|en
+ * API: GET /api/v1/blogs?lang=fa|en
+ * API: POST /api/messages
  */
-// Hero — unchanged HTML structure and CSS classes
-const HERO = String.raw`
-    <section class="section hero-one-section">
+import { getLanguage, t } from '../code/i18n.js';
+import '../asset/css/home-custom.css';
+
+const language = () => getLanguage() === 'fa' ? 'fa' : 'en';
+const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+})[ch]);
+const tr = key => escapeHTML(t(`home.${key}`));
+const clean = value => typeof value === 'string' ? value.trim() : '';
+
+const CDN = 'https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/';
+const HERO_IMAGE = 'https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/679c51db219feb60fb4c94c4_hero%20image.webp';
+const HERO_ICON = 'https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/679c4b211f44d535f9e7da9c_1.svg';
+const ARROW_ICON = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>`;
+const TOOTH_ICON = `<svg viewBox="0 0 64 64" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M18 8C10 8 5 14 5 24c0 9 4 16 7 24 2 5 5 8 9 7 4-1 3-9 5-15 1-4 3-6 6-6s5 2 6 6c2 6 1 14 5 15 4 1 7-2 9-7 3-8 7-15 7-24 0-10-5-16-13-16-6 0-9 4-14 4s-8-4-14-4Z"/></svg>`;
+
+const SERVICE_IMAGES = [
+  CDN + '67739cb05026dbf725d4e6e6_service%20image%20%281%29.webp',
+  CDN + '6773a8df753ab7c72f9cc04f_service%20image%20%289%29.webp',
+  CDN + '6773a948a802dec038145370_service%20image%20%282%29.webp',
+  CDN + '6773a9540dd9d020f977e7e6_service%20image%20%283%29.webp',
+  CDN + '6773a95f18d02159b11b502c_service%20image%20%284%29.webp',
+  CDN + '6773a948a802dec038145370_service%20image%20%282%29.webp',
+];
+
+const BLOG_IMAGES = [
+  CDN + '676a535bc2ab95ad9983363c_blog%20image%20%284%29.webp',
+  CDN + '676a53cf0e3c157f6e1fa3f0_blog%20image%20%285%29.webp',
+  CDN + '676a540c9da3b01fd9958a20_blog%20image%20%286%29.webp',
+];
+
+function demoServices() {
+  return SERVICE_IMAGES.map((image, i) => ({
+    id: null,
+    name: t(`home.service${i + 1}Title`),
+    description: t(`home.service${i + 1}Description`),
+    image,
+    isDemo: true,
+  }));
+}
+
+function demoBlogs() {
+  return BLOG_IMAGES.map((image, i) => ({
+    slug: '',
+    title: t(`home.blog${i + 1}Title`),
+    image,
+    date: '',
+    isDemo: true,
+  }));
+}
+
+function apiV1() {
+  const base = String(import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/+$/, '');
+  if (/\/api\/v1$/i.test(base) || /\/v1$/i.test(base)) return base;
+  if (/\/api$/i.test(base)) return `${base}/v1`;
+  return `${base}/api/v1`;
+}
+
+// Message route is /api/messages, NOT /api/v1/messages.
+function messagesEndpoint() {
+  return `${apiV1().replace(/\/v1$/i, '')}/messages`;
+}
+
+function assetURL(raw) {
+  const value = clean(raw);
+  if (!value || /[<>"'\u0000-\u001f]/.test(value)) return '';
+  try {
+    const origin = new URL(apiV1(), window.location.origin).origin;
+    const path = /^https?:\/\//i.test(value) || value.startsWith('/')
+      ? value
+      : /^(storage|uploads|images)\//i.test(value) ? `/${value}` : `/storage/${value}`;
+    const url = new URL(path, origin);
+    return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+  } catch { return ''; }
+}
+
+function translation(record) {
+  if (Array.isArray(record?.translations)) {
+    return record.translations.find(x => x?.locale === language() || x?.lang === language()) || {};
+  }
+  if (record?.translations?.[language()]) return record.translations[language()];
+  if (record?.translation && (!record.translation.locale || record.translation.locale === language())) {
+    return record.translation;
+  }
+  return {};
+}
+
+function normalizeService(record) {
+  if (!record || typeof record !== 'object') return null;
+  if ([false, 0, '0'].includes(record.is_active)) return null;
+  const id = Number(record.id);
+  if (!Number.isSafeInteger(id) || id <= 0) return null;
+  const translated = translation(record);
+  const name = clean(
+    translated.name || translated.title_1 || translated.title ||
+    record.name || record.title_1 || record.title
+  );
+  if (!name) return null;
+  return {
+    id,
+    name,
+    description: clean(
+      translated.description_1 || translated.description ||
+      record.description_1 || record.description
+    ),
+    image: assetURL(record.image_url || record.image_1_url || record.image || record.image_1 || record.cover_image || ''),
+    isDemo: false,
+  };
+}
+
+function normalizeBlog(record) {
+  if (!record || typeof record !== 'object') return null;
+  const translated = translation(record);
+  // Laravel list API returns title_1/image_1/date; slug can be absent.
+  const title = clean(translated.title_1 || record.title_1 || translated.title || record.title);
+  if (!title) return null;
+  const rawSlug = clean(record.slug || record.blog_slug || translated.slug);
+  const slug = /^[a-z0-9-]+$/i.test(rawSlug) ? rawSlug : '';
+  const date = clean(record.date || record.published_at || record.created_at).slice(0, 10);
+  return {
+    id: record.id ?? null,
+    slug,
+    title,
+    image: assetURL(record.image_1 || record.image_1_url || record.image_url || record.cover_image_url || record.image || record.cover_image || ''),
+    date: /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : '',
+    isDemo: false,
+  };
+}
+
+function extractList(json, alternate) {
+  const data = json?.data ?? json;
+  if (Array.isArray(data)) return data;
+  for (const possible of [data?.data, data?.[alternate], data?.items, json?.[alternate]]) {
+    if (Array.isArray(possible)) return possible;
+  }
+  return [];
+}
+
+function button(href, textKey, className = 'button-primary w-inline-block') {
+  return `<a href="${href}" class="${className}"><span class="button-primary-text">${tr(textKey)}</span><span class="button-icon-block">${ARROW_ICON}</span></a>`;
+}
+
+function renderHero() {
+  return `
+    <section class="section hero-one-section dp-home-hero">
       <div class="w-layout-blockcontainer container-fluid w-container">
         <div class="hero-one-main-block">
           <div class="w-layout-grid hero-one-grid">
             <div class="hero-contant-block">
-              <div class="hero-icon-inner-block">
-                <div class="hero-one-icon-block">
-                  <img
-                    src="https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/679c4b211f44d535f9e7da9c_1.svg"
-                    loading="lazy"
-                    alt="Hero One Icon"
-                    class="hero-one-icon"
-                  />
-                </div>
-              </div>
-              <div class="hero-title-block">
-                <h1 class="hero-title">open wide to a world of smile</h1>
-              </div>
-              <div class="hero-description">
-                <p class="section-description">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                  Suspendisse varius enim in eros elementum tristique. Duis
-                  cursus, mi quis viverra ornare.
-                </p>
-              </div>
-              <div class="hero-button-block">
-                <a
-                  data-w-id="2192d6ae-f694-afec-d3e3-1590d12bae8e"
-                  href="/login"
-                  class="button-primary w-inline-block"
-                  ><div class="button-primary-text">book appointment now</div>
-                  <div class="button-icon-block">
-                    <img
-                      src="https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/676923878f05f400928066e8_Vector%20(3).svg"
-                      loading="lazy"
-                      alt="Button Icon"
-                      class="button-icon"
-                    /></div
-                ></a>
-              </div>
-              
+              <div class="hero-icon-inner-block"><div class="hero-one-icon-block">
+                <img src="${HERO_ICON}" loading="eager" alt="" class="hero-one-icon" aria-hidden="true" />
+              </div></div>
+              <div class="hero-title-block"><h1 class="hero-title">${tr('heroTitle')}</h1></div>
+              <div class="hero-description"><p class="section-description">${tr('heroDescription')}</p></div>
+              <div class="hero-button-block">${button('/login', 'bookNow')}</div>
             </div>
-            <div
-              id="w-node-_7e518cb5-8964-f1df-924e-e57d818b2897-ffeed92f"
-              class="hero-image-block"
-            >
-              <img
-                src="https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/679c51db219feb60fb4c94c4_hero%20image.webp"
-                loading="lazy"
-                sizes="(max-width: 991px) 100vw, (max-width: 1439px) 676.4375px, (max-width: 1919px) 685.890625px, 853px"
-                srcset="
-                  https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/679c51db219feb60fb4c94c4_hero%20image-p-500.webp 500w,
-                  https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/679c51db219feb60fb4c94c4_hero%20image-p-800.webp 800w,
-                  https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/679c51db219feb60fb4c94c4_hero%20image.webp       807w
-                "
-                alt="Hero Image Block"
-                class="hero-image"
-              />
+            <div class="hero-image-block">
+              <img src="${HERO_IMAGE}" loading="eager" fetchpriority="high" alt="${tr('heroImageAlt')}" class="hero-image" />
             </div>
           </div>
         </div>
       </div>
-    </section>
-`;
+    </section>`;
+}
 
-// About — unchanged HTML structure and CSS classes
-const ABOUT = String.raw`
-    <section class="section aboutus-section">
+function renderAbout() {
+  return `
+    <section class="section aboutus-section dp-home-about">
       <div class="w-layout-blockcontainer container w-container">
-        <div class="main-about-block">
-          <div class="w-layout-grid about-grid">
-            <div class="about-image-block">
-              <img
-                src="./asset/img/about.jpg"
-                loading="lazy"
-                sizes="(max-width: 479px) 94vw, (max-width: 767px) 96vw, (max-width: 991px) 97vw, 514px"
-                srcset="
-                  ./asset/img/about.jpg 500w,
-                  ./asset/img/about.jpg 580w
-                "
-                alt="About Image Block"
-                class="about-image"
-              /><img
-                src="./asset/img/about-1.jpg"
-                loading="lazy"
-                alt="About Image Two"
-                class="about-image-two"
-              />
-            </div>
-            <div class="about-content-block">
-              <div class="about-title-block">
-                <div class="section-sub-text">who we are</div>
-                <h2 class="section-title">Why Our Dental Care Is Preferred</h2>
-              </div>
-              <p class="aboutus-description">
-                The energy you use varies by business type, but simple steps can
-                help save energy regardless of your industry. Start making smart
-                changes today!
-              </p>
-              <div class="about-two-list-block two">
-                <ul role="list" class="about-two-list">
-                  <li class="about-two-list-item">
-                    <div class="about-two-icon-block">
-                      <img
-                        src="https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/679c4bae001cc3a4c1f1febe_2.svg"
-                        loading="lazy"
-                        alt="About Two Icon"
-                        class="about-two-icon"
-                      />
-                    </div>
-                    <div class="about-list-two-info-block">
-                      <h3 class="about-two-list-title">
-                        expert advice idea planner
-                      </h3>
-                    </div>
-                  </li>
-                  <li class="about-two-list-item last">
-                    <div class="about-two-icon-block">
-                      <img
-                        src="https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/679c4bae001cc3a4c1f1febe_2.svg"
-                        loading="lazy"
-                        alt="About Two Icon"
-                        class="about-two-icon"
-                      />
-                    </div>
-                    <div class="about-list-two-info-block">
-                      <h3 class="about-two-list-title">
-                        make your smile beautiful
-                      </h3>
-                    </div>
-                  </li>
-                </ul>
-              </div>
-              <div class="contact-number-block">
-                <div class="contact-number-text">
-                  Have Questions ?
-                  <a href="#" class="about-contact-link"
-                    >+1 - (246) 333 - 0089</a
-                  >
-                </div>
-              </div>
-              <div class="about-button-block">
-                <a
-                  data-w-id="2192d6ae-f694-afec-d3e3-1590d12bae8e"
-                  href="/about-us"
-                  class="button-primary w-inline-block"
-                  ><div class="button-primary-text">read more</div>
-                  <div class="button-icon-block">
-                    <img
-                      src="https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/676923878f05f400928066e8_Vector%20(3).svg"
-                      loading="lazy"
-                      alt="Button Icon"
-                      class="button-icon"
-                    /></div
-                ></a>
-              </div>
-            </div>
+        <div class="main-about-block"><div class="w-layout-grid about-grid">
+          <div class="about-image-block">
+            <img src="/asset/img/about.jpg" loading="lazy" alt="${tr('aboutImageAlt')}" class="about-image" />
+            <img src="/asset/img/about-1.jpg" loading="lazy" alt="${tr('aboutImageAlt')}" class="about-image-two" />
           </div>
-        </div>
+          <div class="about-content-block">
+            <div class="about-title-block">
+              <div class="section-sub-text">${tr('aboutEyebrow')}</div>
+              <h2 class="section-title">${tr('aboutTitle')}</h2>
+            </div>
+            <p class="aboutus-description">${tr('aboutDescription')}</p>
+            <div class="about-two-list-block two"><ul role="list" class="about-two-list">
+              <li class="about-two-list-item">
+                <div class="about-two-icon-block" aria-hidden="true">${TOOTH_ICON}</div>
+                <div class="about-list-two-info-block"><h3 class="about-two-list-title">${tr('aboutFeature1')}</h3></div>
+              </li>
+              <li class="about-two-list-item last">
+                <div class="about-two-icon-block" aria-hidden="true">${TOOTH_ICON}</div>
+                <div class="about-list-two-info-block"><h3 class="about-two-list-title">${tr('aboutFeature2')}</h3></div>
+              </li>
+            </ul></div>
+            <div class="contact-number-block"><div class="contact-number-text">
+              ${tr('questions')} <a href="/contact-us" class="about-contact-link">${tr('contactUs')}</a>
+            </div></div>
+            <div class="about-button-block">${button('/about-us', 'readMore')}</div>
+          </div>
+        </div></div>
       </div>
-    </section>
-`;
+    </section>`;
+}
 
-// Services — unchanged HTML structure and CSS classes
-const SERVICES = String.raw`
-    <section class="section service-section">
-      <div class="w-layout-blockcontainer container-fluid w-container">
-        <div class="main-grey-block">
-          <div class="w-layout-blockcontainer container w-container">
-            <div class="service-main-block">
-              <div class="section-title-main-block">
-                <div class="section-title-sub-text-block">
-                  <div class="section-sub-text">our service</div>
-                </div>
-                <div class="section-title-grid">
-                  <h2 class="section-title">
-                    Personalized Dental Care Solutions
-                  </h2>
-                </div>
-              </div>
-              <div class="w-layout-grid service-grid-block">
-                <div
-                  data-w-id="bc7be0a5-0a4a-6812-a9db-3cb2ecabd28d"
-                  class="w-dyn-list"
-                >
-                  <div role="list" class="w-dyn-items">
-                    <div role="listitem" class="w-dyn-item">
-                      <div
-                        data-w-id="9809578f-b9ba-1cd0-515e-e943dca4384d"
-                        class="service-info-main-block"
-                      >
-                        <a
-                          href="/services/smile-design-clinic"
-                          class="service-link w-inline-block"
-                          ><div
-                            data-w-id="e9801259-896b-3a7e-e24b-4b6ddbdfcb5e"
-                            class="service-info-inner-block"
-                          >
-                            <div class="service-icon-inner-block">
-                              <div
-                                data-w-id="28ef002d-a5b6-5b45-2ca8-8542b73e58d0"
-                                class="service-icon-block"
-                              >
-                                <div class="w-embed">
-                                  
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="50"
-                                    height="50"
-                                    viewBox="0 0 100 100"
-                                    fill="none"
-                                  >
-                                    <path
-                                      d="M17.5405 40.4999C17.6346 40.8856 17.573 41.2929 17.369 41.6335C17.165 41.9742 16.835 42.2207 16.4505 42.3199C16.3276 42.3341 16.2035 42.3341 16.0805 42.3199C15.7464 42.3196 15.4219 42.2085 15.1577 42.004C14.8935 41.7995 14.7046 41.5132 14.6205 41.1899C13.5105 36.7699 12.3005 32.5199 11.0005 28.5799C9.937 25.5322 9.63825 22.27 10.1305 19.0799C10.2152 18.7026 10.4423 18.3726 10.7644 18.1587C11.0865 17.9448 11.4788 17.8635 11.8594 17.9319C12.24 18.0003 12.5794 18.213 12.807 18.5256C13.0345 18.8383 13.1325 19.2267 13.0805 19.6099C12.6763 22.3191 12.9406 25.0862 13.8505 27.6699C15.1805 31.6599 16.4005 35.9999 17.5405 40.4999ZM16.5405 9.49987C15.4791 10.1371 14.5242 10.9368 13.7105 11.8699C13.5744 12.0139 13.4682 12.1834 13.398 12.3687C13.3278 12.554 13.295 12.7514 13.3015 12.9495C13.308 13.1475 13.3537 13.3423 13.4359 13.5226C13.5181 13.7029 13.6353 13.8651 13.7805 13.9999C14.0568 14.2435 14.4122 14.3786 14.7805 14.3799C14.9912 14.3814 15.1997 14.3386 15.3927 14.2541C15.5857 14.1697 15.7587 14.0456 15.9005 13.8899C16.5144 13.2018 17.2212 12.6027 18.0005 12.1099C18.1719 12.0114 18.3222 11.8801 18.4428 11.7235C18.5635 11.5669 18.6521 11.3881 18.7036 11.1973C18.7552 11.0065 18.7686 10.8074 18.7432 10.6114C18.7178 10.4153 18.654 10.2262 18.5555 10.0549C18.457 9.88349 18.3258 9.73319 18.1692 9.61256C18.0126 9.49192 17.8338 9.4033 17.643 9.35176C17.4521 9.30023 17.253 9.28678 17.057 9.31219C16.861 9.3376 16.6719 9.40138 16.5005 9.49987H16.5405ZM96.4205 67.8299C96.4212 71.96 95.5298 76.0415 93.8074 79.7954C92.085 83.5492 89.5721 86.8867 86.4407 89.5796C83.3092 92.2726 79.6331 94.2574 75.6637 95.3984C71.6943 96.5394 67.5253 96.8097 63.4419 96.1906C59.3584 95.5716 55.4568 94.0779 52.0039 91.8117C48.5511 89.5455 45.6284 86.5603 43.4358 83.0603C41.2432 79.5602 39.8324 75.6279 39.2999 71.5322C38.7674 67.4366 39.1258 63.2742 40.3505 59.3299C39.4105 55.1799 38.2005 50.9699 36.6805 50.6499C34.7605 51.0599 33.3405 57.6499 32.3105 62.5499C30.5005 70.9999 28.4505 80.6199 21.8805 80.6199C15.3105 80.6199 13.5005 70.3699 11.3305 57.3999C10.0005 49.2299 8.43053 39.9999 5.47053 31.6299C2.60053 23.5599 2.35053 12.7599 10.2605 6.62987C12.6027 4.728 15.4942 3.6294 18.5084 3.49615C21.5225 3.36291 24.4997 4.20209 27.0005 5.88987C32.1705 9.38987 35.4505 9.58987 36.5205 9.64987H36.8405C37.9205 9.58987 41.2005 9.38987 46.3605 5.88987C48.8645 4.20419 51.8437 3.36723 54.8592 3.50225C57.8747 3.63727 60.7672 4.73715 63.1105 6.63987C71.0205 12.7699 70.7705 23.5699 67.9005 31.6399C67.0205 34.1099 66.2805 36.6399 65.6205 39.2499C66.3205 39.1899 67.0305 39.1599 67.7405 39.1599C75.3428 39.1678 82.6315 42.1906 88.008 47.5653C93.3846 52.9399 96.4099 60.2276 96.4205 67.8299ZM42.2705 54.6899C44.2767 50.827 47.1335 47.47 50.6257 44.8716C54.1178 42.2733 58.1541 40.5016 62.4305 39.6899C63.1533 36.646 64.0345 33.6419 65.0705 30.6899C69.9105 17.1199 63.3905 10.6899 61.2805 9.07987C59.4372 7.54937 57.1492 6.65455 54.7566 6.52844C52.364 6.40232 49.9946 7.05164 48.0005 8.37987C43.0005 11.7399 39.4805 12.3799 37.7405 12.5899C41.0805 14.2299 44.7405 15.5899 47.9105 15.6999C48.3083 15.7078 48.6867 15.8735 48.9624 16.1604C49.2381 16.4474 49.3885 16.832 49.3805 17.2299C49.3726 17.6277 49.2069 18.0061 48.92 18.2817C48.633 18.5574 48.2483 18.7078 47.8505 18.6999H47.7805C38.3805 18.3099 26.2905 9.15987 25.2605 8.35987C23.2851 7.05013 20.9429 6.40584 18.5755 6.52097C16.2082 6.6361 13.9395 7.50463 12.1005 8.99987C10.0005 10.6399 3.46053 16.9999 8.29053 30.6299C11.3405 39.2099 12.9105 48.6299 14.2905 56.8999C16.0705 67.5499 17.7505 77.6199 21.8805 77.6199C26.0105 77.6199 27.8805 68.9199 29.3705 61.9299C30.9705 54.4399 32.3705 47.9299 36.5605 47.6399H36.8005C39.5505 47.8599 41.0905 50.6799 42.2705 54.6899ZM93.4205 67.8299C93.4225 62.7504 91.9181 57.7845 89.0975 53.5601C86.277 49.3357 82.267 46.0427 77.5748 44.0975C72.8825 42.1523 67.7188 41.6423 62.7367 42.6321C57.7547 43.6218 53.178 46.0668 49.5856 49.6578C45.9931 53.2488 43.5464 57.8246 42.5547 62.8063C41.563 67.788 42.071 72.9519 44.0143 77.6449C45.9577 82.3379 49.2492 86.3491 53.4724 89.1713C57.6957 91.9935 62.6611 93.4999 67.7405 93.4999C74.5471 93.4919 81.0728 90.7852 85.8867 85.9731C90.7007 81.1611 93.4099 74.6365 93.4205 67.8299ZM85.5005 57.0699C86.4736 58.6622 87.2207 60.382 87.7205 62.1799C88.1506 63.7158 88.4023 65.2963 88.4705 66.8899V67.8299C88.4952 69.4127 88.3375 70.9931 88.0005 72.5399C87.9561 72.7323 87.9502 72.9315 87.983 73.1263C88.0158 73.321 88.0868 73.5073 88.1917 73.6745C88.2967 73.8418 88.4337 73.9866 88.5948 74.1008C88.7559 74.215 88.938 74.2962 89.1305 74.3399C89.2433 74.3551 89.3577 74.3551 89.4705 74.3399C89.8095 74.3415 90.139 74.2274 90.4044 74.0165C90.6699 73.8056 90.8554 73.5105 90.9305 73.1799C92.3227 67.1342 91.3116 60.7841 88.1105 55.4699C87.9037 55.1291 87.5699 54.8844 87.1826 54.7897C86.7954 54.695 86.3863 54.758 86.0455 54.9649C85.7047 55.1717 85.4601 55.5055 85.3653 55.8928C85.2706 56.28 85.3337 56.6891 85.5405 57.0299L85.5005 57.0699ZM78.7705 50.2299C79.7476 50.8485 80.6739 51.5441 81.5405 52.3099C81.8143 52.5576 82.1713 52.6933 82.5405 52.6899C82.8448 52.6903 83.1419 52.5982 83.3926 52.4259C83.6433 52.2535 83.8356 52.009 83.9441 51.7248C84.0526 51.4405 84.0721 51.13 84 50.8345C83.9279 50.5389 83.7677 50.2722 83.5405 50.0699C82.5473 49.1954 81.4874 48.3996 80.3705 47.6899C80.0337 47.4777 79.6264 47.408 79.2382 47.4962C78.85 47.5843 78.5127 47.823 78.3005 48.1599C78.0884 48.4967 78.0187 48.904 78.1068 49.2922C78.195 49.6804 78.4337 50.0177 78.7705 50.2299ZM84.2705 62.8199V72.8199C84.2705 73.2177 84.1125 73.5992 83.8312 73.8805C83.5499 74.1618 83.1684 74.3199 82.7705 74.3199H74.2505V82.8399C74.2505 83.2377 74.0925 83.6192 73.8112 83.9005C73.5299 84.1818 73.1484 84.3399 72.7505 84.3399H62.7505C62.3527 84.3399 61.9712 84.1818 61.6899 83.9005C61.4086 83.6192 61.2505 83.2377 61.2505 82.8399V74.3299H52.7205C52.3227 74.3299 51.9412 74.1718 51.6599 73.8905C51.3786 73.6092 51.2205 73.2277 51.2205 72.8299V62.8299C51.2205 62.432 51.3786 62.0505 51.6599 61.7692C51.9412 61.4879 52.3227 61.3299 52.7205 61.3299H61.2405V52.7999C61.2405 52.402 61.3986 52.0205 61.6799 51.7392C61.9612 51.4579 62.3427 51.2999 62.7405 51.2999H72.7405C73.1384 51.2999 73.5199 51.4579 73.8012 51.7392C74.0825 52.0205 74.2405 52.402 74.2405 52.7999V61.3199H82.7605C82.9584 61.3185 83.1545 61.3564 83.3376 61.4312C83.5208 61.506 83.6873 61.6162 83.8277 61.7557C83.968 61.8951 84.0794 62.0609 84.1554 62.2435C84.2314 62.4262 84.2705 62.622 84.2705 62.8199ZM81.2705 64.3199H72.7505C72.3527 64.3199 71.9712 64.1618 71.6899 63.8805C71.4086 63.5992 71.2505 63.2177 71.2505 62.8199V54.2999H64.2505V62.8199C64.2479 63.2169 64.089 63.5969 63.8083 63.8776C63.5276 64.1584 63.1475 64.3172 62.7505 64.3199H54.2205V71.3199H62.7405C63.1375 71.3225 63.5176 71.4814 63.7983 71.7621C64.079 72.0428 64.2379 72.4229 64.2405 72.8199V81.3399H71.2405V72.8299C71.2405 72.432 71.3986 72.0505 71.6799 71.7692C71.9612 71.4879 72.3427 71.3299 72.7405 71.3299H81.2605L81.2705 64.3199Z"
-                                      fill="currentColor"
-                                    ></path>
-                                  </svg>
-                                </div>
-                              </div>
-                              <h3
-                                data-w-id="7edb9a71-0bb1-38d8-4a45-822b5f3accaa"
-                                class="service-title-one"
-                              >
-                                Smile Design Clinic
-                              </h3>
-                            </div>
-                          </div>
-                          <p class="service-description one">
-                            Transform your smile with customized cosmetic
-                            treatments that enhance smile.
-                          </p></a
-                        >
-                        <div class="service-link-block">
-                          <a
-                            href="/services/smile-design-clinic"
-                            class="link-block w-inline-block"
-                            ><div
-                              data-w-id="97bb8a54-3e1e-a92f-708e-9570c2707e9a"
-                              class="link-button"
-                            >
-                              read more
-                            </div>
-                            <div
-                              data-w-id="880c460a-6970-3321-82be-62081731051b"
-                              class="link-border"
-                            ></div
-                          ></a>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div
-                  data-w-id="8553a199-dc51-5433-368f-5251aa8b39a6"
-                  class="w-dyn-list"
-                >
-                  <div role="list" class="w-dyn-items">
-                    <div role="listitem" class="w-dyn-item">
-                      <div
-                        data-w-id="8553a199-dc51-5433-368f-5251aa8b39a9"
-                        class="service-info-main-block"
-                      >
-                        <a
-                          href="/services/bright-smile-solutions"
-                          class="service-link w-inline-block"
-                          ><div
-                            data-w-id="8553a199-dc51-5433-368f-5251aa8b39ab"
-                            class="service-info-inner-block"
-                          >
-                            <div class="service-icon-inner-block">
-                              <div
-                                data-w-id="8553a199-dc51-5433-368f-5251aa8b39ad"
-                                class="service-icon-block"
-                              >
-                                <div class="w-embed">
-                                  
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="50"
-                                    height="50"
-                                    viewBox="0 0 100 100"
-                                    fill="none"
-                                  >
-                                    <path
-                                      d="M71.9625 9.64095C66.4406 5.36282 59.1281 5.11907 53.3375 9.04095C52.2906 9.75032 51.2406 10.5034 50.1781 11.2628L50 11.3909C49.9031 11.3222 49.8031 11.2534 49.7094 11.1847C48.6844 10.4534 47.6719 9.72532 46.6594 9.04095C40.8656 5.1222 33.5531 5.3597 28.0344 9.64095C22.5531 13.8909 20.5156 20.8535 22.8469 27.3753C22.8469 27.3753 33.7594 57.9285 33.7687 57.9597C34.7812 60.7972 37.5937 62.6753 40.6062 62.4878C43.7125 62.3035 46.1719 60.2253 46.8719 57.1878L50 43.5441L53.1312 57.1941C53.825 60.2222 56.2844 62.2972 59.3937 62.4785C62.4906 62.6816 65.1875 60.8878 66.2312 57.9597L77.1531 27.3753C79.4844 20.8535 77.4469 13.8909 71.9625 9.64095ZM74.2125 26.3253L63.2906 56.9097C62.6031 58.8347 60.8812 59.4035 59.5781 59.3597C58.2312 59.2816 56.6375 58.4878 56.1781 56.4972L52.5406 40.6347C52.2687 39.4441 51.225 38.6128 50.0031 38.6128C48.7812 38.6128 47.7344 39.4441 47.4625 40.6347L43.8281 56.4878C43.3687 58.4941 41.7687 59.2878 40.425 59.3691C39.0406 59.4097 37.4031 58.841 36.7125 56.9097L25.7875 26.3253C23.5219 19.9816 26.4531 14.8222 29.95 12.1097C34.3 8.7347 40.3562 8.5472 44.9094 11.6284C50.7219 15.5597 56.3875 20.5785 63.7125 21.1097C65.7156 21.2566 65.9562 18.1409 63.9375 17.9909C59.8625 17.6972 56.2031 15.6659 52.7062 13.2941C53.5031 12.7222 54.2969 12.1628 55.0875 11.6284C59.7406 8.48157 65.6094 8.67845 70.0469 12.1097C73.5469 14.8222 76.4781 19.9816 74.2125 26.3253Z"
-                                      fill="currentColor"
-                                    ></path>
-                                    <path
-                                      d="M30.1063 16.059C29.3532 15.6371 28.4063 15.8934 27.9751 16.6496C26.397 19.4434 26.1095 22.784 27.1938 25.8215C27.4188 26.459 28.0251 26.859 28.6657 26.859C28.8407 26.859 29.0157 26.8309 29.1907 26.7684C30.0032 26.4778 30.4282 25.584 30.1376 24.7715C29.3626 22.5903 29.5626 20.1903 30.697 18.1871C31.122 17.4371 30.8563 16.484 30.1063 16.059Z"
-                                      fill="currentColor"
-                                    ></path>
-                                    <path
-                                      d="M32.8345 12.0561C32.2813 12.3342 31.7595 12.6467 31.2688 12.9967C30.5657 13.4967 30.4032 14.4749 30.9032 15.1749C31.2095 15.603 31.6876 15.8311 32.1751 15.8311C32.4907 15.8311 32.8063 15.7374 33.0813 15.5405C33.4376 15.2842 33.8188 15.0561 34.2251 14.8561C34.997 14.4717 35.3126 13.5311 34.9313 12.7592C34.547 11.9874 33.6001 11.6811 32.8345 12.0561Z"
-                                      fill="currentColor"
-                                    ></path>
-                                    <path
-                                      d="M15.8531 93.75C15.8313 93.75 15.5813 93.7469 15.5625 93.7469C10.35 93.6 6.25 89.3844 6.25 84.1469V62.7281C6.25 57.4344 10.5938 53.125 15.9313 53.125C23.0375 53.125 27.4375 58.9219 30.1281 64.8281C31.3062 67.4094 32.2094 70.0938 33.1625 72.7625C34.325 76.0156 37.3094 78.125 40.7625 78.125H59.2375C62.6875 78.125 65.675 76.0156 66.8406 72.7531C68.8969 66.8344 71.0625 60.0938 76.0938 55.9844C78.3594 54.1344 81.1406 53.125 84.0687 53.125C89.4062 53.125 93.75 57.4344 93.75 62.7281V84.1469C93.75 89.3844 89.65 93.6 84.4187 93.7469L15.8531 93.75ZM15.9313 56.25C12.3781 56.25 9.375 59.2156 9.375 62.7281V84.1469C9.375 87.6781 12.1406 90.525 15.6687 90.6219L15.8562 92.1875V90.625H84.15C87.8594 90.525 90.625 87.6781 90.625 84.1469V62.7281C90.625 59.2156 87.6219 56.25 84.0687 56.25C76.95 56.25 73.4156 63.975 71.2688 69.6375C70.7469 71.0125 70.2688 72.4031 69.7812 73.7938C68.1656 78.325 64.025 81.25 59.2375 81.25H40.7625C35.975 81.25 31.8344 78.325 30.2188 73.8031C28.1906 68.0375 25.9938 60.3375 20.1406 57.2781C18.8406 56.6 17.3969 56.25 15.9313 56.25Z"
-                                      fill="currentColor"
-                                    ></path>
-                                    <path
-                                      d="M89.0619 49.9994H82.8119C81.9494 49.9994 81.2494 49.2994 81.2494 48.4369V37.4994H79.6869C79.1088 37.4994 78.5807 37.1807 78.3119 36.6744C78.0369 36.165 78.0682 35.5494 78.3869 35.0682L84.6369 25.6932C85.2182 24.8275 86.6557 24.8275 87.2369 25.6932L93.4869 35.0682C93.8088 35.5463 93.8369 36.165 93.5619 36.6744C93.2932 37.1807 92.7651 37.4994 92.1869 37.4994H90.6244V48.4369C90.6244 49.2994 89.9244 49.9994 89.0619 49.9994ZM84.3744 46.8744H87.4994V35.9369C87.4994 35.0744 88.1994 34.3744 89.0619 34.3744H89.2651L85.9369 29.3775L82.6088 34.3744H82.8119C83.6744 34.3744 84.3744 35.0744 84.3744 35.9369V46.8744Z"
-                                      fill="currentColor"
-                                    ></path>
-                                    <path
-                                      d="M17.1869 49.9994H10.9369C10.0744 49.9994 9.37444 49.2994 9.37444 48.4369V37.4994H7.81194C7.23381 37.4994 6.70569 37.1807 6.43694 36.6744C6.16194 36.165 6.19319 35.5494 6.51194 35.0682L12.7619 25.6932C13.3432 24.8275 14.7807 24.8275 15.3619 25.6932L21.6119 35.0682C21.9338 35.5463 21.9619 36.165 21.6869 36.6744C21.4182 37.1807 20.8901 37.4994 20.3119 37.4994H18.7494V48.4369C18.7494 49.2994 18.0494 49.9994 17.1869 49.9994ZM12.4994 46.8744H15.6244V35.9369C15.6244 35.0744 16.3244 34.3744 17.1869 34.3744H17.3901L14.0619 29.3775L10.7338 34.3744H10.9369C11.7994 34.3744 12.4994 35.0744 12.4994 35.9369V46.8744Z"
-                                      fill="currentColor"
-                                    ></path>
-                                  </svg>
-                                </div>
-                              </div>
-                              <h3
-                                data-w-id="8553a199-dc51-5433-368f-5251aa8b39af"
-                                class="service-title-one"
-                              >
-                                Perfect Smile Clinic
-                              </h3>
-                            </div>
-                          </div>
-                          <p
-                            data-w-id="8553a199-dc51-5433-368f-5251aa8b39b0"
-                            class="service-description"
-                          >
-                            Achieve a radiant, confident smile with our
-                            professional teeth whitening and cosmetic dental
-                            treatments.
-                          </p></a
-                        >
-                        <div class="service-link-block">
-                          <a
-                            href="/services/bright-smile-solutions"
-                            class="link-block w-inline-block"
-                            ><div
-                              data-w-id="8553a199-dc51-5433-368f-5251aa8b39b3"
-                              class="link-button"
-                            >
-                              read more
-                            </div>
-                            <div
-                              data-w-id="8553a199-dc51-5433-368f-5251aa8b39b5"
-                              class="link-border"
-                            ></div
-                          ></a>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div
-                  data-w-id="b7cce17c-6b0f-649c-dcb5-bed8a477ab9c"
-                  class="w-dyn-list"
-                >
-                  <div role="list" class="w-dyn-items">
-                    <div role="listitem" class="w-dyn-item">
-                      <div
-                        data-w-id="b7cce17c-6b0f-649c-dcb5-bed8a477ab9f"
-                        class="service-info-main-block"
-                      >
-                        <a
-                          href="/services/dental-implants"
-                          class="service-link w-inline-block"
-                          ><div
-                            data-w-id="b7cce17c-6b0f-649c-dcb5-bed8a477aba1"
-                            class="service-info-inner-block"
-                          >
-                            <div class="service-icon-inner-block">
-                              <div
-                                data-w-id="b7cce17c-6b0f-649c-dcb5-bed8a477aba3"
-                                class="service-icon-block"
-                              >
-                                <div class="w-embed">
-                                  
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="50"
-                                    height="50"
-                                    viewBox="0 0 100 100"
-                                    fill="none"
-                                  >
-                                    <g clip-path="url(#clip0_104_12)">
-                                      <path
-                                        d="M27.115 6.73047C24.1677 6.76869 21.2706 7.49812 18.6567 8.86009C16.0427 10.2221 13.7849 12.1785 12.065 14.5721C10.2725 16.9955 9.08334 19.8113 8.59611 22.7859C8.10889 25.7606 8.3376 28.8085 9.2633 31.6771C9.36961 32.0152 9.58093 32.3106 9.86655 32.5204C10.1522 32.7302 10.4972 32.8435 10.8516 32.8438C11.0213 32.8428 11.1898 32.8164 11.3516 32.7655C11.5612 32.6997 11.7558 32.5931 11.924 32.4519C12.0923 32.3107 12.231 32.1376 12.3321 31.9426C12.4333 31.7476 12.4949 31.5345 12.5134 31.3156C12.5319 31.0967 12.5069 30.8764 12.44 30.6671C11.676 28.2981 11.4875 25.7812 11.8901 23.3248C12.2926 20.8684 13.2747 18.5433 14.755 16.5421C16.1647 14.5706 18.0174 12.9574 20.1641 11.8323C22.3108 10.7071 24.6916 10.1014 27.115 10.0638C27.557 10.0638 27.9809 9.88821 28.2935 9.57565C28.606 9.26309 28.7816 8.83916 28.7816 8.39714C28.7816 7.95511 28.606 7.53118 28.2935 7.21862C27.9809 6.90606 27.557 6.73047 27.115 6.73047Z"
-                                        fill="currentColor"
-                                      ></path>
-                                      <path
-                                        d="M91.4263 19.687L88.6463 16.907C88.1 16.3626 87.3818 16.0246 86.6141 15.9504C85.8464 15.8763 85.0768 16.0706 84.4363 16.5003L81.833 18.232C79.9623 17.1249 77.9454 16.2862 75.8413 15.7403L75.233 12.6853C75.083 11.9291 74.6755 11.2481 74.0799 10.7586C73.4843 10.269 72.7373 10.001 71.9663 10.0003H69.5313C66.459 5.84444 62.1511 2.76658 57.2237 1.20696C52.2964 -0.352659 47.0021 -0.314141 42.098 1.317H42.0747L41.9997 1.35034C39.6194 2.1425 37.0466 2.1425 34.6663 1.35034L34.5947 1.33367L34.5663 1.317C30.236 -0.129462 25.5869 -0.332442 21.147 0.731124C16.7071 1.79469 12.6546 4.08216 9.44966 7.33367C6.03189 10.6898 3.60898 14.9258 2.44888 19.5732C1.28879 24.2207 1.43672 29.0984 2.87633 33.667L3.72466 36.3803C5.2588 41.631 7.42995 46.674 10.1897 51.397C11.2381 52.9653 11.8512 54.784 11.9663 56.667C11.9663 57.1003 12.533 100 25.1497 100C31.593 100 34.9997 92.5087 34.9997 78.3337V70.022C34.9997 69.817 35.1163 65.0003 38.333 65.0003C41.5497 65.0003 41.6663 69.817 41.6663 70.0003V78.3337C41.6663 92.5087 45.073 100 51.5163 100C61.3013 100 63.828 74.7003 64.473 62.5187L64.7647 63.982C64.9147 64.7386 65.3224 65.4197 65.9184 65.9093C66.5144 66.3989 67.2617 66.6667 68.033 66.667H71.9663C72.7374 66.6668 73.4845 66.3992 74.0805 65.91C74.6764 65.4207 75.0843 64.7399 75.2347 63.9837L75.843 60.927C77.9465 60.381 79.9628 59.5423 81.833 58.4353L84.4363 60.167C85.0775 60.5959 85.8476 60.7891 86.6153 60.7137C87.383 60.6384 88.1008 60.2991 88.6463 59.7537L91.4263 56.9737C91.9721 56.428 92.3117 55.7099 92.3871 54.9418C92.4625 54.1738 92.269 53.4033 91.8397 52.762L90.1013 50.167C91.2114 48.2939 92.053 46.2742 92.6013 44.167L95.658 43.5603C96.4107 43.4068 97.0876 42.9987 97.5748 42.4046C98.062 41.8106 98.3297 41.0669 98.333 40.2987V36.3687C98.3313 35.5981 98.0635 34.8517 97.5749 34.2558C97.0862 33.66 96.4067 33.2512 95.6513 33.0987L92.5947 32.5003C92.0466 30.3931 91.2051 28.3733 90.0947 26.5003L91.833 23.9003C92.2636 23.2596 92.4584 22.4893 92.3843 21.7208C92.3101 20.9524 91.9715 20.2336 91.4263 19.687ZM51.5163 96.667C47.4363 96.667 44.9997 89.8137 44.9997 78.3337V69.9837C44.9697 67.107 43.5397 61.667 38.333 61.667C33.1263 61.667 31.6963 67.107 31.6663 70.0003V78.3337C31.6663 89.8137 29.2297 96.667 25.1497 96.667C18.2297 96.667 15.2997 68.052 15.2997 56.667C15.1978 54.1719 14.4176 51.7518 13.043 49.667C10.4235 45.1726 8.36321 40.3748 6.90799 35.3803L6.05633 32.667C4.80314 28.6841 4.67538 24.4323 5.68717 20.3813C6.69896 16.3303 8.8109 12.6379 11.7897 9.712C14.5618 6.89405 18.0689 4.91035 21.9123 3.9864C25.7557 3.06244 29.7813 3.23531 33.5313 4.48534L33.6047 4.51034H33.6297C36.6831 5.52536 39.9829 5.52536 43.0363 4.51034H43.0563L43.1363 4.48367C47.1255 3.15546 51.4201 3.04685 55.4713 4.17173C59.5226 5.2966 63.1464 7.60387 65.8797 10.7987C65.3057 11.283 64.9127 11.9474 64.7647 12.6837L64.1563 15.7403C62.0528 16.2863 60.0365 17.1251 58.1663 18.232L55.563 16.5003C54.9218 16.0715 54.1517 15.8782 53.384 15.9536C52.6163 16.029 51.8985 16.3683 51.353 16.9137L48.573 19.6937C48.0272 20.2393 47.6876 20.9574 47.6122 21.7255C47.5369 22.4936 47.7303 23.264 48.1597 23.9053L49.898 26.5053C48.7876 28.3783 47.946 30.3981 47.398 32.5053L44.3413 33.112C43.5894 33.2654 42.9132 33.6728 42.4261 34.2658C41.939 34.8588 41.6707 35.6013 41.6663 36.3687V40.2987C41.668 41.0693 41.9358 41.8157 42.4245 42.4115C42.9131 43.0074 43.5926 43.4162 44.348 43.5687L47.4047 44.1753C47.953 46.2825 48.7946 48.3022 49.9047 50.1753L48.1663 52.7687C47.737 53.41 47.5435 54.1804 47.6189 54.9485C47.6943 55.7166 48.0339 56.4347 48.5797 56.9803L51.3597 59.7603C51.9052 60.3057 52.623 60.645 53.3907 60.7204C54.1584 60.7958 54.9285 60.6026 55.5697 60.1737L58.1663 58.4353C59.1581 59.0189 60.1914 59.5286 61.258 59.9603C60.5347 77.9753 56.9397 96.667 51.5163 96.667ZM90.8913 35.552L94.9997 36.367V40.2987L90.8913 41.1153C90.5712 41.1792 90.2769 41.3356 90.0449 41.5653C89.8129 41.7949 89.6535 42.0876 89.5863 42.407C89.0709 44.8588 88.0996 47.192 86.723 49.2853C86.545 49.5583 86.451 49.8774 86.4524 50.2033C86.4539 50.5291 86.5509 50.8474 86.7313 51.1187L89.0647 54.6187L86.283 57.4003L82.783 55.067C82.5108 54.8848 82.191 54.7868 81.8634 54.7854C81.5359 54.7839 81.2152 54.8789 80.9413 55.0587C78.8495 56.4365 76.5165 57.4074 74.0647 57.9203C73.745 57.9876 73.4522 58.1473 73.2225 58.3796C72.9929 58.6119 72.8366 58.9066 72.773 59.227L71.9663 63.3337H68.033L67.2163 59.2253C67.1528 58.9049 66.9965 58.6103 66.7668 58.3779C66.5372 58.1456 66.2443 57.9859 65.9247 57.9187C63.4729 57.4057 61.1399 56.4349 59.048 55.057C58.7742 54.8773 58.4535 54.7822 58.1259 54.7837C57.7984 54.7852 57.4785 54.8831 57.2063 55.0653L53.7063 57.3987L50.9247 54.617L53.258 51.117C53.4384 50.8457 53.5354 50.5274 53.5369 50.2016C53.5384 49.8757 53.4443 49.5566 53.2663 49.2837C51.8897 47.1904 50.9184 44.8572 50.403 42.4053C50.3359 42.0859 50.1764 41.7932 49.9444 41.5636C49.7124 41.334 49.4181 41.1775 49.098 41.1137L44.9997 40.2987V36.3687L49.108 35.552C49.4281 35.4882 49.7224 35.3317 49.9544 35.1021C50.1864 34.8725 50.3459 34.5798 50.413 34.2603C50.9278 31.8083 51.8991 29.475 53.2763 27.382C53.4543 27.1091 53.5484 26.7899 53.5469 26.4641C53.5454 26.1383 53.4484 25.82 53.268 25.5487L50.9347 22.0487L53.7163 19.267L57.2163 21.6003C57.4893 21.7813 57.8096 21.8778 58.1372 21.8778C58.4647 21.8778 58.785 21.7813 59.058 21.6003C61.1499 20.2225 63.4829 19.2516 65.9347 18.7387C66.2543 18.6714 66.5472 18.5117 66.7768 18.2794C67.0065 18.0471 67.1628 17.7524 67.2263 17.432L68.033 13.3337H71.9663L72.783 17.442C72.8465 17.7624 73.0029 18.0571 73.2325 18.2894C73.4622 18.5217 73.755 18.6814 74.0747 18.7487C76.5265 19.2616 78.8595 20.2325 80.9513 21.6103C81.2243 21.7913 81.5446 21.8878 81.8722 21.8878C82.1997 21.8878 82.52 21.7913 82.793 21.6103L86.293 19.277L89.0747 22.0587L86.7413 25.5587C86.5609 25.83 86.4639 26.1483 86.4624 26.4741C86.461 26.7999 86.555 27.1191 86.733 27.392C88.1102 29.485 89.0815 31.8183 89.5963 34.2703C89.6645 34.5866 89.8232 34.8762 90.0532 35.1038C90.2831 35.3314 90.5744 35.4871 90.8913 35.552Z"
-                                        fill="currentColor"
-                                      ></path>
-                                      <path
-                                        d="M69.9997 21.667C66.7033 21.667 63.481 22.6445 60.7402 24.4758C57.9994 26.3072 55.8632 28.9102 54.6017 31.9556C53.3402 35.001 53.0102 38.3521 53.6533 41.5852C54.2963 44.8182 55.8837 47.7879 58.2146 50.1188C60.5454 52.4496 63.5152 54.037 66.7482 54.6801C69.9812 55.3232 73.3323 54.9931 76.3777 53.7317C79.4232 52.4702 82.0262 50.334 83.8575 47.5932C85.6889 44.8523 86.6664 41.63 86.6664 38.3337C86.6615 33.9149 84.904 29.6785 81.7794 26.5539C78.6549 23.4294 74.4185 21.6718 69.9997 21.667ZM69.9997 51.667C67.3626 51.667 64.7847 50.885 62.5921 49.4199C60.3994 47.9548 58.6905 45.8725 57.6813 43.4361C56.6721 40.9998 56.4081 38.3189 56.9225 35.7325C57.437 33.146 58.7069 30.7703 60.5716 28.9056C62.4363 27.0409 64.8121 25.771 67.3985 25.2565C69.9849 24.7421 72.6658 25.0061 75.1021 26.0153C77.5385 27.0244 79.6209 28.7334 81.0859 30.9261C82.551 33.1187 83.333 35.6966 83.333 38.3337C83.329 41.8687 81.923 45.2577 79.4234 47.7574C76.9238 50.257 73.5347 51.663 69.9997 51.667Z"
-                                        fill="currentColor"
-                                      ></path>
-                                    </g>
-                                  </svg>
-                                </div>
-                              </div>
-                              <h3
-                                data-w-id="b7cce17c-6b0f-649c-dcb5-bed8a477aba5"
-                                class="service-title-one"
-                              >
-                                Golden Standard
-                              </h3>
-                            </div>
-                          </div>
-                          <p
-                            data-w-id="b7cce17c-6b0f-649c-dcb5-bed8a477aba6"
-                            class="service-description"
-                          >
-                            Replace missing teeth with durable dental implants,
-                            providing a natural-looking.
-                          </p></a
-                        >
-                        <div class="service-link-block">
-                          <a
-                            href="/services/dental-implants"
-                            class="link-block w-inline-block"
-                            ><div
-                              data-w-id="b7cce17c-6b0f-649c-dcb5-bed8a477aba9"
-                              class="link-button"
-                            >
-                              read more
-                            </div>
-                            <div
-                              data-w-id="b7cce17c-6b0f-649c-dcb5-bed8a477abab"
-                              class="link-border"
-                            ></div
-                          ></a>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div
-                  data-w-id="59a812e7-bfc8-9c95-38fc-5ae455565c23"
-                  class="w-dyn-list"
-                >
-                  <div role="list" class="w-dyn-items">
-                    <div role="listitem" class="w-dyn-item">
-                      <div
-                        data-w-id="59a812e7-bfc8-9c95-38fc-5ae455565c26"
-                        class="service-info-main-block"
-                      >
-                        <a
-                          href="/services/general-dentistry"
-                          class="service-link w-inline-block"
-                          ><div
-                            data-w-id="59a812e7-bfc8-9c95-38fc-5ae455565c28"
-                            class="service-info-inner-block"
-                          >
-                            <div class="service-icon-inner-block">
-                              <div
-                                data-w-id="59a812e7-bfc8-9c95-38fc-5ae455565c2a"
-                                class="service-icon-block"
-                              >
-                                <div class="w-embed">
-                                  
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="50"
-                                    height="50"
-                                    viewBox="0 0 100 100"
-                                    fill="none"
-                                  >
-                                    <path
-                                      d="M43.391 27.5555C40.3883 27.5321 37.4602 28.49 35.052 30.2836C32.7763 28.2947 29.8821 27.1551 26.8613 27.0586C26.4469 27.0586 26.0495 27.2232 25.7565 27.5162C25.4634 27.8093 25.2988 28.2067 25.2988 28.6211C25.2988 29.0355 25.4634 29.4329 25.7565 29.7259C26.0495 30.019 26.4469 30.1836 26.8613 30.1836C29.0601 30.2692 31.1679 31.0845 32.852 32.5008C32.4658 33.0034 32.1258 33.54 31.8363 34.1039C31.7423 34.2873 31.6854 34.4875 31.669 34.693C31.6527 34.8985 31.6772 35.1052 31.741 35.3012C31.8049 35.4971 31.9069 35.6786 32.0412 35.8349C32.1755 35.9913 32.3394 36.1196 32.5235 36.2123C32.7076 36.3051 32.9082 36.3605 33.1138 36.3754C33.3194 36.3903 33.5259 36.3644 33.7214 36.2991C33.9169 36.2338 34.0976 36.1305 34.253 35.9951C34.4084 35.8597 34.5355 35.6949 34.627 35.5102C35.5082 33.9822 36.7906 32.7244 38.3355 31.8731C39.8803 31.0218 41.6286 30.6094 43.391 30.6805C45.1513 30.6109 46.897 31.0242 48.4393 31.8754C49.9816 32.7267 51.2617 33.9837 52.141 35.5102C52.2325 35.6949 52.3596 35.8597 52.515 35.9951C52.6704 36.1305 52.8511 36.2338 53.0466 36.2991C53.2421 36.3644 53.4486 36.3903 53.6542 36.3754C53.8598 36.3605 54.0604 36.3051 54.2445 36.2123C54.4286 36.1196 54.5925 35.9913 54.7268 35.8349C54.8611 35.6786 54.9631 35.4971 55.0269 35.3012C55.0908 35.1052 55.1153 34.8985 55.0989 34.693C55.0826 34.4875 55.0257 34.2873 54.9316 34.1039C53.7906 32.0615 52.1114 30.3712 50.0766 29.2166C48.0419 28.062 45.7295 27.4875 43.391 27.5555Z"
-                                      fill="currentColor"
-                                    ></path>
-                                    <path
-                                      d="M74.6459 32.144L76.185 28.1736C76.3333 27.7913 76.3253 27.366 76.1627 26.9895C76.0002 26.613 75.6962 26.3155 75.3163 26.1611L68.1459 23.2565V17.0846C68.146 16.8715 68.1026 16.6607 68.0182 16.4651C67.9338 16.2695 67.8103 16.0932 67.6553 15.9471C63.6584 12.1768 58.9506 11.2861 55.0819 13.5268C55.0491 13.544 55.0178 13.5596 54.9866 13.5783C54.5163 13.848 54.069 14.1558 53.6491 14.4986C52.6272 15.3361 51.66 16.1033 50.76 16.808C48.6503 18.4352 46.061 19.3178 43.3967 19.3178C40.7324 19.3178 38.1431 18.4352 36.0334 16.808C35.1131 16.1002 34.1506 15.3361 33.1288 14.4971C29.0663 11.194 23.7866 11.6752 19.3397 15.7596C12.5694 21.9783 7.5397 37.344 17.5569 52.0315C19.0165 54.1445 19.8159 56.6433 19.8538 59.2111C19.8866 62.6721 20.085 66.0236 20.4256 69.219C19.2683 69.3488 18.1511 69.7205 17.1465 70.3098C16.142 70.8991 15.2725 71.6929 14.5944 72.6398C13.9162 73.5866 13.4447 74.6655 13.2102 75.8063C12.9758 76.9471 12.9837 78.1244 13.2334 79.262C13.4831 80.3995 13.9691 81.4719 14.6598 82.4096C15.3506 83.3473 16.2306 84.1294 17.243 84.7052C18.2554 85.281 19.3774 85.6376 20.5365 85.752C21.6955 85.8663 22.8656 85.7358 23.971 85.369C25.206 88.8983 27.1548 92.1353 29.6959 94.8783C30.4256 95.6361 32.1288 97.4174 33.9334 96.7158C35.9647 95.9346 36.0225 93.1986 36.1444 88.2408C36.3178 81.1471 36.5772 70.5549 43.3975 65.7502C50.2178 70.5549 50.4772 81.1471 50.6506 88.2408C50.7725 93.1986 50.8397 95.9299 52.8631 96.7158C53.1332 96.8203 53.4204 96.8733 53.71 96.8721C55.046 96.6592 56.2524 95.95 57.0881 94.8861C65.3928 86.4346 66.8272 68.9158 66.9413 59.2221C66.9785 56.6519 67.7773 54.1506 69.2366 52.0346C70.9396 49.5639 72.2905 46.8682 73.2506 44.0252C73.9895 41.8806 74.4731 39.6564 74.6913 37.3986C74.7277 37.0283 74.6307 36.657 74.4178 36.3518L73.5303 35.0799L74.61 32.2549C74.6244 32.2187 74.6364 32.1817 74.6459 32.144ZM65.0209 17.7815V24.3111C65.0213 24.6221 65.1144 24.9259 65.2883 25.1837C65.4623 25.4414 65.7092 25.6414 65.9975 25.758L72.7163 28.4783L71.7178 31.0502L71.7006 31.094L71.6913 31.1158C71.6772 31.1549 71.6631 31.1955 71.6506 31.2377L70.3116 34.7361C70.2203 34.9745 70.1889 35.2315 70.2199 35.4849C70.251 35.7382 70.3436 35.98 70.4897 36.1893L71.5163 37.6596C71.3977 38.6295 71.2245 39.592 70.9975 40.5424C69.3734 39.2916 67.4907 38.4188 65.4866 37.9877V29.5315C65.4864 29.1504 65.3469 28.7825 65.0944 28.4971C63.3002 26.8166 60.9935 25.7876 58.5444 25.5752C59.1402 24.1977 59.8909 22.8924 60.7819 21.6846C60.9175 21.5053 61.0128 21.2989 61.0614 21.0794C61.1099 20.8598 61.1105 20.6325 61.0631 20.4127C60.6702 18.6074 59.8378 16.927 58.6397 15.5205C59.8026 15.4266 60.9722 15.5795 62.0719 15.9691C63.1716 16.3588 64.1766 16.9764 65.0209 17.7815ZM16.2616 77.4533C16.2616 76.4218 16.5675 75.4134 17.1406 74.5557C17.7137 73.698 18.5282 73.0295 19.4813 72.6347C20.4343 72.24 21.483 72.1367 22.4947 72.3379C23.5064 72.5392 24.4358 73.0359 25.1652 73.7653C25.8946 74.4947 26.3914 75.4241 26.5926 76.4358C26.7939 77.4475 26.6906 78.4962 26.2958 79.4493C25.9011 80.4023 25.2326 81.2169 24.3748 81.79C23.5171 82.3631 22.5088 82.669 21.4772 82.669C20.0943 82.6677 18.7684 82.1178 17.7906 81.14C16.8127 80.1621 16.2628 78.8362 16.2616 77.4533ZM66.6538 50.2658C64.8461 52.893 63.8586 55.9974 63.8163 59.1861C63.7288 66.6096 62.6788 84.7346 54.8475 92.7065C54.6107 92.955 54.3609 93.1908 54.0991 93.4127C53.8782 91.6699 53.7702 89.9147 53.7756 88.158C53.5788 80.1221 53.2803 67.969 44.2178 62.558C43.9695 62.4166 43.6887 62.3423 43.403 62.3423C43.1173 62.3423 42.8364 62.4166 42.5881 62.558C33.5256 67.9658 33.2241 80.1221 33.0272 88.1658C33.0314 89.922 32.9229 91.6767 32.7022 93.419C32.4356 93.194 32.182 92.9541 31.9428 92.7002C29.6119 90.1513 27.8439 87.1401 26.7538 83.8627C27.9465 82.898 28.8474 81.6205 29.3557 80.1732C29.8641 78.7258 29.9599 77.1656 29.6324 75.6669C29.3049 74.1683 28.567 72.7902 27.5013 71.6868C26.4355 70.5835 25.0839 69.7982 23.5975 69.419C23.2193 66.0191 23.0149 62.6022 22.985 59.1815C22.9407 55.9972 21.9526 52.8977 20.146 50.2752C11.2772 37.2721 15.6881 23.3658 21.46 18.0627C23.0225 16.6205 27.1116 13.6268 31.1584 16.919C32.2022 17.7768 33.1897 18.5596 34.1272 19.2846C36.7843 21.3351 40.0459 22.4473 43.4022 22.4473C46.7585 22.4473 50.0201 21.3351 52.6772 19.2846C53.6053 18.5606 54.5871 17.7768 55.6225 16.933C55.6381 16.9205 55.6522 16.9143 55.6678 16.9018C56.6757 17.8786 57.4242 19.0912 57.8459 20.4299C56.4835 22.3167 55.507 24.4539 54.9725 26.719C54.9369 26.9399 54.9492 27.166 55.0085 27.3818C55.0678 27.5976 55.1728 27.7982 55.3164 27.9699C55.4599 28.1416 55.6387 28.2805 55.8406 28.3771C56.0425 28.4737 56.2628 28.5258 56.4866 28.5299C58.5616 28.5404 60.5945 29.1169 62.3663 30.1971V39.3283C62.3653 39.7245 62.5148 40.1062 62.7846 40.3962C63.0543 40.6863 63.4242 40.8631 63.8194 40.8908C66.1465 41.1639 68.3167 42.2034 69.9881 43.8455C69.1446 46.1169 68.0247 48.2758 66.6538 50.2736V50.2658Z"
-                                      fill="currentColor"
-                                    ></path>
-                                    <path
-                                      d="M73.1467 15.4266C73.4635 15.4267 73.7729 15.3306 74.0338 15.1509C74.2947 14.9712 74.4949 14.7164 74.6076 14.4203L78.1045 5.24377C78.1776 5.05202 78.2121 4.84776 78.2062 4.64265C78.2003 4.43754 78.1541 4.2356 78.0702 4.04836C77.9862 3.86112 77.8662 3.69225 77.717 3.55138C77.5678 3.41051 77.3924 3.30041 77.2006 3.22736C77.0089 3.15432 76.8046 3.11975 76.5995 3.12564C76.3944 3.13154 76.1924 3.17777 76.0052 3.26171C75.818 3.34564 75.6491 3.46563 75.5082 3.61484C75.3674 3.76404 75.2572 3.93952 75.1842 4.13127L71.6873 13.3078C71.5972 13.5443 71.5659 13.7992 71.5961 14.0505C71.6263 14.3018 71.7171 14.542 71.8607 14.7504C72.0042 14.9588 72.1963 15.1293 72.4203 15.2471C72.6443 15.3649 72.8936 15.4265 73.1467 15.4266Z"
-                                      fill="currentColor"
-                                    ></path>
-                                    <path
-                                      d="M77.4563 19.9334L85.2407 15.1975C85.5948 14.9822 85.8489 14.6351 85.947 14.2325C86.0452 13.8299 85.9794 13.4047 85.7641 13.0506C85.5488 12.6965 85.2017 12.4424 84.7991 12.3443C84.3965 12.2461 83.9713 12.3119 83.6172 12.5272L75.8329 17.2631C75.4788 17.4784 75.2247 17.8255 75.1265 18.2282C75.0283 18.6308 75.0941 19.0559 75.3094 19.41C75.5247 19.7641 75.8718 20.0182 76.2744 20.1164C76.6771 20.2145 77.1022 20.1487 77.4563 19.9334Z"
-                                      fill="currentColor"
-                                    ></path>
-                                    <path
-                                      d="M77.6557 25.0503L86.0932 27.2472C86.2219 27.2798 86.3541 27.2966 86.4869 27.2972C86.8672 27.2976 87.2346 27.1593 87.5202 26.9082C87.8059 26.657 87.9901 26.3104 88.0384 25.9332C88.0867 25.5559 87.9958 25.174 87.7826 24.859C87.5695 24.5441 87.2488 24.3176 86.8807 24.2222L78.4432 22.0253C78.2429 21.9689 78.0334 21.9531 77.8269 21.9787C77.6204 22.0044 77.4212 22.071 77.2408 22.1747C77.0604 22.2784 76.9026 22.4171 76.7765 22.5826C76.6504 22.7481 76.5587 22.9371 76.5067 23.1386C76.4546 23.34 76.4434 23.5498 76.4735 23.7557C76.5037 23.9616 76.5746 24.1593 76.6822 24.3374C76.7898 24.5155 76.9319 24.6703 77.1002 24.7927C77.2684 24.9151 77.4594 25.0027 77.6619 25.0503H77.6557Z"
-                                      fill="currentColor"
-                                    ></path>
-                                  </svg>
-                                </div>
-                              </div>
-                              <h3
-                                data-w-id="59a812e7-bfc8-9c95-38fc-5ae455565c2c"
-                                class="service-title-one"
-                              >
-                                General Dentistry
-                              </h3>
-                            </div>
-                          </div>
-                          <p
-                            data-w-id="59a812e7-bfc8-9c95-38fc-5ae455565c2d"
-                            class="service-description"
-                          >
-                            We provide comprehensive dental care, including
-                            routine cleanings, exams and bright.
-                          </p></a
-                        >
-                        <div class="service-link-block">
-                          <a
-                            href="/services/general-dentistry"
-                            class="link-block w-inline-block"
-                            ><div
-                              data-w-id="59a812e7-bfc8-9c95-38fc-5ae455565c30"
-                              class="link-button"
-                            >
-                              read more
-                            </div>
-                            <div
-                              data-w-id="59a812e7-bfc8-9c95-38fc-5ae455565c32"
-                              class="link-border"
-                            ></div
-                          ></a>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div
-                  data-w-id="5de8ec92-584a-a162-a618-c716c5469036"
-                  class="w-dyn-list"
-                >
-                  <div role="list" class="w-dyn-items">
-                    <div role="listitem" class="w-dyn-item">
-                      <div
-                        data-w-id="5de8ec92-584a-a162-a618-c716c5469039"
-                        class="service-info-main-block"
-                      >
-                        <a
-                          href="/services/teeth-whitening"
-                          class="service-link w-inline-block"
-                          ><div
-                            data-w-id="5de8ec92-584a-a162-a618-c716c546903b"
-                            class="service-info-inner-block"
-                          >
-                            <div class="service-icon-inner-block">
-                              <div
-                                data-w-id="5de8ec92-584a-a162-a618-c716c546903d"
-                                class="service-icon-block"
-                              >
-                                <div class="w-embed">
-                                  
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="50"
-                                    height="50"
-                                    viewBox="0 0 100 100"
-                                    fill="none"
-                                  >
-                                    <g clip-path="url(#clip0_104_5)">
-                                      <path
-                                        d="M50.7168 50.1238C48.1603 49.7323 45.5475 50.2502 43.3335 51.5871C41.1198 50.2495 38.5067 49.7316 35.9501 50.1238C33.6077 50.461 31.4401 51.5561 29.7788 53.2415C28.1174 54.9269 27.0537 57.11 26.7501 59.4571C26.3976 62.2465 27.162 65.0623 28.8768 67.2904C29.191 67.6757 29.3774 68.1493 29.4101 68.6454C29.5068 72.6454 29.7068 80.9454 34.2785 86.7738C34.8136 87.4495 35.5463 87.9414 36.3743 88.1809C37.2023 88.4204 38.0844 88.3956 38.8977 88.11C39.711 87.8244 40.4148 87.2921 40.9112 86.5874C41.4076 85.8827 41.6717 85.0407 41.6668 84.1788V76.5438C41.6864 76.1427 41.8537 75.7631 42.1365 75.4782C42.4193 75.1932 42.7976 75.023 43.1985 75.0004C43.4186 74.9846 43.6396 75.0155 43.847 75.091C44.0544 75.1666 44.2434 75.2851 44.4018 75.4388C44.587 75.6114 44.7355 75.8197 44.8383 76.0511C44.9411 76.2825 44.9962 76.5322 45.0001 76.7854V84.2754C45.0203 85.128 45.3026 85.9536 45.8086 86.6401C46.3147 87.3265 47.0199 87.8403 47.8284 88.1117C48.6369 88.3831 49.5093 88.3988 50.327 88.1567C51.1448 87.9146 51.868 87.4265 52.3985 86.7588C56.9601 80.9438 57.1602 72.6288 57.2568 68.6338C57.2894 68.1384 57.4752 67.6655 57.7885 67.2804C59.504 65.0526 60.2691 62.2368 59.9168 59.4471C59.6113 57.1018 58.5466 54.921 56.8854 53.2376C55.2242 51.5541 53.0578 50.4605 50.7168 50.1238ZM55.1435 65.2588C54.3973 66.201 53.9701 67.3561 53.9235 68.5571C53.8368 72.1938 53.6535 79.7621 49.7768 84.7038C49.7011 84.7985 49.6046 84.8745 49.4948 84.926C49.3849 84.9774 49.2647 85.0029 49.1435 85.0004C48.9464 84.9916 48.7583 84.9152 48.6108 84.7841C48.4633 84.653 48.3654 84.4752 48.3335 84.2804V76.7904C48.3304 76.0782 48.1809 75.3742 47.8942 74.7222C47.6074 74.0702 47.1897 73.4841 46.6668 73.0004C46.1734 72.5334 45.5876 72.175 44.9471 71.9482C44.3067 71.7214 43.6259 71.6313 42.9485 71.6838C41.71 71.7676 40.5482 72.3138 39.6934 73.2139C38.8386 74.1141 38.3532 75.3026 38.3335 76.5438V84.1788C38.3327 84.3664 38.2686 84.5484 38.1515 84.6951C38.0345 84.8418 37.8713 84.9447 37.6885 84.9871C37.5439 85.0139 37.3948 85.0019 37.2564 84.9524C37.1179 84.903 36.995 84.8177 36.9001 84.7054C33.0135 79.7521 32.8301 72.1904 32.7435 68.5571C32.6968 67.3553 32.2689 66.1996 31.5218 65.2571C30.3411 63.7211 29.8146 61.781 30.0568 59.8588C30.2877 58.2431 31.0327 56.7448 32.1815 55.5856C33.3302 54.4263 34.8217 53.6677 36.4352 53.4221C36.8275 53.364 37.2235 53.3345 37.6202 53.3338C39.3194 53.329 40.972 53.8889 42.3185 54.9254C42.6096 55.149 42.9664 55.2701 43.3335 55.2701C43.7005 55.2701 44.0573 55.149 44.3485 54.9254C45.1761 54.2894 46.1245 53.8284 47.1359 53.5705C48.1474 53.3126 49.2007 53.2633 50.2318 53.4254C51.8453 53.671 53.3367 54.4296 54.4855 55.5889C55.6343 56.7482 56.3792 58.2465 56.6102 59.8621C56.8515 61.784 56.3244 63.7234 55.1435 65.2588Z"
-                                        fill="currentColor"
-                                      ></path>
-                                      <path
-                                        d="M92.0002 16.7001C91.7856 16.656 91.5644 16.6548 91.3494 16.6968C91.1344 16.7387 90.9298 16.8228 90.7475 16.9444C90.5652 17.0659 90.4088 17.2224 90.2874 17.4047C90.166 17.5871 90.082 17.7917 90.0402 18.0068L87.3569 31.4184C87.2719 31.8415 87.0737 32.2337 86.7835 32.553C86.4932 32.8724 86.1217 33.107 85.7086 33.2319C85.2956 33.3567 84.8563 33.3672 84.4378 33.2621C84.0192 33.157 83.637 32.9403 83.3319 32.6351L77.7285 27.0318C77.0032 26.3073 76.1263 25.7527 75.1608 25.4079C74.1954 25.0631 73.1655 24.9366 72.1453 25.0377C71.1252 25.1388 70.1401 25.4648 69.2611 25.9923C68.3821 26.5198 67.631 27.2357 67.0619 28.0884L61.0619 37.0884C60.3453 34.3543 59.0097 31.8214 57.1585 29.6855C55.3073 27.5497 52.9898 25.8679 50.3852 24.7701L67.2569 16.5851C67.6513 16.3937 68.0042 16.1263 68.2951 15.7984C68.5861 15.4704 68.8095 15.0882 68.9526 14.6738C69.0956 14.2593 69.1555 13.8207 69.1288 13.3831C69.1021 12.9455 68.9893 12.5174 68.7969 12.1234L67.8869 10.2501C66.8489 8.1028 65.3978 6.1812 63.6165 4.5952C61.8352 3.00921 59.7588 1.78994 57.5059 1.00714C55.253 0.224338 52.8679 -0.106637 50.4869 0.0331443C48.106 0.172926 45.776 0.780722 43.6302 1.82177L16.9119 14.7534C14.7659 15.7926 12.8459 17.2445 11.2615 19.0263C9.67709 20.808 8.45947 22.8846 7.67824 25.1373C6.897 27.39 6.56749 29.7746 6.70853 32.1547C6.84957 34.5348 7.4584 36.8638 8.50021 39.0084L10.0002 42.0568V66.6668C10.0002 75.5073 13.5121 83.9858 19.7633 90.237C26.0145 96.4882 34.493 100 43.3335 100C52.1741 100 60.6526 96.4882 66.9038 90.237C73.155 83.9858 76.6669 75.5073 76.6669 66.6668V43.3334C76.6669 42.4494 76.3157 41.6015 75.6906 40.9764C75.0654 40.3513 74.2176 40.0001 73.3335 40.0001H63.1152L69.8235 29.9384C70.131 29.5106 70.526 29.1531 70.9823 28.8898C71.4386 28.6264 71.9458 28.4633 72.4701 28.4113C72.9944 28.3593 73.5237 28.4195 74.0229 28.588C74.5221 28.7565 74.9797 29.0293 75.3652 29.3884L80.9685 35.0001C81.7004 35.7318 82.6171 36.2511 83.6209 36.5027C84.6247 36.7544 85.678 36.7289 86.6685 36.429C87.6589 36.1292 88.5495 35.5661 89.2451 34.7999C89.9407 34.0338 90.4154 33.0932 90.6185 32.0784L93.3002 18.6668C93.344 18.4523 93.3452 18.2312 93.3035 18.0163C93.2619 17.8014 93.1784 17.5968 93.0576 17.4141C92.9369 17.2315 92.7814 17.0744 92.6 16.9519C92.4185 16.8294 92.2147 16.7438 92.0002 16.7001ZM58.2302 40.0001H51.5002C51.1177 38.1163 50.0957 36.4226 48.6073 35.2061C47.119 33.9896 45.2558 33.3251 43.3335 33.3251C41.4113 33.3251 39.5481 33.9896 38.0598 35.2061C36.5714 36.4226 35.5494 38.1163 35.1669 40.0001H28.4435C28.656 38.0937 29.2367 36.2467 30.1535 34.5618L45.9269 26.9201C49.1126 27.485 52.0308 29.0632 54.2475 31.4199C56.4643 33.7766 57.8611 36.7858 58.2302 40.0001ZM48.0269 40.0001H38.6402C38.9796 39.0259 39.6138 38.1814 40.4548 37.5838C41.2958 36.9862 42.3019 36.6652 43.3335 36.6652C44.3652 36.6652 45.3713 36.9862 46.2123 37.5838C47.0533 38.1814 47.6875 39.0259 48.0269 40.0001ZM11.4885 37.5401C10.6399 35.7893 10.1447 33.8884 10.0311 31.9461C9.91753 30.0038 10.1879 28.0582 10.8267 26.2204C11.4655 24.3827 12.4602 22.6888 13.754 21.2357C15.0478 19.7826 16.6153 18.5987 18.3669 17.7518L45.0819 4.82343C46.834 3.97271 48.7367 3.47588 50.6811 3.36138C52.6255 3.24688 54.5734 3.51696 56.4132 4.15616C58.2531 4.79535 59.9489 5.79112 61.4035 7.08647C62.8581 8.38181 64.0429 9.9513 64.8902 11.7051L65.8052 13.5834L12.4285 39.4451L11.4885 37.5401ZM25.6885 36.7251C25.3971 37.797 25.2035 38.8932 25.1102 40.0001H18.9302L25.6885 36.7251ZM73.3335 66.6668C73.3335 74.6233 70.1728 82.2539 64.5467 87.88C58.9207 93.5061 51.29 96.6668 43.3335 96.6668C35.377 96.6668 27.7464 93.5061 22.1203 87.88C16.4942 82.2539 13.3335 74.6233 13.3335 66.6668V43.3334H73.3335V66.6668Z"
-                                        fill="currentColor"
-                                      ></path>
-                                    </g>
-                                  </svg>
-                                </div>
-                              </div>
-                              <h3
-                                data-w-id="5de8ec92-584a-a162-a618-c716c546903f"
-                                class="service-title-one"
-                              >
-                                Teeth Whitening
-                              </h3>
-                            </div>
-                          </div>
-                          <p class="service-description one">
-                            Brighten your smile with our professional whitening
-                            treatments, designed.
-                          </p></a
-                        >
-                        <div class="service-link-block">
-                          <a
-                            href="/services/teeth-whitening"
-                            class="link-block w-inline-block"
-                            ><div
-                              data-w-id="5de8ec92-584a-a162-a618-c716c5469043"
-                              class="link-button"
-                            >
-                              read more
-                            </div>
-                            <div
-                              data-w-id="5de8ec92-584a-a162-a618-c716c5469045"
-                              class="link-border"
-                            ></div
-                          ></a>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div
-                  data-w-id="856057b2-9740-331c-da93-374eb69697ae"
-                  class="w-dyn-list"
-                >
-                  <div role="list" class="w-dyn-items">
-                    <div role="listitem" class="w-dyn-item">
-                      <div
-                        data-w-id="856057b2-9740-331c-da93-374eb69697b1"
-                        class="service-info-main-block"
-                      >
-                        <a
-                          href="/services/root-cannel-treatment"
-                          class="service-link w-inline-block"
-                          ><div
-                            data-w-id="856057b2-9740-331c-da93-374eb69697b3"
-                            class="service-info-inner-block"
-                          >
-                            <div class="service-icon-inner-block">
-                              <div
-                                data-w-id="856057b2-9740-331c-da93-374eb69697b5"
-                                class="service-icon-block"
-                              >
-                                <div class="w-embed">
-                                  
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="50"
-                                    height="50"
-                                    viewBox="0 0 46 46"
-                                    fill="none"
-                                  >
-                                    <path
-                                      d="M19.9601 12.6758C18.5789 12.6651 17.2319 13.1057 16.1241 13.9308C15.0773 13.0159 13.746 12.4917 12.3564 12.4473C12.1658 12.4473 11.983 12.523 11.8482 12.6578C11.7134 12.7926 11.6377 12.9754 11.6377 13.166C11.6377 13.3566 11.7134 13.5395 11.8482 13.6742C11.983 13.809 12.1658 13.8848 12.3564 13.8848C13.3679 13.9241 14.3374 14.2992 15.1121 14.9507C14.9345 15.1819 14.7781 15.4287 14.6449 15.6881C14.6017 15.7725 14.5755 15.8646 14.568 15.9591C14.5605 16.0536 14.5717 16.1487 14.6011 16.2388C14.6305 16.329 14.6774 16.4124 14.7392 16.4844C14.801 16.5563 14.8764 16.6153 14.961 16.658C15.0457 16.7007 15.138 16.7262 15.2326 16.733C15.3271 16.7399 15.4221 16.7279 15.5121 16.6979C15.602 16.6679 15.6851 16.6203 15.7566 16.5581C15.8281 16.4958 15.8866 16.42 15.9286 16.335C16.334 15.6321 16.9239 15.0536 17.6345 14.6619C18.3452 14.2703 19.1494 14.0806 19.9601 14.1133C20.7698 14.0813 21.5729 14.2714 22.2823 14.663C22.9918 15.0546 23.5806 15.6328 23.9851 16.335C24.0272 16.42 24.0856 16.4958 24.1571 16.5581C24.2286 16.6203 24.3117 16.6679 24.4017 16.6979C24.4916 16.7279 24.5866 16.7399 24.6812 16.733C24.7757 16.7262 24.868 16.7007 24.9527 16.658C25.0374 16.6153 25.1128 16.5563 25.1745 16.4844C25.2363 16.4124 25.2832 16.329 25.3126 16.2388C25.342 16.1487 25.3533 16.0536 25.3457 15.9591C25.3382 15.8646 25.3121 15.7725 25.2688 15.6881C24.7439 14.7486 23.9715 13.971 23.0355 13.4399C22.0995 12.9088 21.0358 12.6446 19.9601 12.6758Z"
-                                      fill="currentColor"
-                                    ></path>
-                                    <path
-                                      d="M34.3368 14.7865L35.0448 12.9602C35.113 12.7843 35.1093 12.5887 35.0345 12.4155C34.9598 12.2423 34.8199 12.1054 34.6452 12.0344L31.3468 10.6983V7.85922C31.3469 7.76122 31.3269 7.66426 31.2881 7.57427C31.2492 7.48429 31.1924 7.4032 31.1211 7.33597C29.2826 5.60163 27.117 5.19194 25.3374 6.22263C25.3223 6.23053 25.3079 6.23772 25.2935 6.24634C25.0772 6.37039 24.8714 6.51198 24.6783 6.66969C24.2082 7.05494 23.7633 7.40784 23.3493 7.732C22.3788 8.48052 21.1878 8.8865 19.9622 8.8865C18.7366 8.8865 17.5455 8.48052 16.5751 7.732C16.1517 7.40641 15.709 7.05494 15.2389 6.66897C13.3702 5.14953 10.9415 5.37091 8.89595 7.24972C5.78161 10.1103 3.46795 17.1785 8.07586 23.9348C8.74728 24.9068 9.115 26.0562 9.13242 27.2374C9.14751 28.8295 9.23879 30.3712 9.39548 31.841C8.86308 31.9008 8.34918 32.0717 7.88709 32.3428C7.42499 32.6139 7.02502 32.979 6.71309 33.4146C6.40116 33.8502 6.18424 34.3464 6.0764 34.8712C5.96855 35.396 5.97218 35.9375 6.08705 36.4608C6.20192 36.9841 6.42547 37.4774 6.74321 37.9087C7.06095 38.3401 7.46578 38.6998 7.93147 38.9647C8.39716 39.2296 8.91331 39.3936 9.44646 39.4462C9.97961 39.4988 10.5179 39.4388 11.0263 39.27C11.5945 40.8935 12.4909 42.3826 13.6598 43.6443C13.9955 43.9929 14.7789 44.8123 15.6091 44.4896C16.5434 44.1302 16.57 42.8717 16.6261 40.5911C16.7059 37.328 16.8252 32.4556 19.9625 30.2454C23.0999 32.4556 23.2192 37.328 23.299 40.5911C23.355 42.8717 23.386 44.1281 24.3167 44.4896C24.441 44.5376 24.5731 44.562 24.7063 44.5615C25.3208 44.4636 25.8758 44.1373 26.2602 43.6479C30.0804 39.7602 30.7402 31.7016 30.7927 27.2425C30.8098 26.0602 31.1773 24.9096 31.8485 23.9362C32.6319 22.7997 33.2533 21.5597 33.695 20.2519C34.0349 19.2654 34.2573 18.2423 34.3577 17.2037C34.3744 17.0333 34.3298 16.8625 34.2319 16.7221L33.8236 16.1371L34.3203 14.8376C34.3269 14.8209 34.3324 14.8039 34.3368 14.7865ZM29.9093 8.17978V11.1834C29.9095 11.3265 29.9523 11.4662 30.0323 11.5848C30.1124 11.7034 30.2259 11.7954 30.3585 11.849L33.4492 13.1003L32.9899 14.2834L32.982 14.3035L32.9777 14.3136C32.9712 14.3316 32.9647 14.3503 32.959 14.3697L32.343 15.9789C32.301 16.0886 32.2866 16.2068 32.3009 16.3233C32.3151 16.4399 32.3577 16.5511 32.4249 16.6474L32.8972 17.3237C32.8426 17.7699 32.7629 18.2126 32.6585 18.6498C31.9114 18.0744 31.0454 17.673 30.1235 17.4747V13.5848C30.1234 13.4095 30.0593 13.2403 29.9431 13.109C29.1178 12.3359 28.0567 11.8626 26.9301 11.7649C27.2042 11.1312 27.5495 10.5308 27.9594 9.97522C28.0217 9.89275 28.0656 9.79778 28.0879 9.69681C28.1102 9.59584 28.1105 9.49124 28.0887 9.39016C27.908 8.55971 27.5251 7.78671 26.9739 7.13975C27.5089 7.09655 28.0469 7.16688 28.5528 7.34611C29.0586 7.52534 29.5209 7.80944 29.9093 8.17978ZM7.48001 35.6288C7.48001 35.1543 7.62072 34.6905 7.88435 34.2959C8.14797 33.9014 8.52268 33.5939 8.96107 33.4123C9.39946 33.2307 9.88186 33.1832 10.3473 33.2758C10.8127 33.3683 11.2401 33.5968 11.5757 33.9324C11.9112 34.2679 12.1397 34.6954 12.2323 35.1608C12.3249 35.6262 12.2773 36.1086 12.0958 36.547C11.9142 36.9854 11.6067 37.3601 11.2121 37.6237C10.8176 37.8873 10.3537 38.028 9.8792 38.028C9.24307 38.0275 8.63316 37.7745 8.18335 37.3247C7.73354 36.8749 7.48058 36.265 7.48001 35.6288ZM30.6604 23.1226C29.8289 24.3311 29.3746 25.7591 29.3552 27.2259C29.3149 30.6407 28.8319 38.9782 25.2295 42.6453C25.1206 42.7596 25.0057 42.8681 24.8853 42.9702C24.7837 42.1685 24.734 41.3611 24.7365 40.553C24.6459 36.8565 24.5086 31.266 20.3399 28.777C20.2257 28.712 20.0965 28.6778 19.9651 28.6778C19.8336 28.6778 19.7044 28.712 19.5902 28.777C15.4215 31.2646 15.2828 36.8565 15.1922 40.5566C15.1941 41.3644 15.1442 42.1716 15.0427 42.973C14.9201 42.8696 14.8034 42.7592 14.6934 42.6424C13.6212 41.4699 12.8079 40.0848 12.3064 38.5772C12.8551 38.1334 13.2695 37.5458 13.5033 36.88C13.7372 36.2142 13.7812 35.4965 13.6306 34.8071C13.4799 34.1177 13.1405 33.4838 12.6503 32.9763C12.16 32.4687 11.5383 32.1075 10.8545 31.933C10.6806 30.3691 10.5865 28.7973 10.5728 27.2238C10.5524 25.759 10.0979 24.3332 9.26682 23.1269C5.1872 17.1455 7.21623 10.7486 9.87129 8.30916C10.59 7.64575 12.471 6.26863 14.3326 7.78303C14.8127 8.17763 15.2669 8.53772 15.6982 8.87122C16.9204 9.81446 18.4208 10.3261 19.9647 10.3261C21.5086 10.3261 23.009 9.81446 24.2312 8.87122C24.6581 8.5382 25.1098 8.17763 25.586 7.7895C25.5932 7.78375 25.5997 7.78088 25.6069 7.77513C26.0705 8.22448 26.4148 8.78226 26.6088 9.39806C25.9821 10.266 25.5329 11.2491 25.287 12.291C25.2707 12.3927 25.2763 12.4967 25.3036 12.5959C25.3309 12.6952 25.3792 12.7875 25.4452 12.8665C25.5113 12.9454 25.5935 13.0093 25.6864 13.0538C25.7792 13.0982 25.8806 13.1222 25.9835 13.1241C26.938 13.1289 27.8732 13.3941 28.6882 13.891V18.0913C28.6877 18.2736 28.7565 18.4492 28.8806 18.5826C29.0047 18.716 29.1748 18.7973 29.3566 18.8101C30.4271 18.9357 31.4254 19.4139 32.1942 20.1693C31.8062 21.2141 31.2911 22.2072 30.6604 23.1262V23.1226Z"
-                                      fill="currentColor"
-                                    ></path>
-                                    <path
-                                      d="M33.6471 7.09623C33.7928 7.0963 33.9352 7.05207 34.0552 6.96941C34.1752 6.88674 34.2673 6.76954 34.3191 6.63335L35.9277 2.41213C35.9613 2.32393 35.9772 2.22997 35.9745 2.13562C35.9718 2.04127 35.9505 1.94838 35.9119 1.86225C35.8733 1.77612 35.8181 1.69843 35.7495 1.63363C35.6808 1.56884 35.6001 1.51819 35.5119 1.48459C35.4237 1.45099 35.3297 1.43509 35.2354 1.4378C35.141 1.44051 35.0482 1.46177 34.962 1.50038C34.8759 1.53899 34.7982 1.59419 34.7334 1.66282C34.6686 1.73146 34.618 1.81218 34.5844 1.90038L32.9758 6.1216C32.9344 6.2304 32.92 6.34764 32.9338 6.46323C32.9477 6.57882 32.9895 6.68931 33.0555 6.78519C33.1216 6.88107 33.2099 6.95947 33.313 7.01365C33.416 7.06783 33.5307 7.09617 33.6471 7.09623Z"
-                                      fill="currentColor"
-                                    ></path>
-                                    <path
-                                      d="M35.6302 9.16968L39.2111 6.99115C39.3739 6.89212 39.4908 6.73244 39.536 6.54723C39.5811 6.36203 39.5509 6.16647 39.4518 6.00358C39.3528 5.84069 39.1931 5.72382 39.0079 5.67866C38.8227 5.63351 38.6272 5.66377 38.4643 5.7628L34.8835 7.94133C34.7206 8.04036 34.6037 8.20004 34.5585 8.38525C34.5134 8.57045 34.5437 8.76601 34.6427 8.9289C34.7417 9.09178 34.9014 9.20866 35.0866 9.25382C35.2718 9.29897 35.4674 9.26871 35.6302 9.16968Z"
-                                      fill="currentColor"
-                                    ></path>
-                                    <path
-                                      d="M35.7213 11.5229L39.6025 12.5335C39.6618 12.5485 39.7226 12.5562 39.7837 12.5565C39.9586 12.5567 40.1276 12.493 40.259 12.3775C40.3904 12.262 40.4751 12.1025 40.4974 11.929C40.5196 11.7555 40.4777 11.5798 40.3797 11.4349C40.2817 11.29 40.1341 11.1859 39.9648 11.142L36.0835 10.1314C35.9914 10.1055 35.895 10.0982 35.8001 10.11C35.7051 10.1218 35.6134 10.1524 35.5304 10.2001C35.4475 10.2478 35.3749 10.3116 35.3169 10.3878C35.2589 10.4639 35.2167 10.5508 35.1928 10.6435C35.1688 10.7362 35.1636 10.8327 35.1775 10.9274C35.1914 11.0221 35.224 11.1131 35.2735 11.195C35.323 11.2769 35.3884 11.3481 35.4658 11.4044C35.5431 11.4607 35.631 11.501 35.7242 11.5229H35.7213Z"
-                                      fill="currentColor"
-                                    ></path>
-                                  </svg>
-                                </div>
-                              </div>
-                              <h3
-                                data-w-id="856057b2-9740-331c-da93-374eb69697b7"
-                                class="service-title-one"
-                              >
-                                rootcannel treatment
-                              </h3>
-                            </div>
-                          </div>
-                          <p class="service-description one">
-                            Save your natural tooth with our gentle root canal
-                            treatment, relieving pain.
-                          </p></a
-                        >
-                        <div class="service-link-block">
-                          <a
-                            href="/services/root-cannel-treatment"
-                            class="link-block w-inline-block"
-                            ><div
-                              data-w-id="856057b2-9740-331c-da93-374eb69697bb"
-                              class="link-button"
-                            >
-                              read more
-                            </div>
-                            <div
-                              data-w-id="856057b2-9740-331c-da93-374eb69697bd"
-                              class="link-border"
-                            ></div
-                          ></a>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-`;
+function renderServiceCards(services) {
+  return services.map(service => {
+    const href = service.isDemo ? '/service' : `/services/${service.id}`;
+    return `<div class="w-dyn-list"><div role="list" class="w-dyn-items"><div role="listitem" class="w-dyn-item">
+      <article class="service-info-main-block dp-home-service-card">
+        <a href="${href}" class="service-link w-inline-block">
+          <div class="service-info-inner-block"><div class="service-icon-inner-block"><div class="service-icon-block" aria-hidden="true">${TOOTH_ICON}</div>
+            <h3 class="service-title-one">${escapeHTML(service.name)}</h3>
+          </div></div>
+          <p class="service-description">${escapeHTML(service.description)}</p>
+        </a>
+        <div class="service-link-block"><a href="${href}" class="link-block w-inline-block">
+          <span class="link-button">${tr('readMore')}</span><span class="link-border"></span>
+        </a></div>
+      </article>
+    </div></div></div>`;
+  }).join('');
+}
 
-// Treatments — unchanged HTML structure and CSS classes
-const TREATMENTS = String.raw`
-    <section class="section treatment-section">
-      <img
-        src="https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/67727893646184ec2ba1f00b_Ellipse%2013.svg"
-        loading="lazy"
-        alt="Tretment Section Vector"
-        class="tretment-section-vector"
-      />
-      <div class="w-layout-blockcontainer container w-container">
-        <div class="main-treatment-block">
-          <div class="treatment-title-block">
-            <div class="section-sub-text">Treatment</div>
-            <h2 class="section-title">Comprehensive Care for Healthy Smiles</h2>
-          </div>
-          <div class="treatment-inner-block">
-            <div
-              data-current="Tab 3"
-              data-easing="ease"
-              data-duration-in="300"
-              data-duration-out="100"
-              class="tretment-tabs w-tabs"
-            >
-              <div class="tretment-menu w-tab-menu">
-                <a
-                  data-w-tab="Tab 3"
-                  data-w-id="63070509-9f11-fd09-f8aa-933a21be8b84"
-                  class="tretment-tab-link-main one w-inline-block w-tab-link w--current"
-                  ><div
-                    data-w-id="36692bf1-9a15-0edb-daa1-9d5f38b03da0"
-                    class="tretment-link-main-block"
-                  >
-                    <div class="tretment-inner-block">
-                      <div
-                        style="background-color: rgb(245, 245, 245)"
-                        class="tretment-tab-link"
-                      >
-                        <div>Smile Design Clinic</div>
-                      </div>
-                      <div
-                        style="display: block"
-                        class="tretment-round-block"
-                      ></div>
-                    </div>
-                    <div
-                      style="display: none"
-                      class="tretment-tab-content-block"
-                    >
-                      <div class="tretment-tab-content-inner-block">
-                        <div class="tretment-icon-box">
-                          <div class="w-embed">
-                            
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="60"
-                              height="60"
-                              viewBox="0 0 100 100"
-                              fill="none"
-                            >
-                              <path
-                                d="M17.5405 40.4999C17.6346 40.8856 17.573 41.2929 17.369 41.6335C17.165 41.9742 16.835 42.2207 16.4505 42.3199C16.3276 42.3341 16.2035 42.3341 16.0805 42.3199C15.7464 42.3196 15.4219 42.2085 15.1577 42.004C14.8935 41.7995 14.7046 41.5132 14.6205 41.1899C13.5105 36.7699 12.3005 32.5199 11.0005 28.5799C9.937 25.5322 9.63825 22.27 10.1305 19.0799C10.2152 18.7026 10.4423 18.3726 10.7644 18.1587C11.0865 17.9448 11.4788 17.8635 11.8594 17.9319C12.24 18.0003 12.5794 18.213 12.807 18.5256C13.0345 18.8383 13.1325 19.2267 13.0805 19.6099C12.6763 22.3191 12.9406 25.0862 13.8505 27.6699C15.1805 31.6599 16.4005 35.9999 17.5405 40.4999ZM16.5405 9.49987C15.4791 10.1371 14.5242 10.9368 13.7105 11.8699C13.5744 12.0139 13.4682 12.1834 13.398 12.3687C13.3278 12.554 13.295 12.7514 13.3015 12.9495C13.308 13.1475 13.3537 13.3423 13.4359 13.5226C13.5181 13.7029 13.6353 13.8651 13.7805 13.9999C14.0568 14.2435 14.4122 14.3786 14.7805 14.3799C14.9912 14.3814 15.1997 14.3386 15.3927 14.2541C15.5857 14.1697 15.7587 14.0456 15.9005 13.8899C16.5144 13.2018 17.2212 12.6027 18.0005 12.1099C18.1719 12.0114 18.3222 11.8801 18.4428 11.7235C18.5635 11.5669 18.6521 11.3881 18.7036 11.1973C18.7552 11.0065 18.7686 10.8074 18.7432 10.6114C18.7178 10.4153 18.654 10.2262 18.5555 10.0549C18.457 9.88349 18.3258 9.73319 18.1692 9.61256C18.0126 9.49192 17.8338 9.4033 17.643 9.35176C17.4521 9.30023 17.253 9.28678 17.057 9.31219C16.861 9.3376 16.6719 9.40138 16.5005 9.49987H16.5405ZM96.4205 67.8299C96.4212 71.96 95.5298 76.0415 93.8074 79.7954C92.085 83.5492 89.5721 86.8867 86.4407 89.5796C83.3092 92.2726 79.6331 94.2574 75.6637 95.3984C71.6943 96.5394 67.5253 96.8097 63.4419 96.1906C59.3584 95.5716 55.4568 94.0779 52.0039 91.8117C48.5511 89.5455 45.6284 86.5603 43.4358 83.0603C41.2432 79.5602 39.8324 75.6279 39.2999 71.5322C38.7674 67.4366 39.1258 63.2742 40.3505 59.3299C39.4105 55.1799 38.2005 50.9699 36.6805 50.6499C34.7605 51.0599 33.3405 57.6499 32.3105 62.5499C30.5005 70.9999 28.4505 80.6199 21.8805 80.6199C15.3105 80.6199 13.5005 70.3699 11.3305 57.3999C10.0005 49.2299 8.43053 39.9999 5.47053 31.6299C2.60053 23.5599 2.35053 12.7599 10.2605 6.62987C12.6027 4.728 15.4942 3.6294 18.5084 3.49615C21.5225 3.36291 24.4997 4.20209 27.0005 5.88987C32.1705 9.38987 35.4505 9.58987 36.5205 9.64987H36.8405C37.9205 9.58987 41.2005 9.38987 46.3605 5.88987C48.8645 4.20419 51.8437 3.36723 54.8592 3.50225C57.8747 3.63727 60.7672 4.73715 63.1105 6.63987C71.0205 12.7699 70.7705 23.5699 67.9005 31.6399C67.0205 34.1099 66.2805 36.6399 65.6205 39.2499C66.3205 39.1899 67.0305 39.1599 67.7405 39.1599C75.3428 39.1678 82.6315 42.1906 88.008 47.5653C93.3846 52.9399 96.4099 60.2276 96.4205 67.8299ZM42.2705 54.6899C44.2767 50.827 47.1335 47.47 50.6257 44.8716C54.1178 42.2733 58.1541 40.5016 62.4305 39.6899C63.1533 36.646 64.0345 33.6419 65.0705 30.6899C69.9105 17.1199 63.3905 10.6899 61.2805 9.07987C59.4372 7.54937 57.1492 6.65455 54.7566 6.52844C52.364 6.40232 49.9946 7.05164 48.0005 8.37987C43.0005 11.7399 39.4805 12.3799 37.7405 12.5899C41.0805 14.2299 44.7405 15.5899 47.9105 15.6999C48.3083 15.7078 48.6867 15.8735 48.9624 16.1604C49.2381 16.4474 49.3885 16.832 49.3805 17.2299C49.3726 17.6277 49.2069 18.0061 48.92 18.2817C48.633 18.5574 48.2483 18.7078 47.8505 18.6999H47.7805C38.3805 18.3099 26.2905 9.15987 25.2605 8.35987C23.2851 7.05013 20.9429 6.40584 18.5755 6.52097C16.2082 6.6361 13.9395 7.50463 12.1005 8.99987C10.0005 10.6399 3.46053 16.9999 8.29053 30.6299C11.3405 39.2099 12.9105 48.6299 14.2905 56.8999C16.0705 67.5499 17.7505 77.6199 21.8805 77.6199C26.0105 77.6199 27.8805 68.9199 29.3705 61.9299C30.9705 54.4399 32.3705 47.9299 36.5605 47.6399H36.8005C39.5505 47.8599 41.0905 50.6799 42.2705 54.6899ZM93.4205 67.8299C93.4225 62.7504 91.9181 57.7845 89.0975 53.5601C86.277 49.3357 82.267 46.0427 77.5748 44.0975C72.8825 42.1523 67.7188 41.6423 62.7367 42.6321C57.7547 43.6218 53.178 46.0668 49.5856 49.6578C45.9931 53.2488 43.5464 57.8246 42.5547 62.8063C41.563 67.788 42.071 72.9519 44.0143 77.6449C45.9577 82.3379 49.2492 86.3491 53.4724 89.1713C57.6957 91.9935 62.6611 93.4999 67.7405 93.4999C74.5471 93.4919 81.0728 90.7852 85.8867 85.9731C90.7007 81.1611 93.4099 74.6365 93.4205 67.8299ZM85.5005 57.0699C86.4736 58.6622 87.2207 60.382 87.7205 62.1799C88.1506 63.7158 88.4023 65.2963 88.4705 66.8899V67.8299C88.4952 69.4127 88.3375 70.9931 88.0005 72.5399C87.9561 72.7323 87.9502 72.9315 87.983 73.1263C88.0158 73.321 88.0868 73.5073 88.1917 73.6745C88.2967 73.8418 88.4337 73.9866 88.5948 74.1008C88.7559 74.215 88.938 74.2962 89.1305 74.3399C89.2433 74.3551 89.3577 74.3551 89.4705 74.3399C89.8095 74.3415 90.139 74.2274 90.4044 74.0165C90.6699 73.8056 90.8554 73.5105 90.9305 73.1799C92.3227 67.1342 91.3116 60.7841 88.1105 55.4699C87.9037 55.1291 87.5699 54.8844 87.1826 54.7897C86.7954 54.695 86.3863 54.758 86.0455 54.9649C85.7047 55.1717 85.4601 55.5055 85.3653 55.8928C85.2706 56.28 85.3337 56.6891 85.5405 57.0299L85.5005 57.0699ZM78.7705 50.2299C79.7476 50.8485 80.6739 51.5441 81.5405 52.3099C81.8143 52.5576 82.1713 52.6933 82.5405 52.6899C82.8448 52.6903 83.1419 52.5982 83.3926 52.4259C83.6433 52.2535 83.8356 52.009 83.9441 51.7248C84.0526 51.4405 84.0721 51.13 84 50.8345C83.9279 50.5389 83.7677 50.2722 83.5405 50.0699C82.5473 49.1954 81.4874 48.3996 80.3705 47.6899C80.0337 47.4777 79.6264 47.408 79.2382 47.4962C78.85 47.5843 78.5127 47.823 78.3005 48.1599C78.0884 48.4967 78.0187 48.904 78.1068 49.2922C78.195 49.6804 78.4337 50.0177 78.7705 50.2299ZM84.2705 62.8199V72.8199C84.2705 73.2177 84.1125 73.5992 83.8312 73.8805C83.5499 74.1618 83.1684 74.3199 82.7705 74.3199H74.2505V82.8399C74.2505 83.2377 74.0925 83.6192 73.8112 83.9005C73.5299 84.1818 73.1484 84.3399 72.7505 84.3399H62.7505C62.3527 84.3399 61.9712 84.1818 61.6899 83.9005C61.4086 83.6192 61.2505 83.2377 61.2505 82.8399V74.3299H52.7205C52.3227 74.3299 51.9412 74.1718 51.6599 73.8905C51.3786 73.6092 51.2205 73.2277 51.2205 72.8299V62.8299C51.2205 62.432 51.3786 62.0505 51.6599 61.7692C51.9412 61.4879 52.3227 61.3299 52.7205 61.3299H61.2405V52.7999C61.2405 52.402 61.3986 52.0205 61.6799 51.7392C61.9612 51.4579 62.3427 51.2999 62.7405 51.2999H72.7405C73.1384 51.2999 73.5199 51.4579 73.8012 51.7392C74.0825 52.0205 74.2405 52.402 74.2405 52.7999V61.3199H82.7605C82.9584 61.3185 83.1545 61.3564 83.3376 61.4312C83.5208 61.506 83.6873 61.6162 83.8277 61.7557C83.968 61.8951 84.0794 62.0609 84.1554 62.2435C84.2314 62.4262 84.2705 62.622 84.2705 62.8199ZM81.2705 64.3199H72.7505C72.3527 64.3199 71.9712 64.1618 71.6899 63.8805C71.4086 63.5992 71.2505 63.2177 71.2505 62.8199V54.2999H64.2505V62.8199C64.2479 63.2169 64.089 63.5969 63.8083 63.8776C63.5276 64.1584 63.1475 64.3172 62.7505 64.3199H54.2205V71.3199H62.7405C63.1375 71.3225 63.5176 71.4814 63.7983 71.7621C64.079 72.0428 64.2379 72.4229 64.2405 72.8199V81.3399H71.2405V72.8299C71.2405 72.432 71.3986 72.0505 71.6799 71.7692C71.9612 71.4879 72.3427 71.3299 72.7405 71.3299H81.2605L81.2705 64.3199Z"
-                                fill="currentColor"
-                              ></path>
-                            </svg>
-                          </div>
-                        </div>
-                        <p class="tretment-description">
-                          Transform your smile with customized cosmetic
-                          treatments that enhance smile.
-                        </p>
-                      </div>
-                    </div>
-                  </div></a
-                ><a
-                  data-w-tab="Tab 4"
-                  data-w-id="96a614df-9e6c-f3b2-2aaa-a72dd07ae3a8"
-                  class="tretment-tab-link-main two w-inline-block w-tab-link"
-                  ><div
-                    data-w-id="af5478e9-2d7c-8a0a-75fd-9e12f89bef50"
-                    class="tretment-link-main-block"
-                  >
-                    <div class="tretment-inner-block">
-                      <div
-                        style="background-color: rgb(245, 245, 245)"
-                        class="tretment-tab-link"
-                      >
-                        <div>Smile Solutions</div>
-                      </div>
-                      <div
-                        style="display: block"
-                        class="tretment-round-block"
-                      ></div>
-                    </div>
-                    <div
-                      style="display: none"
-                      class="tretment-tab-content-block"
-                    >
-                      <div class="tretment-tab-content-inner-block">
-                        <div class="tretment-icon-box">
-                          <div class="w-embed">
-                            
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="60"
-                              height="60"
-                              viewBox="0 0 100 100"
-                              fill="none"
-                            >
-                              <path
-                                d="M71.9625 9.64095C66.4406 5.36282 59.1281 5.11907 53.3375 9.04095C52.2906 9.75032 51.2406 10.5034 50.1781 11.2628L50 11.3909C49.9031 11.3222 49.8031 11.2534 49.7094 11.1847C48.6844 10.4534 47.6719 9.72532 46.6594 9.04095C40.8656 5.1222 33.5531 5.3597 28.0344 9.64095C22.5531 13.8909 20.5156 20.8535 22.8469 27.3753C22.8469 27.3753 33.7594 57.9285 33.7687 57.9597C34.7812 60.7972 37.5937 62.6753 40.6062 62.4878C43.7125 62.3035 46.1719 60.2253 46.8719 57.1878L50 43.5441L53.1312 57.1941C53.825 60.2222 56.2844 62.2972 59.3937 62.4785C62.4906 62.6816 65.1875 60.8878 66.2312 57.9597L77.1531 27.3753C79.4844 20.8535 77.4469 13.8909 71.9625 9.64095ZM74.2125 26.3253L63.2906 56.9097C62.6031 58.8347 60.8812 59.4035 59.5781 59.3597C58.2312 59.2816 56.6375 58.4878 56.1781 56.4972L52.5406 40.6347C52.2687 39.4441 51.225 38.6128 50.0031 38.6128C48.7812 38.6128 47.7344 39.4441 47.4625 40.6347L43.8281 56.4878C43.3687 58.4941 41.7687 59.2878 40.425 59.3691C39.0406 59.4097 37.4031 58.841 36.7125 56.9097L25.7875 26.3253C23.5219 19.9816 26.4531 14.8222 29.95 12.1097C34.3 8.7347 40.3562 8.5472 44.9094 11.6284C50.7219 15.5597 56.3875 20.5785 63.7125 21.1097C65.7156 21.2566 65.9562 18.1409 63.9375 17.9909C59.8625 17.6972 56.2031 15.6659 52.7062 13.2941C53.5031 12.7222 54.2969 12.1628 55.0875 11.6284C59.7406 8.48157 65.6094 8.67845 70.0469 12.1097C73.5469 14.8222 76.4781 19.9816 74.2125 26.3253Z"
-                                fill="currentColor"
-                              ></path>
-                              <path
-                                d="M30.1063 16.059C29.3532 15.6371 28.4063 15.8934 27.9751 16.6496C26.397 19.4434 26.1095 22.784 27.1938 25.8215C27.4188 26.459 28.0251 26.859 28.6657 26.859C28.8407 26.859 29.0157 26.8309 29.1907 26.7684C30.0032 26.4778 30.4282 25.584 30.1376 24.7715C29.3626 22.5903 29.5626 20.1903 30.697 18.1871C31.122 17.4371 30.8563 16.484 30.1063 16.059Z"
-                                fill="currentColor"
-                              ></path>
-                              <path
-                                d="M32.8345 12.0561C32.2813 12.3342 31.7595 12.6467 31.2688 12.9967C30.5657 13.4967 30.4032 14.4749 30.9032 15.1749C31.2095 15.603 31.6876 15.8311 32.1751 15.8311C32.4907 15.8311 32.8063 15.7374 33.0813 15.5405C33.4376 15.2842 33.8188 15.0561 34.2251 14.8561C34.997 14.4717 35.3126 13.5311 34.9313 12.7592C34.547 11.9874 33.6001 11.6811 32.8345 12.0561Z"
-                                fill="currentColor"
-                              ></path>
-                              <path
-                                d="M15.8531 93.75C15.8313 93.75 15.5813 93.7469 15.5625 93.7469C10.35 93.6 6.25 89.3844 6.25 84.1469V62.7281C6.25 57.4344 10.5938 53.125 15.9313 53.125C23.0375 53.125 27.4375 58.9219 30.1281 64.8281C31.3062 67.4094 32.2094 70.0938 33.1625 72.7625C34.325 76.0156 37.3094 78.125 40.7625 78.125H59.2375C62.6875 78.125 65.675 76.0156 66.8406 72.7531C68.8969 66.8344 71.0625 60.0938 76.0938 55.9844C78.3594 54.1344 81.1406 53.125 84.0687 53.125C89.4062 53.125 93.75 57.4344 93.75 62.7281V84.1469C93.75 89.3844 89.65 93.6 84.4187 93.7469L15.8531 93.75ZM15.9313 56.25C12.3781 56.25 9.375 59.2156 9.375 62.7281V84.1469C9.375 87.6781 12.1406 90.525 15.6687 90.6219L15.8562 92.1875V90.625H84.15C87.8594 90.525 90.625 87.6781 90.625 84.1469V62.7281C90.625 59.2156 87.6219 56.25 84.0687 56.25C76.95 56.25 73.4156 63.975 71.2688 69.6375C70.7469 71.0125 70.2688 72.4031 69.7812 73.7938C68.1656 78.325 64.025 81.25 59.2375 81.25H40.7625C35.975 81.25 31.8344 78.325 30.2188 73.8031C28.1906 68.0375 25.9938 60.3375 20.1406 57.2781C18.8406 56.6 17.3969 56.25 15.9313 56.25Z"
-                                fill="currentColor"
-                              ></path>
-                              <path
-                                d="M89.0619 49.9994H82.8119C81.9494 49.9994 81.2494 49.2994 81.2494 48.4369V37.4994H79.6869C79.1088 37.4994 78.5807 37.1807 78.3119 36.6744C78.0369 36.165 78.0682 35.5494 78.3869 35.0682L84.6369 25.6932C85.2182 24.8275 86.6557 24.8275 87.2369 25.6932L93.4869 35.0682C93.8088 35.5463 93.8369 36.165 93.5619 36.6744C93.2932 37.1807 92.7651 37.4994 92.1869 37.4994H90.6244V48.4369C90.6244 49.2994 89.9244 49.9994 89.0619 49.9994ZM84.3744 46.8744H87.4994V35.9369C87.4994 35.0744 88.1994 34.3744 89.0619 34.3744H89.2651L85.9369 29.3775L82.6088 34.3744H82.8119C83.6744 34.3744 84.3744 35.0744 84.3744 35.9369V46.8744Z"
-                                fill="currentColor"
-                              ></path>
-                              <path
-                                d="M17.1869 49.9994H10.9369C10.0744 49.9994 9.37444 49.2994 9.37444 48.4369V37.4994H7.81194C7.23381 37.4994 6.70569 37.1807 6.43694 36.6744C6.16194 36.165 6.19319 35.5494 6.51194 35.0682L12.7619 25.6932C13.3432 24.8275 14.7807 24.8275 15.3619 25.6932L21.6119 35.0682C21.9338 35.5463 21.9619 36.165 21.6869 36.6744C21.4182 37.1807 20.8901 37.4994 20.3119 37.4994H18.7494V48.4369C18.7494 49.2994 18.0494 49.9994 17.1869 49.9994ZM12.4994 46.8744H15.6244V35.9369C15.6244 35.0744 16.3244 34.3744 17.1869 34.3744H17.3901L14.0619 29.3775L10.7338 34.3744H10.9369C11.7994 34.3744 12.4994 35.0744 12.4994 35.9369V46.8744Z"
-                                fill="currentColor"
-                              ></path>
-                            </svg>
-                          </div>
-                        </div>
-                        <p class="tretment-description">
-                          Achieve a radiant smile with our teeth whitening and
-                          cosmetic treatments.
-                        </p>
-                      </div>
-                    </div>
-                  </div></a
-                ><a
-                  data-w-tab="Tab 5"
-                  data-w-id="df9bbf39-7eec-9140-a6db-72d64ce384fa"
-                  class="tretment-tab-link-main three w-inline-block w-tab-link"
-                  ><div
-                    data-w-id="6b4f0872-53c0-3074-cd63-b1caa5a872b8"
-                    class="tretment-link-main-block"
-                  >
-                    <div class="tretment-inner-block">
-                      <div
-                        style="background-color: rgb(245, 245, 245)"
-                        class="tretment-tab-link"
-                      >
-                        <div>Dental Implants</div>
-                      </div>
-                      <div
-                        style="display: block"
-                        class="tretment-round-block"
-                      ></div>
-                    </div>
-                    <div
-                      style="display: none"
-                      class="tretment-tab-content-block"
-                    >
-                      <div class="tretment-tab-content-inner-block">
-                        <div class="tretment-icon-box">
-                          <div class="w-embed">
-                            
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="60"
-                              height="60"
-                              viewBox="0 0 100 100"
-                              fill="none"
-                            >
-                              <g clip-path="url(#clip0_104_12)">
-                                <path
-                                  d="M27.115 6.73047C24.1677 6.76869 21.2706 7.49812 18.6567 8.86009C16.0427 10.2221 13.7849 12.1785 12.065 14.5721C10.2725 16.9955 9.08334 19.8113 8.59611 22.7859C8.10889 25.7606 8.3376 28.8085 9.2633 31.6771C9.36961 32.0152 9.58093 32.3106 9.86655 32.5204C10.1522 32.7302 10.4972 32.8435 10.8516 32.8438C11.0213 32.8428 11.1898 32.8164 11.3516 32.7655C11.5612 32.6997 11.7558 32.5931 11.924 32.4519C12.0923 32.3107 12.231 32.1376 12.3321 31.9426C12.4333 31.7476 12.4949 31.5345 12.5134 31.3156C12.5319 31.0967 12.5069 30.8764 12.44 30.6671C11.676 28.2981 11.4875 25.7812 11.8901 23.3248C12.2926 20.8684 13.2747 18.5433 14.755 16.5421C16.1647 14.5706 18.0174 12.9574 20.1641 11.8323C22.3108 10.7071 24.6916 10.1014 27.115 10.0638C27.557 10.0638 27.9809 9.88821 28.2935 9.57565C28.606 9.26309 28.7816 8.83916 28.7816 8.39714C28.7816 7.95511 28.606 7.53118 28.2935 7.21862C27.9809 6.90606 27.557 6.73047 27.115 6.73047Z"
-                                  fill="currentColor"
-                                ></path>
-                                <path
-                                  d="M91.4263 19.687L88.6463 16.907C88.1 16.3626 87.3818 16.0246 86.6141 15.9504C85.8464 15.8763 85.0768 16.0706 84.4363 16.5003L81.833 18.232C79.9623 17.1249 77.9454 16.2862 75.8413 15.7403L75.233 12.6853C75.083 11.9291 74.6755 11.2481 74.0799 10.7586C73.4843 10.269 72.7373 10.001 71.9663 10.0003H69.5313C66.459 5.84444 62.1511 2.76658 57.2237 1.20696C52.2964 -0.352659 47.0021 -0.314141 42.098 1.317H42.0747L41.9997 1.35034C39.6194 2.1425 37.0466 2.1425 34.6663 1.35034L34.5947 1.33367L34.5663 1.317C30.236 -0.129462 25.5869 -0.332442 21.147 0.731124C16.7071 1.79469 12.6546 4.08216 9.44966 7.33367C6.03189 10.6898 3.60898 14.9258 2.44888 19.5732C1.28879 24.2207 1.43672 29.0984 2.87633 33.667L3.72466 36.3803C5.2588 41.631 7.42995 46.674 10.1897 51.397C11.2381 52.9653 11.8512 54.784 11.9663 56.667C11.9663 57.1003 12.533 100 25.1497 100C31.593 100 34.9997 92.5087 34.9997 78.3337V70.022C34.9997 69.817 35.1163 65.0003 38.333 65.0003C41.5497 65.0003 41.6663 69.817 41.6663 70.0003V78.3337C41.6663 92.5087 45.073 100 51.5163 100C61.3013 100 63.828 74.7003 64.473 62.5187L64.7647 63.982C64.9147 64.7386 65.3224 65.4197 65.9184 65.9093C66.5144 66.3989 67.2617 66.6667 68.033 66.667H71.9663C72.7374 66.6668 73.4845 66.3992 74.0805 65.91C74.6764 65.4207 75.0843 64.7399 75.2347 63.9837L75.843 60.927C77.9465 60.381 79.9628 59.5423 81.833 58.4353L84.4363 60.167C85.0775 60.5959 85.8476 60.7891 86.6153 60.7137C87.383 60.6384 88.1008 60.2991 88.6463 59.7537L91.4263 56.9737C91.9721 56.428 92.3117 55.7099 92.3871 54.9418C92.4625 54.1738 92.269 53.4033 91.8397 52.762L90.1013 50.167C91.2114 48.2939 92.053 46.2742 92.6013 44.167L95.658 43.5603C96.4107 43.4068 97.0876 42.9987 97.5748 42.4046C98.062 41.8106 98.3297 41.0669 98.333 40.2987V36.3687C98.3313 35.5981 98.0635 34.8517 97.5749 34.2558C97.0862 33.66 96.4067 33.2512 95.6513 33.0987L92.5947 32.5003C92.0466 30.3931 91.2051 28.3733 90.0947 26.5003L91.833 23.9003C92.2636 23.2596 92.4584 22.4893 92.3843 21.7208C92.3101 20.9524 91.9715 20.2336 91.4263 19.687ZM51.5163 96.667C47.4363 96.667 44.9997 89.8137 44.9997 78.3337V69.9837C44.9697 67.107 43.5397 61.667 38.333 61.667C33.1263 61.667 31.6963 67.107 31.6663 70.0003V78.3337C31.6663 89.8137 29.2297 96.667 25.1497 96.667C18.2297 96.667 15.2997 68.052 15.2997 56.667C15.1978 54.1719 14.4176 51.7518 13.043 49.667C10.4235 45.1726 8.36321 40.3748 6.90799 35.3803L6.05633 32.667C4.80314 28.6841 4.67538 24.4323 5.68717 20.3813C6.69896 16.3303 8.8109 12.6379 11.7897 9.712C14.5618 6.89405 18.0689 4.91035 21.9123 3.9864C25.7557 3.06244 29.7813 3.23531 33.5313 4.48534L33.6047 4.51034H33.6297C36.6831 5.52536 39.9829 5.52536 43.0363 4.51034H43.0563L43.1363 4.48367C47.1255 3.15546 51.4201 3.04685 55.4713 4.17173C59.5226 5.2966 63.1464 7.60387 65.8797 10.7987C65.3057 11.283 64.9127 11.9474 64.7647 12.6837L64.1563 15.7403C62.0528 16.2863 60.0365 17.1251 58.1663 18.232L55.563 16.5003C54.9218 16.0715 54.1517 15.8782 53.384 15.9536C52.6163 16.029 51.8985 16.3683 51.353 16.9137L48.573 19.6937C48.0272 20.2393 47.6876 20.9574 47.6122 21.7255C47.5369 22.4936 47.7303 23.264 48.1597 23.9053L49.898 26.5053C48.7876 28.3783 47.946 30.3981 47.398 32.5053L44.3413 33.112C43.5894 33.2654 42.9132 33.6728 42.4261 34.2658C41.939 34.8588 41.6707 35.6013 41.6663 36.3687V40.2987C41.668 41.0693 41.9358 41.8157 42.4245 42.4115C42.9131 43.0074 43.5926 43.4162 44.348 43.5687L47.4047 44.1753C47.953 46.2825 48.7946 48.3022 49.9047 50.1753L48.1663 52.7687C47.737 53.41 47.5435 54.1804 47.6189 54.9485C47.6943 55.7166 48.0339 56.4347 48.5797 56.9803L51.3597 59.7603C51.9052 60.3057 52.623 60.645 53.3907 60.7204C54.1584 60.7958 54.9285 60.6026 55.5697 60.1737L58.1663 58.4353C59.1581 59.0189 60.1914 59.5286 61.258 59.9603C60.5347 77.9753 56.9397 96.667 51.5163 96.667ZM90.8913 35.552L94.9997 36.367V40.2987L90.8913 41.1153C90.5712 41.1792 90.2769 41.3356 90.0449 41.5653C89.8129 41.7949 89.6535 42.0876 89.5863 42.407C89.0709 44.8588 88.0996 47.192 86.723 49.2853C86.545 49.5583 86.451 49.8774 86.4524 50.2033C86.4539 50.5291 86.5509 50.8474 86.7313 51.1187L89.0647 54.6187L86.283 57.4003L82.783 55.067C82.5108 54.8848 82.191 54.7868 81.8634 54.7854C81.5359 54.7839 81.2152 54.8789 80.9413 55.0587C78.8495 56.4365 76.5165 57.4074 74.0647 57.9203C73.745 57.9876 73.4522 58.1473 73.2225 58.3796C72.9929 58.6119 72.8366 58.9066 72.773 59.227L71.9663 63.3337H68.033L67.2163 59.2253C67.1528 58.9049 66.9965 58.6103 66.7668 58.3779C66.5372 58.1456 66.2443 57.9859 65.9247 57.9187C63.4729 57.4057 61.1399 56.4349 59.048 55.057C58.7742 54.8773 58.4535 54.7822 58.1259 54.7837C57.7984 54.7852 57.4785 54.8831 57.2063 55.0653L53.7063 57.3987L50.9247 54.617L53.258 51.117C53.4384 50.8457 53.5354 50.5274 53.5369 50.2016C53.5384 49.8757 53.4443 49.5566 53.2663 49.2837C51.8897 47.1904 50.9184 44.8572 50.403 42.4053C50.3359 42.0859 50.1764 41.7932 49.9444 41.5636C49.7124 41.334 49.4181 41.1775 49.098 41.1137L44.9997 40.2987V36.3687L49.108 35.552C49.4281 35.4882 49.7224 35.3317 49.9544 35.1021C50.1864 34.8725 50.3459 34.5798 50.413 34.2603C50.9278 31.8083 51.8991 29.475 53.2763 27.382C53.4543 27.1091 53.5484 26.7899 53.5469 26.4641C53.5454 26.1383 53.4484 25.82 53.268 25.5487L50.9347 22.0487L53.7163 19.267L57.2163 21.6003C57.4893 21.7813 57.8096 21.8778 58.1372 21.8778C58.4647 21.8778 58.785 21.7813 59.058 21.6003C61.1499 20.2225 63.4829 19.2516 65.9347 18.7387C66.2543 18.6714 66.5472 18.5117 66.7768 18.2794C67.0065 18.0471 67.1628 17.7524 67.2263 17.432L68.033 13.3337H71.9663L72.783 17.442C72.8465 17.7624 73.0029 18.0571 73.2325 18.2894C73.4622 18.5217 73.755 18.6814 74.0747 18.7487C76.5265 19.2616 78.8595 20.2325 80.9513 21.6103C81.2243 21.7913 81.5446 21.8878 81.8722 21.8878C82.1997 21.8878 82.52 21.7913 82.793 21.6103L86.293 19.277L89.0747 22.0587L86.7413 25.5587C86.5609 25.83 86.4639 26.1483 86.4624 26.4741C86.461 26.7999 86.555 27.1191 86.733 27.392C88.1102 29.485 89.0815 31.8183 89.5963 34.2703C89.6645 34.5866 89.8232 34.8762 90.0532 35.1038C90.2831 35.3314 90.5744 35.4871 90.8913 35.552Z"
-                                  fill="currentColor"
-                                ></path>
-                                <path
-                                  d="M69.9997 21.667C66.7033 21.667 63.481 22.6445 60.7402 24.4758C57.9994 26.3072 55.8632 28.9102 54.6017 31.9556C53.3402 35.001 53.0102 38.3521 53.6533 41.5852C54.2963 44.8182 55.8837 47.7879 58.2146 50.1188C60.5454 52.4496 63.5152 54.037 66.7482 54.6801C69.9812 55.3232 73.3323 54.9931 76.3777 53.7317C79.4232 52.4702 82.0262 50.334 83.8575 47.5932C85.6889 44.8523 86.6664 41.63 86.6664 38.3337C86.6615 33.9149 84.904 29.6785 81.7794 26.5539C78.6549 23.4294 74.4185 21.6718 69.9997 21.667ZM69.9997 51.667C67.3626 51.667 64.7847 50.885 62.5921 49.4199C60.3994 47.9548 58.6905 45.8725 57.6813 43.4361C56.6721 40.9998 56.4081 38.3189 56.9225 35.7325C57.437 33.146 58.7069 30.7703 60.5716 28.9056C62.4363 27.0409 64.8121 25.771 67.3985 25.2565C69.9849 24.7421 72.6658 25.0061 75.1021 26.0153C77.5385 27.0244 79.6209 28.7334 81.0859 30.9261C82.551 33.1187 83.333 35.6966 83.333 38.3337C83.329 41.8687 81.923 45.2577 79.4234 47.7574C76.9238 50.257 73.5347 51.663 69.9997 51.667Z"
-                                  fill="currentColor"
-                                ></path>
-                              </g>
-                            </svg>
-                          </div>
-                        </div>
-                        <p class="tretment-description">
-                          Replace missing teeth with durable dental implants,
-                          providing a natural-looking.
-                        </p>
-                      </div>
-                    </div>
-                  </div></a
-                ><a
-                  data-w-tab="Tab 6"
-                  data-w-id="a6ee489d-d34b-4c87-c227-0194c295c0ab"
-                  class="tretment-tab-link-main four w-inline-block w-tab-link"
-                  ><div
-                    data-w-id="3b737bba-f65a-334f-a064-b493ef6e6803"
-                    class="tretment-link-main-block"
-                  >
-                    <div class="tretment-inner-block first">
-                      <div
-                        style="background-color: rgb(245, 245, 245)"
-                        class="tretment-tab-link"
-                      >
-                        <div>Teeth Whitening</div>
-                      </div>
-                      <div
-                        style="display: block"
-                        class="tretment-round-block"
-                      ></div>
-                    </div>
-                    <div
-                      style="display: none"
-                      class="tretment-tab-content-block"
-                    >
-                      <div class="tretment-tab-content-inner-block">
-                        <div class="tretment-icon-box">
-                          <div class="w-embed">
-                            
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="60"
-                              height="60"
-                              viewBox="0 0 100 100"
-                              fill="none"
-                            >
-                              <g clip-path="url(#clip0_104_5)">
-                                <path
-                                  d="M50.7168 50.1238C48.1603 49.7323 45.5475 50.2502 43.3335 51.5871C41.1198 50.2495 38.5067 49.7316 35.9501 50.1238C33.6077 50.461 31.4401 51.5561 29.7788 53.2415C28.1174 54.9269 27.0537 57.11 26.7501 59.4571C26.3976 62.2465 27.162 65.0623 28.8768 67.2904C29.191 67.6757 29.3774 68.1493 29.4101 68.6454C29.5068 72.6454 29.7068 80.9454 34.2785 86.7738C34.8136 87.4495 35.5463 87.9414 36.3743 88.1809C37.2023 88.4204 38.0844 88.3956 38.8977 88.11C39.711 87.8244 40.4148 87.2921 40.9112 86.5874C41.4076 85.8827 41.6717 85.0407 41.6668 84.1788V76.5438C41.6864 76.1427 41.8537 75.7631 42.1365 75.4782C42.4193 75.1932 42.7976 75.023 43.1985 75.0004C43.4186 74.9846 43.6396 75.0155 43.847 75.091C44.0544 75.1666 44.2434 75.2851 44.4018 75.4388C44.587 75.6114 44.7355 75.8197 44.8383 76.0511C44.9411 76.2825 44.9962 76.5322 45.0001 76.7854V84.2754C45.0203 85.128 45.3026 85.9536 45.8086 86.6401C46.3147 87.3265 47.0199 87.8403 47.8284 88.1117C48.6369 88.3831 49.5093 88.3988 50.327 88.1567C51.1448 87.9146 51.868 87.4265 52.3985 86.7588C56.9601 80.9438 57.1602 72.6288 57.2568 68.6338C57.2894 68.1384 57.4752 67.6655 57.7885 67.2804C59.504 65.0526 60.2691 62.2368 59.9168 59.4471C59.6113 57.1018 58.5466 54.921 56.8854 53.2376C55.2242 51.5541 53.0578 50.4605 50.7168 50.1238ZM55.1435 65.2588C54.3973 66.201 53.9701 67.3561 53.9235 68.5571C53.8368 72.1938 53.6535 79.7621 49.7768 84.7038C49.7011 84.7985 49.6046 84.8745 49.4948 84.926C49.3849 84.9774 49.2647 85.0029 49.1435 85.0004C48.9464 84.9916 48.7583 84.9152 48.6108 84.7841C48.4633 84.653 48.3654 84.4752 48.3335 84.2804V76.7904C48.3304 76.0782 48.1809 75.3742 47.8942 74.7222C47.6074 74.0702 47.1897 73.4841 46.6668 73.0004C46.1734 72.5334 45.5876 72.175 44.9471 71.9482C44.3067 71.7214 43.6259 71.6313 42.9485 71.6838C41.71 71.7676 40.5482 72.3138 39.6934 73.2139C38.8386 74.1141 38.3532 75.3026 38.3335 76.5438V84.1788C38.3327 84.3664 38.2686 84.5484 38.1515 84.6951C38.0345 84.8418 37.8713 84.9447 37.6885 84.9871C37.5439 85.0139 37.3948 85.0019 37.2564 84.9524C37.1179 84.903 36.995 84.8177 36.9001 84.7054C33.0135 79.7521 32.8301 72.1904 32.7435 68.5571C32.6968 67.3553 32.2689 66.1996 31.5218 65.2571C30.3411 63.7211 29.8146 61.781 30.0568 59.8588C30.2877 58.2431 31.0327 56.7448 32.1815 55.5856C33.3302 54.4263 34.8217 53.6677 36.4352 53.4221C36.8275 53.364 37.2235 53.3345 37.6202 53.3338C39.3194 53.329 40.972 53.8889 42.3185 54.9254C42.6096 55.149 42.9664 55.2701 43.3335 55.2701C43.7005 55.2701 44.0573 55.149 44.3485 54.9254C45.1761 54.2894 46.1245 53.8284 47.1359 53.5705C48.1474 53.3126 49.2007 53.2633 50.2318 53.4254C51.8453 53.671 53.3367 54.4296 54.4855 55.5889C55.6343 56.7482 56.3792 58.2465 56.6102 59.8621C56.8515 61.784 56.3244 63.7234 55.1435 65.2588Z"
-                                  fill="currentColor"
-                                ></path>
-                                <path
-                                  d="M92.0002 16.7001C91.7856 16.656 91.5644 16.6548 91.3494 16.6968C91.1344 16.7387 90.9298 16.8228 90.7475 16.9444C90.5652 17.0659 90.4088 17.2224 90.2874 17.4047C90.166 17.5871 90.082 17.7917 90.0402 18.0068L87.3569 31.4184C87.2719 31.8415 87.0737 32.2337 86.7835 32.553C86.4932 32.8724 86.1217 33.107 85.7086 33.2319C85.2956 33.3567 84.8563 33.3672 84.4378 33.2621C84.0192 33.157 83.637 32.9403 83.3319 32.6351L77.7285 27.0318C77.0032 26.3073 76.1263 25.7527 75.1608 25.4079C74.1954 25.0631 73.1655 24.9366 72.1453 25.0377C71.1252 25.1388 70.1401 25.4648 69.2611 25.9923C68.3821 26.5198 67.631 27.2357 67.0619 28.0884L61.0619 37.0884C60.3453 34.3543 59.0097 31.8214 57.1585 29.6855C55.3073 27.5497 52.9898 25.8679 50.3852 24.7701L67.2569 16.5851C67.6513 16.3937 68.0042 16.1263 68.2951 15.7984C68.5861 15.4704 68.8095 15.0882 68.9526 14.6738C69.0956 14.2593 69.1555 13.8207 69.1288 13.3831C69.1021 12.9455 68.9893 12.5174 68.7969 12.1234L67.8869 10.2501C66.8489 8.1028 65.3978 6.1812 63.6165 4.5952C61.8352 3.00921 59.7588 1.78994 57.5059 1.00714C55.253 0.224338 52.8679 -0.106637 50.4869 0.0331443C48.106 0.172926 45.776 0.780722 43.6302 1.82177L16.9119 14.7534C14.7659 15.7926 12.8459 17.2445 11.2615 19.0263C9.67709 20.808 8.45947 22.8846 7.67824 25.1373C6.897 27.39 6.56749 29.7746 6.70853 32.1547C6.84957 34.5348 7.4584 36.8638 8.50021 39.0084L10.0002 42.0568V66.6668C10.0002 75.5073 13.5121 83.9858 19.7633 90.237C26.0145 96.4882 34.493 100 43.3335 100C52.1741 100 60.6526 96.4882 66.9038 90.237C73.155 83.9858 76.6669 75.5073 76.6669 66.6668V43.3334C76.6669 42.4494 76.3157 41.6015 75.6906 40.9764C75.0654 40.3513 74.2176 40.0001 73.3335 40.0001H63.1152L69.8235 29.9384C70.131 29.5106 70.526 29.1531 70.9823 28.8898C71.4386 28.6264 71.9458 28.4633 72.4701 28.4113C72.9944 28.3593 73.5237 28.4195 74.0229 28.588C74.5221 28.7565 74.9797 29.0293 75.3652 29.3884L80.9685 35.0001C81.7004 35.7318 82.6171 36.2511 83.6209 36.5027C84.6247 36.7544 85.678 36.7289 86.6685 36.429C87.6589 36.1292 88.5495 35.5661 89.2451 34.7999C89.9407 34.0338 90.4154 33.0932 90.6185 32.0784L93.3002 18.6668C93.344 18.4523 93.3452 18.2312 93.3035 18.0163C93.2619 17.8014 93.1784 17.5968 93.0576 17.4141C92.9369 17.2315 92.7814 17.0744 92.6 16.9519C92.4185 16.8294 92.2147 16.7438 92.0002 16.7001ZM58.2302 40.0001H51.5002C51.1177 38.1163 50.0957 36.4226 48.6073 35.2061C47.119 33.9896 45.2558 33.3251 43.3335 33.3251C41.4113 33.3251 39.5481 33.9896 38.0598 35.2061C36.5714 36.4226 35.5494 38.1163 35.1669 40.0001H28.4435C28.656 38.0937 29.2367 36.2467 30.1535 34.5618L45.9269 26.9201C49.1126 27.485 52.0308 29.0632 54.2475 31.4199C56.4643 33.7766 57.8611 36.7858 58.2302 40.0001ZM48.0269 40.0001H38.6402C38.9796 39.0259 39.6138 38.1814 40.4548 37.5838C41.2958 36.9862 42.3019 36.6652 43.3335 36.6652C44.3652 36.6652 45.3713 36.9862 46.2123 37.5838C47.0533 38.1814 47.6875 39.0259 48.0269 40.0001ZM11.4885 37.5401C10.6399 35.7893 10.1447 33.8884 10.0311 31.9461C9.91753 30.0038 10.1879 28.0582 10.8267 26.2204C11.4655 24.3827 12.4602 22.6888 13.754 21.2357C15.0478 19.7826 16.6153 18.5987 18.3669 17.7518L45.0819 4.82343C46.834 3.97271 48.7367 3.47588 50.6811 3.36138C52.6255 3.24688 54.5734 3.51696 56.4132 4.15616C58.2531 4.79535 59.9489 5.79112 61.4035 7.08647C62.8581 8.38181 64.0429 9.9513 64.8902 11.7051L65.8052 13.5834L12.4285 39.4451L11.4885 37.5401ZM25.6885 36.7251C25.3971 37.797 25.2035 38.8932 25.1102 40.0001H18.9302L25.6885 36.7251ZM73.3335 66.6668C73.3335 74.6233 70.1728 82.2539 64.5467 87.88C58.9207 93.5061 51.29 96.6668 43.3335 96.6668C35.377 96.6668 27.7464 93.5061 22.1203 87.88C16.4942 82.2539 13.3335 74.6233 13.3335 66.6668V43.3334H73.3335V66.6668Z"
-                                  fill="currentColor"
-                                ></path>
-                              </g>
-                            </svg>
-                          </div>
-                        </div>
-                        <p class="tretment-description">
-                          Brighten your smile with our professional whitening
-                          treatments, designed.
-                        </p>
-                      </div>
-                    </div>
-                  </div></a
-                ><a
-                  data-w-tab="Tab 7"
-                  data-w-id="5e028e3e-7326-1fdb-3325-0c3fc0f128a3"
-                  class="tretment-tab-link-main five w-inline-block w-tab-link"
-                  ><div
-                    data-w-id="a621ad43-7d8e-ced9-6ef1-d7015c207fa1"
-                    class="tretment-link-main-block"
-                  >
-                    <div class="tretment-inner-block first">
-                      <div
-                        style="background-color: rgb(245, 245, 245)"
-                        class="tretment-tab-link"
-                      >
-                        <div>General Dentistry</div>
-                      </div>
-                      <div
-                        style="display: block"
-                        class="tretment-round-block"
-                      ></div>
-                    </div>
-                    <div
-                      style="display: none"
-                      class="tretment-tab-content-block"
-                    >
-                      <div class="tretment-tab-content-inner-block">
-                        <div class="tretment-icon-box">
-                          <div class="w-embed">
-                            
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="60"
-                              height="60"
-                              viewBox="0 0 100 100"
-                              fill="none"
-                            >
-                              <path
-                                d="M43.391 27.5555C40.3883 27.5321 37.4602 28.49 35.052 30.2836C32.7763 28.2947 29.8821 27.1551 26.8613 27.0586C26.4469 27.0586 26.0495 27.2232 25.7565 27.5162C25.4634 27.8093 25.2988 28.2067 25.2988 28.6211C25.2988 29.0355 25.4634 29.4329 25.7565 29.7259C26.0495 30.019 26.4469 30.1836 26.8613 30.1836C29.0601 30.2692 31.1679 31.0845 32.852 32.5008C32.4658 33.0034 32.1258 33.54 31.8363 34.1039C31.7423 34.2873 31.6854 34.4875 31.669 34.693C31.6527 34.8985 31.6772 35.1052 31.741 35.3012C31.8049 35.4971 31.9069 35.6786 32.0412 35.8349C32.1755 35.9913 32.3394 36.1196 32.5235 36.2123C32.7076 36.3051 32.9082 36.3605 33.1138 36.3754C33.3194 36.3903 33.5259 36.3644 33.7214 36.2991C33.9169 36.2338 34.0976 36.1305 34.253 35.9951C34.4084 35.8597 34.5355 35.6949 34.627 35.5102C35.5082 33.9822 36.7906 32.7244 38.3355 31.8731C39.8803 31.0218 41.6286 30.6094 43.391 30.6805C45.1513 30.6109 46.897 31.0242 48.4393 31.8754C49.9816 32.7267 51.2617 33.9837 52.141 35.5102C52.2325 35.6949 52.3596 35.8597 52.515 35.9951C52.6704 36.1305 52.8511 36.2338 53.0466 36.2991C53.2421 36.3644 53.4486 36.3903 53.6542 36.3754C53.8598 36.3605 54.0604 36.3051 54.2445 36.2123C54.4286 36.1196 54.5925 35.9913 54.7268 35.8349C54.8611 35.6786 54.9631 35.4971 55.0269 35.3012C55.0908 35.1052 55.1153 34.8985 55.0989 34.693C55.0826 34.4875 55.0257 34.2873 54.9316 34.1039C53.7906 32.0615 52.1114 30.3712 50.0766 29.2166C48.0419 28.062 45.7295 27.4875 43.391 27.5555Z"
-                                fill="currentColor"
-                              ></path>
-                              <path
-                                d="M74.6459 32.144L76.185 28.1736C76.3333 27.7913 76.3253 27.366 76.1627 26.9895C76.0002 26.613 75.6962 26.3155 75.3163 26.1611L68.1459 23.2565V17.0846C68.146 16.8715 68.1026 16.6607 68.0182 16.4651C67.9338 16.2695 67.8103 16.0932 67.6553 15.9471C63.6584 12.1768 58.9506 11.2861 55.0819 13.5268C55.0491 13.544 55.0178 13.5596 54.9866 13.5783C54.5163 13.848 54.069 14.1558 53.6491 14.4986C52.6272 15.3361 51.66 16.1033 50.76 16.808C48.6503 18.4352 46.061 19.3178 43.3967 19.3178C40.7324 19.3178 38.1431 18.4352 36.0334 16.808C35.1131 16.1002 34.1506 15.3361 33.1288 14.4971C29.0663 11.194 23.7866 11.6752 19.3397 15.7596C12.5694 21.9783 7.5397 37.344 17.5569 52.0315C19.0165 54.1445 19.8159 56.6433 19.8538 59.2111C19.8866 62.6721 20.085 66.0236 20.4256 69.219C19.2683 69.3488 18.1511 69.7205 17.1465 70.3098C16.142 70.8991 15.2725 71.6929 14.5944 72.6398C13.9162 73.5866 13.4447 74.6655 13.2102 75.8063C12.9758 76.9471 12.9837 78.1244 13.2334 79.262C13.4831 80.3995 13.9691 81.4719 14.6598 82.4096C15.3506 83.3473 16.2306 84.1294 17.243 84.7052C18.2554 85.281 19.3774 85.6376 20.5365 85.752C21.6955 85.8663 22.8656 85.7358 23.971 85.369C25.206 88.8983 27.1548 92.1353 29.6959 94.8783C30.4256 95.6361 32.1288 97.4174 33.9334 96.7158C35.9647 95.9346 36.0225 93.1986 36.1444 88.2408C36.3178 81.1471 36.5772 70.5549 43.3975 65.7502C50.2178 70.5549 50.4772 81.1471 50.6506 88.2408C50.7725 93.1986 50.8397 95.9299 52.8631 96.7158C53.1332 96.8203 53.4204 96.8733 53.71 96.8721C55.046 96.6592 56.2524 95.95 57.0881 94.8861C65.3928 86.4346 66.8272 68.9158 66.9413 59.2221C66.9785 56.6519 67.7773 54.1506 69.2366 52.0346C70.9396 49.5639 72.2905 46.8682 73.2506 44.0252C73.9895 41.8806 74.4731 39.6564 74.6913 37.3986C74.7277 37.0283 74.6307 36.657 74.4178 36.3518L73.5303 35.0799L74.61 32.2549C74.6244 32.2187 74.6364 32.1817 74.6459 32.144ZM65.0209 17.7815V24.3111C65.0213 24.6221 65.1144 24.9259 65.2883 25.1837C65.4623 25.4414 65.7092 25.6414 65.9975 25.758L72.7163 28.4783L71.7178 31.0502L71.7006 31.094L71.6913 31.1158C71.6772 31.1549 71.6631 31.1955 71.6506 31.2377L70.3116 34.7361C70.2203 34.9745 70.1889 35.2315 70.2199 35.4849C70.251 35.7382 70.3436 35.98 70.4897 36.1893L71.5163 37.6596C71.3977 38.6295 71.2245 39.592 70.9975 40.5424C69.3734 39.2916 67.4907 38.4188 65.4866 37.9877V29.5315C65.4864 29.1504 65.3469 28.7825 65.0944 28.4971C63.3002 26.8166 60.9935 25.7876 58.5444 25.5752C59.1402 24.1977 59.8909 22.8924 60.7819 21.6846C60.9175 21.5053 61.0128 21.2989 61.0614 21.0794C61.1099 20.8598 61.1105 20.6325 61.0631 20.4127C60.6702 18.6074 59.8378 16.927 58.6397 15.5205C59.8026 15.4266 60.9722 15.5795 62.0719 15.9691C63.1716 16.3588 64.1766 16.9764 65.0209 17.7815ZM16.2616 77.4533C16.2616 76.4218 16.5675 75.4134 17.1406 74.5557C17.7137 73.698 18.5282 73.0295 19.4813 72.6347C20.4343 72.24 21.483 72.1367 22.4947 72.3379C23.5064 72.5392 24.4358 73.0359 25.1652 73.7653C25.8946 74.4947 26.3914 75.4241 26.5926 76.4358C26.7939 77.4475 26.6906 78.4962 26.2958 79.4493C25.9011 80.4023 25.2326 81.2169 24.3748 81.79C23.5171 82.3631 22.5088 82.669 21.4772 82.669C20.0943 82.6677 18.7684 82.1178 17.7906 81.14C16.8127 80.1621 16.2628 78.8362 16.2616 77.4533ZM66.6538 50.2658C64.8461 52.893 63.8586 55.9974 63.8163 59.1861C63.7288 66.6096 62.6788 84.7346 54.8475 92.7065C54.6107 92.955 54.3609 93.1908 54.0991 93.4127C53.8782 91.6699 53.7702 89.9147 53.7756 88.158C53.5788 80.1221 53.2803 67.969 44.2178 62.558C43.9695 62.4166 43.6887 62.3423 43.403 62.3423C43.1173 62.3423 42.8364 62.4166 42.5881 62.558C33.5256 67.9658 33.2241 80.1221 33.0272 88.1658C33.0314 89.922 32.9229 91.6767 32.7022 93.419C32.4356 93.194 32.182 92.9541 31.9428 92.7002C29.6119 90.1513 27.8439 87.1401 26.7538 83.8627C27.9465 82.898 28.8474 81.6205 29.3557 80.1732C29.8641 78.7258 29.9599 77.1656 29.6324 75.6669C29.3049 74.1683 28.567 72.7902 27.5013 71.6868C26.4355 70.5835 25.0839 69.7982 23.5975 69.419C23.2193 66.0191 23.0149 62.6022 22.985 59.1815C22.9407 55.9972 21.9526 52.8977 20.146 50.2752C11.2772 37.2721 15.6881 23.3658 21.46 18.0627C23.0225 16.6205 27.1116 13.6268 31.1584 16.919C32.2022 17.7768 33.1897 18.5596 34.1272 19.2846C36.7843 21.3351 40.0459 22.4473 43.4022 22.4473C46.7585 22.4473 50.0201 21.3351 52.6772 19.2846C53.6053 18.5606 54.5871 17.7768 55.6225 16.933C55.6381 16.9205 55.6522 16.9143 55.6678 16.9018C56.6757 17.8786 57.4242 19.0912 57.8459 20.4299C56.4835 22.3167 55.507 24.4539 54.9725 26.719C54.9369 26.9399 54.9492 27.166 55.0085 27.3818C55.0678 27.5976 55.1728 27.7982 55.3164 27.9699C55.4599 28.1416 55.6387 28.2805 55.8406 28.3771C56.0425 28.4737 56.2628 28.5258 56.4866 28.5299C58.5616 28.5404 60.5945 29.1169 62.3663 30.1971V39.3283C62.3653 39.7245 62.5148 40.1062 62.7846 40.3962C63.0543 40.6863 63.4242 40.8631 63.8194 40.8908C66.1465 41.1639 68.3167 42.2034 69.9881 43.8455C69.1446 46.1169 68.0247 48.2758 66.6538 50.2736V50.2658Z"
-                                fill="currentColor"
-                              ></path>
-                              <path
-                                d="M73.1467 15.4266C73.4635 15.4267 73.7729 15.3306 74.0338 15.1509C74.2947 14.9712 74.4949 14.7164 74.6076 14.4203L78.1045 5.24377C78.1776 5.05202 78.2121 4.84776 78.2062 4.64265C78.2003 4.43754 78.1541 4.2356 78.0702 4.04836C77.9862 3.86112 77.8662 3.69225 77.717 3.55138C77.5678 3.41051 77.3924 3.30041 77.2006 3.22736C77.0089 3.15432 76.8046 3.11975 76.5995 3.12564C76.3944 3.13154 76.1924 3.17777 76.0052 3.26171C75.818 3.34564 75.6491 3.46563 75.5082 3.61484C75.3674 3.76404 75.2572 3.93952 75.1842 4.13127L71.6873 13.3078C71.5972 13.5443 71.5659 13.7992 71.5961 14.0505C71.6263 14.3018 71.7171 14.542 71.8607 14.7504C72.0042 14.9588 72.1963 15.1293 72.4203 15.2471C72.6443 15.3649 72.8936 15.4265 73.1467 15.4266Z"
-                                fill="currentColor"
-                              ></path>
-                              <path
-                                d="M77.4563 19.9334L85.2407 15.1975C85.5948 14.9822 85.8489 14.6351 85.947 14.2325C86.0452 13.8299 85.9794 13.4047 85.7641 13.0506C85.5488 12.6965 85.2017 12.4424 84.7991 12.3443C84.3965 12.2461 83.9713 12.3119 83.6172 12.5272L75.8329 17.2631C75.4788 17.4784 75.2247 17.8255 75.1265 18.2282C75.0283 18.6308 75.0941 19.0559 75.3094 19.41C75.5247 19.7641 75.8718 20.0182 76.2744 20.1164C76.6771 20.2145 77.1022 20.1487 77.4563 19.9334Z"
-                                fill="currentColor"
-                              ></path>
-                              <path
-                                d="M77.6557 25.0503L86.0932 27.2472C86.2219 27.2798 86.3541 27.2966 86.4869 27.2972C86.8672 27.2976 87.2346 27.1593 87.5202 26.9082C87.8059 26.657 87.9901 26.3104 88.0384 25.9332C88.0867 25.5559 87.9958 25.174 87.7826 24.859C87.5695 24.5441 87.2488 24.3176 86.8807 24.2222L78.4432 22.0253C78.2429 21.9689 78.0334 21.9531 77.8269 21.9787C77.6204 22.0044 77.4212 22.071 77.2408 22.1747C77.0604 22.2784 76.9026 22.4171 76.7765 22.5826C76.6504 22.7481 76.5587 22.9371 76.5067 23.1386C76.4546 23.34 76.4434 23.5498 76.4735 23.7557C76.5037 23.9616 76.5746 24.1593 76.6822 24.3374C76.7898 24.5155 76.9319 24.6703 77.1002 24.7927C77.2684 24.9151 77.4594 25.0027 77.6619 25.0503H77.6557Z"
-                                fill="currentColor"
-                              ></path>
-                            </svg>
-                          </div>
-                        </div>
-                        <p class="tretment-description">
-                          We provide comprehensive dental care, including
-                          routine cleanings.
-                        </p>
-                      </div>
-                    </div>
-                  </div></a
-                >
-              </div>
-              <div class="tretment-content w-tab-content">
-                <div
-                  data-w-tab="Tab 3"
-                  class="tretment-tab-pane w-tab-pane w--tab-active"
-                >
-                  <div class="w-dyn-list">
-                    <div role="list" class="w-dyn-items">
-                      <div role="listitem" class="w-dyn-item">
-                        <a
-                          href="/services/smile-design-clinic"
-                          class="tretment-content-link w-inline-block"
-                          ><img
-                            loading="lazy"
-                            src="https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/67739cb05026dbf725d4e6e6_service%20image%20(1).webp"
-                            alt="Tretment Image"
-                            class="tretment-image"
-                        /></a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div data-w-tab="Tab 4" class="tretment-tab-pane w-tab-pane">
-                  <div class="w-dyn-list">
-                    <div role="list" class="w-dyn-items">
-                      <div role="listitem" class="w-dyn-item">
-                        <a
-                          href="/services/bright-smile-solutions"
-                          class="tretment-content-link w-inline-block"
-                          ><img
-                            loading="lazy"
-                            src="https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/6773a8df753ab7c72f9cc04f_service%20image%20(9).webp"
-                            alt="Tretment Image"
-                            class="tretment-image"
-                        /></a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div data-w-tab="Tab 5" class="tretment-tab-pane w-tab-pane">
-                  <div class="w-dyn-list">
-                    <div role="list" class="w-dyn-items">
-                      <div role="listitem" class="w-dyn-item">
-                        <a
-                          href="/services/dental-implants"
-                          class="tretment-content-link w-inline-block"
-                          ><img
-                            loading="lazy"
-                            src="https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/6773a948a802dec038145370_service%20image%20(2).webp"
-                            alt="Tretment Image"
-                            class="tretment-image"
-                        /></a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div data-w-tab="Tab 6" class="tretment-tab-pane w-tab-pane">
-                  <div class="w-dyn-list">
-                    <div role="list" class="w-dyn-items">
-                      <div role="listitem" class="w-dyn-item">
-                        <a
-                          href="/services/general-dentistry"
-                          class="tretment-content-link w-inline-block"
-                          ><img
-                            loading="lazy"
-                            src="https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/6773a9540dd9d020f977e7e6_service%20image%20(3).webp"
-                            alt="Tretment Image"
-                            class="tretment-image"
-                        /></a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div data-w-tab="Tab 7" class="tretment-tab-pane w-tab-pane">
-                  <div class="w-dyn-list">
-                    <div role="list" class="w-dyn-items">
-                      <div role="listitem" class="w-dyn-item">
-                        <a
-                          href="/services/teeth-whitening"
-                          class="tretment-content-link w-inline-block"
-                          ><img
-                            loading="lazy"
-                            src="https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/6773a95f18d02159b11b502c_service%20image%20(4).webp"
-                            alt="Tretment Image"
-                            class="tretment-image"
-                        /></a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-`;
-
-// Contact — unchanged HTML structure and CSS classes
-const CONTACT = String.raw`
-    <section class="section contact-section">
-      <div class="w-layout-blockcontainer container-fluid w-container">
-        <div class="w-layout-grid contact-grid">
-          <div class="contact-info-block">
-            <img
-              src="./asset/img/contact.jpg"
-              loading="lazy"
-              sizes="(max-width: 479px) 94vw, (max-width: 767px) 96vw, (max-width: 991px) 97vw, (max-width: 1919px) 98vw, 99vw"
-              srcset="
-               ./asset/img/contact.jpg 500w,
-                ./asset/img/contact.jpg 800w,
-                ./asset/img/contact.jpg 916w
-              "
-              alt="Contact Image One"
-              class="contact-image-one"
-            />
-          </div>
-          <div class="contact-form-block">
-            <div class="contact-from-inner-block">
-              <div class="contact-title-block-one">
-                <div class="section-title-block">
-                  <div class="section-sub-text two">get in touch</div>
-                  <h2 class="section-title text-white">get free information</h2>
-                </div>
-              </div>
-              <div class="contact-from-block w-form">
-                <form
-                  id="email-form"
-                  name="email-form"
-                  data-name="Email Form"
-                  method="post"
-                  data-wf-page-id="6768f6d314e679aeffeed92f"
-                  data-wf-element-id="55c8950d-0bce-1849-f4a5-291bdaffd965"
-                >
-                  <div class="contact-main-block">
-                    <div class="contact-inner-block">
-                      <input
-                        class="input-field bg-grey w-input"
-                        maxlength="256"
-                        name="name"
-                        data-name="Name"
-                        placeholder="name"
-                        type="text"
-                      />
-                    </div>
-                    <div class="contact-inner-block">
-                      <input
-                        class="input-field bg-grey w-input"
-                        maxlength="256"
-                        name="email"
-                        data-name="Email"
-                        placeholder="email address"
-                        type="email"
-                      />
-                    </div>
-                  </div>
-                  <div class="contact-main-block">
-                    <div class="contact-inner-block">
-                      <input
-                        class="input-field bg-grey w-input"
-                        maxlength="256"
-                        name="phone"
-                        data-name="Phone"
-                        placeholder="phone"
-                        type="tel"
-                      />
-                    </div>
-                    <div class="contact-inner-block">
-                      <input
-                        class="input-field bg-grey w-input"
-                        maxlength="256"
-                        name="subject"
-                        data-name="Subject"
-                        placeholder="your problem"
-                        type="text"
-                      />
-                    </div>
-                  </div>
-                  <div class="contact-main-block one">
-                    <textarea
-                      placeholder="Example Text"
-                      maxlength="5000"
-                      id="field"
-                      name="field"
-                      data-name="Field"
-                      class="text-area w-input"
-                    ></textarea>
-                  </div>
-                  <div class="contact-button-block">
-                    <div
-                      data-w-id="dcf29486-84d7-f4db-2d58-1d5a0153d959"
-                      class="button-submit"
-                    >
-                      <div class="button-primary first">
-                        <input
-                          type="submit"
-                          data-wait="Please wait..."
-                          class="button-primary-text last w-button"
-                          value="Submit"
-                        />
-                        <div class="button-icon-block">
-                          <img
-                            src="https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/676923878f05f400928066e8_Vector%20(3).svg"
-                            loading="lazy"
-                            style="
-                              -webkit-transform: translate3d(0%, 0, 0)
-                                scale3d(1, 1, 1) rotateX(0) rotateY(0)
-                                rotateZ(0) skew(0, 0);
-                              -moz-transform: translate3d(0%, 0, 0)
-                                scale3d(1, 1, 1) rotateX(0) rotateY(0)
-                                rotateZ(0) skew(0, 0);
-                              -ms-transform: translate3d(0%, 0, 0)
-                                scale3d(1, 1, 1) rotateX(0) rotateY(0)
-                                rotateZ(0) skew(0, 0);
-                              transform: translate3d(0%, 0, 0) scale3d(1, 1, 1)
-                                rotateX(0) rotateY(0) rotateZ(0) skew(0, 0);
-                            "
-                            alt="Button Icon"
-                            class="button-icon"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </form>
-                <div class="w-form-done">
-                  <div>Thank you! Your submission has been received!</div>
-                </div>
-                <div class="w-form-fail">
-                  <div>
-                    Oops! Something went wrong while submitting the form.
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-`;
-
-// Blog — unchanged HTML structure and CSS classes
-const BLOG = String.raw`
-    <section class="section blog-section">
-      <div class="w-layout-blockcontainer container w-container">
-        <div class="blog-main-block">
+function renderServices() {
+  return `
+    <section class="section service-section dp-home-services" id="home-services">
+      <div class="w-layout-blockcontainer container-fluid w-container"><div class="main-grey-block">
+        <div class="w-layout-blockcontainer container w-container"><div class="service-main-block">
           <div class="section-title-main-block">
-            <div class="section-title-sub-text-block">
-              <div class="section-sub-text">latest updated</div>
-            </div>
-            <div class="section-title-grid">
-              <h2 class="section-title">
-                Find the Latest News and Updates Here.
-              </h2>
-            </div>
+            <div class="section-title-sub-text-block"><div class="section-sub-text">${tr('servicesEyebrow')}</div></div>
+            <div class="section-title-grid"><h2 class="section-title">${tr('servicesTitle')}</h2></div>
           </div>
-          <div class="blog-list-wrapper w-dyn-list">
-            <div role="list" class="blog-list w-dyn-items">
-              <div
-                data-w-id="e77929f4-c4a2-59b2-4c16-2d1d55985539"
-                role="listitem"
-                class="w-dyn-item"
-              >
-                <div class="main-blog-block">
-                  <a
-                    href="/post/teeth-brushing-you-might-want-to-avoid"
-                    class="blog-link-block w-inline-block"
-                    ><div class="blog-image-block">
-                      <img
-                        src="https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/676a535bc2ab95ad9983363c_blog%20image%20(4).webp"
-                        loading="lazy"
-                        alt="Blog Image"
-                        sizes="(max-width: 479px) 87vw, (max-width: 767px) 92vw, (max-width: 991px) 94vw, (max-width: 1439px) 29vw, 373.34375px"
-                        srcset="
-                          https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/676a535bc2ab95ad9983363c_blog%20image%20(4)-p-500.webp   500w,
-                          https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/676a535bc2ab95ad9983363c_blog%20image%20(4)-p-800.webp   800w,
-                          https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/676a535bc2ab95ad9983363c_blog%20image%20(4)-p-1080.webp 1080w,
-                          https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/676a535bc2ab95ad9983363c_blog%20image%20(4).webp        1400w
-                        "
-                        class="blog-image"
-                      />
-                      <div class="blog-date-block">
-                        <h3 class="blog-date">June 10, 2024</h3>
-                      </div>
-                    </div>
-                    <h2 class="blog-title">
-                      Teeth Brushing You Might Want to Avoid
-                    </h2></a
-                  >
-                  <div class="blog-button-block">
-                    <a
-                      data-w-id="2192d6ae-f694-afec-d3e3-1590d12bae8e"
-                      href="/post/teeth-brushing-you-might-want-to-avoid"
-                      class="button-primary w-inline-block"
-                      ><div class="button-primary-text">read more</div>
-                      <div class="button-icon-block">
-                        <img
-                          src="https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/676923878f05f400928066e8_Vector%20(3).svg"
-                          loading="lazy"
-                          alt="Button Icon"
-                          class="button-icon"
-                        /></div
-                    ></a>
-                  </div>
-                </div>
-              </div>
-              <div
-                data-w-id="e77929f4-c4a2-59b2-4c16-2d1d55985539"
-                role="listitem"
-                class="w-dyn-item"
-              >
-                <div class="main-blog-block">
-                  <a
-                    href="/post/natural-ways-to-whiten-teeth-in-a-healthy-way"
-                    class="blog-link-block w-inline-block"
-                    ><div class="blog-image-block">
-                      <img
-                        src="https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/676a53cf0e3c157f6e1fa3f0_blog%20image%20(5).webp"
-                        loading="lazy"
-                        alt="Blog Image"
-                        sizes="(max-width: 479px) 87vw, (max-width: 767px) 92vw, (max-width: 991px) 94vw, (max-width: 1439px) 29vw, 373.34375px"
-                        srcset="
-                          https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/676a53cf0e3c157f6e1fa3f0_blog%20image%20(5)-p-500.webp   500w,
-                          https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/676a53cf0e3c157f6e1fa3f0_blog%20image%20(5)-p-800.webp   800w,
-                          https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/676a53cf0e3c157f6e1fa3f0_blog%20image%20(5)-p-1080.webp 1080w,
-                          https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/676a53cf0e3c157f6e1fa3f0_blog%20image%20(5).webp        1400w
-                        "
-                        class="blog-image"
-                      />
-                      <div class="blog-date-block">
-                        <h3 class="blog-date">May 25, 2024</h3>
-                      </div>
-                    </div>
-                    <h2 class="blog-title">
-                      Natural ways to whiten teeth in a healthy way
-                    </h2></a
-                  >
-                  <div class="blog-button-block">
-                    <a
-                      data-w-id="2192d6ae-f694-afec-d3e3-1590d12bae8e"
-                      href="/post/natural-ways-to-whiten-teeth-in-a-healthy-way"
-                      class="button-primary w-inline-block"
-                      ><div class="button-primary-text">read more</div>
-                      <div class="button-icon-block">
-                        <img
-                          src="https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/676923878f05f400928066e8_Vector%20(3).svg"
-                          loading="lazy"
-                          alt="Button Icon"
-                          class="button-icon"
-                        /></div
-                    ></a>
-                  </div>
-                </div>
-              </div>
-              <div
-                data-w-id="e77929f4-c4a2-59b2-4c16-2d1d55985539"
-                role="listitem"
-                class="w-dyn-item"
-              >
-                <div class="main-blog-block">
-                  <a
-                    href="/post/the-complete-guide-to-dead-teeth"
-                    class="blog-link-block w-inline-block"
-                    ><div class="blog-image-block">
-                      <img
-                        src="https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/676a540c9da3b01fd9958a20_blog%20image%20(6).webp"
-                        loading="lazy"
-                        alt="Blog Image"
-                        sizes="(max-width: 479px) 87vw, (max-width: 767px) 92vw, (max-width: 991px) 94vw, (max-width: 1439px) 29vw, 373.34375px"
-                        srcset="
-                          https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/676a540c9da3b01fd9958a20_blog%20image%20(6)-p-500.webp   500w,
-                          https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/676a540c9da3b01fd9958a20_blog%20image%20(6)-p-800.webp   800w,
-                          https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/676a540c9da3b01fd9958a20_blog%20image%20(6)-p-1080.webp 1080w,
-                          https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/676a540c9da3b01fd9958a20_blog%20image%20(6).webp        1400w
-                        "
-                        class="blog-image"
-                      />
-                      <div class="blog-date-block">
-                        <h3 class="blog-date">January 30, 2024</h3>
-                      </div>
-                    </div>
-                    <h2 class="blog-title">
-                      The Complete Guide to Dead Teeth
-                    </h2></a
-                  >
-                  <div class="blog-button-block">
-                    <a
-                      data-w-id="2192d6ae-f694-afec-d3e3-1590d12bae8e"
-                      href="/post/the-complete-guide-to-dead-teeth"
-                      class="button-primary w-inline-block"
-                      ><div class="button-primary-text">read more</div>
-                      <div class="button-icon-block">
-                        <img
-                          src="https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/676923878f05f400928066e8_Vector%20(3).svg"
-                          loading="lazy"
-                          alt="Button Icon"
-                          class="button-icon"
-                        /></div
-                    ></a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <div class="w-layout-grid service-grid-block" data-home-services>${renderServiceCards(demoServices())}</div>
+          <p class="dp-home-preview-note" data-home-services-note>${tr('demoServicesNote')}</p>
+          <div class="dp-home-section-link">${button('/service', 'allServices')}</div>
+        </div></div>
+      </div></div>
+    </section>`;
+}
+
+function renderTreatmentTabs(services) {
+  const five = services.slice(0, 5);
+  const buttons = five.map((service, index) => `
+    <button id="dp-home-tab-${index}" class="tretment-tab-link-main w-tab-link ${index === 0 ? 'w--current' : ''}"
+      type="button" role="tab" tabindex="${index === 0 ? 0 : -1}" aria-selected="${index === 0}"
+      aria-controls="dp-home-pane-${index}" data-home-tab="${index}">
+      <span class="tretment-link-main-block"><span class="tretment-inner-block">
+        <span class="tretment-tab-link">${escapeHTML(service.name)}</span>
+        <span class="tretment-round-block" aria-hidden="true"></span>
+      </span></span>
+      <span class="tretment-tab-content-block" ${index === 0 ? '' : 'hidden'}>
+        <span class="tretment-tab-content-inner-block"><span class="tretment-icon-box" aria-hidden="true">${TOOTH_ICON}</span>
+          <span class="tretment-description">${escapeHTML(service.description)}</span>
+        </span>
+      </span>
+    </button>`).join('');
+  const panes = five.map((service, index) => {
+    const href = service.isDemo ? '/service' : `/services/${service.id}`;
+    return `<div id="dp-home-pane-${index}" class="tretment-tab-pane w-tab-pane ${index === 0 ? 'w--tab-active' : ''}"
+      role="tabpanel" aria-labelledby="dp-home-tab-${index}" data-home-pane="${index}" ${index === 0 ? '' : 'hidden'}>
+      <a href="${href}" class="tretment-content-link w-inline-block">
+        ${service.image ? `<img src="${escapeHTML(service.image)}" class="tretment-image" loading="lazy" alt="${escapeHTML(service.name)}" />`
+          : `<span class="dp-home-treatment-placeholder" aria-hidden="true">${TOOTH_ICON}</span>`}
+      </a>
+    </div>`;
+  }).join('');
+  return { buttons, panes };
+}
+
+function renderTreatments() {
+  const content = renderTreatmentTabs(demoServices());
+  return `
+    <section class="section treatment-section dp-home-treatment" id="home-treatments">
+      <div class="w-layout-blockcontainer container w-container"><div class="main-treatment-block">
+        <div class="treatment-title-block"><div class="section-sub-text">${tr('treatmentEyebrow')}</div>
+          <h2 class="section-title">${tr('treatmentTitle')}</h2>
         </div>
-      </div>
-    </section>
-`;
+        <div class="treatment-inner-block"><div class="tretment-tabs w-tabs dp-home-treatment-tabs" data-home-treatment>
+          <div class="tretment-menu w-tab-menu" role="tablist" aria-label="${tr('treatmentTitle')}" data-home-tab-list>${content.buttons}</div>
+          <div class="tretment-content w-tab-content" data-home-tab-panes>${content.panes}</div>
+        </div></div>
+      </div></div>
+    </section>`;
+}
+
+function renderContact() {
+  return `
+    <section class="section contact-section dp-home-contact">
+      <div class="w-layout-blockcontainer container-fluid w-container"><div class="w-layout-grid contact-grid">
+        <div class="contact-info-block"><img src="/asset/img/contact.jpg" loading="lazy" alt="${tr('contactImageAlt')}" class="contact-image-one" /></div>
+        <div class="contact-form-block"><div class="contact-from-inner-block">
+          <div class="contact-title-block-one"><div class="section-title-block">
+            <div class="section-sub-text two">${tr('contactEyebrow')}</div>
+            <h2 class="section-title text-white">${tr('contactTitle')}</h2>
+          </div></div>
+          <div class="contact-from-block w-form">
+            <form id="home-contact-form">
+              <div class="contact-main-block">
+                <div class="contact-inner-block"><label class="dp-home-sr-only" for="home-first-name">${tr('firstName')}</label>
+                  <input id="home-first-name" class="input-field bg-grey w-input" name="first_name" maxlength="120" required
+                    type="text" autocomplete="given-name" placeholder="${tr('firstName')}" />
+                </div>
+                <div class="contact-inner-block"><label class="dp-home-sr-only" for="home-last-name">${tr('lastName')}</label>
+                  <input id="home-last-name" class="input-field bg-grey w-input" name="last_name" maxlength="120" required
+                    type="text" autocomplete="family-name" placeholder="${tr('lastName')}" />
+                </div>
+              </div>
+              <div class="contact-main-block">
+                <div class="contact-inner-block"><label class="dp-home-sr-only" for="home-email">${tr('email')}</label>
+                  <input id="home-email" class="input-field bg-grey w-input" name="email" maxlength="255" required
+                    type="email" autocomplete="email" placeholder="${tr('email')}" />
+                </div>
+                <div class="contact-inner-block"><label class="dp-home-sr-only" for="home-phone">${tr('phone')}</label>
+                  <input id="home-phone" class="input-field bg-grey w-input" name="phone" maxlength="30" required
+                    type="tel" autocomplete="tel" placeholder="${tr('phone')}" />
+                </div>
+              </div>
+              <div class="contact-main-block one"><label class="dp-home-sr-only" for="home-message">${tr('message')}</label>
+                <textarea id="home-message" class="text-area w-input" name="message" maxlength="5000" required
+                  placeholder="${tr('message')}"></textarea>
+              </div>
+              <div class="contact-button-block"><div class="button-submit">
+                <button type="submit" class="button-primary first dp-home-submit"><span class="button-primary-text last">${tr('submit')}</span>
+                  <span class="button-icon-block">${ARROW_ICON}</span>
+                </button>
+              </div></div>
+              <p class="dp-home-contact-status" data-home-contact-status role="status" aria-live="polite" hidden></p>
+            </form>
+          </div>
+        </div></div>
+      </div></div>
+    </section>`;
+}
+
+function formatBlogDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return '';
+  const date = new Date(`${value}T12:00:00Z`);
+  return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat(language() === 'fa' ? 'fa-IR' : 'en-US', {
+    year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC',
+  }).format(date);
+}
+
+function renderBlogCards(posts) {
+  return posts.map(post => {
+    const href = post.slug ? `/post/${encodeURIComponent(post.slug)}` : '/blog';
+    return `<div class="w-dyn-item" role="listitem"><article class="main-blog-block dp-home-blog-card">
+      <a href="${href}" class="blog-link-block w-inline-block">
+        <div class="blog-image-block">
+          ${post.image ? `<img src="${escapeHTML(post.image)}" loading="lazy" alt="${escapeHTML(post.title)}" class="blog-image" />`
+            : `<span class="dp-home-blog-placeholder" aria-hidden="true">${TOOTH_ICON}</span>`}
+          ${post.date ? `<div class="blog-date-block"><time class="blog-date" datetime="${escapeHTML(post.date)}">${escapeHTML(formatBlogDate(post.date))}</time></div>` : ''}
+        </div>
+        <h3 class="blog-title">${escapeHTML(post.title)}</h3>
+      </a>
+      <div class="blog-button-block">${button(href, 'readMore')}</div>
+    </article></div>`;
+  }).join('');
+}
+
+function renderBlog() {
+  return `
+    <section class="section blog-section dp-home-blog" id="home-blog">
+      <div class="w-layout-blockcontainer container w-container"><div class="blog-main-block">
+        <div class="section-title-main-block">
+          <div class="section-title-sub-text-block"><div class="section-sub-text">${tr('blogEyebrow')}</div></div>
+          <div class="section-title-grid"><h2 class="section-title">${tr('blogTitle')}</h2></div>
+        </div>
+        <div class="w-dyn-list"><div class="w-dyn-items dp-home-blog-grid" role="list" data-home-blogs>${renderBlogCards(demoBlogs())}</div></div>
+        <p class="dp-home-preview-note" data-home-blogs-note>${tr('demoBlogNote')}</p>
+        <div class="dp-home-section-link">${button('/blog', 'allBlogs')}</div>
+      </div></div>
+    </section>`;
+}
 
 export function Home() {
-  return [HERO, ABOUT, SERVICES, TREATMENTS, CONTACT, BLOG].join('\n');
+  return `<main class="dp-home-page" data-home-page data-no-translate>
+    ${renderHero()}
+    ${renderAbout()}
+    ${renderServices()}
+    ${renderTreatments()}
+    ${renderContact()}
+    ${renderBlog()}
+  </main>`;
 }
 
-/**
- * Runs after Home HTML has been inserted into #app.
- * Replaces Webflow tab and form logic with Vanilla JS.
- */
 export function initHome() {
-  initTreatmentTabs();
-  initContactForm();
-}
+  const root = document.querySelector('[data-home-page]');
+  if (!root) return () => {};
+  const controller = new AbortController();
+  const { signal } = controller;
+  const serviceList = root.querySelector('[data-home-services]');
+  const serviceNote = root.querySelector('[data-home-services-note]');
+  const blogList = root.querySelector('[data-home-blogs]');
+  const blogNote = root.querySelector('[data-home-blogs-note]');
+  const tabsRoot = root.querySelector('[data-home-treatment]');
+  const tabList = root.querySelector('[data-home-tab-list]');
+  const paneList = root.querySelector('[data-home-tab-panes]');
+  const contactForm = root.querySelector('#home-contact-form');
+  const contactStatus = root.querySelector('[data-home-contact-status]');
+  let tabCount = 0;
 
-function initTreatmentTabs() {
-  const root = document.querySelector('.tretment-tabs.w-tabs');
-  if (!root) return;
-
-  const links = Array.from(root.querySelectorAll('.w-tab-menu .w-tab-link[data-w-tab]'));
-  const panes = Array.from(root.querySelectorAll('.w-tab-content .w-tab-pane[data-w-tab]'));
-  const defaultTab = root.dataset.current || links[0]?.dataset.wTab;
-
-  const activate = (key) => {
-    root.dataset.current = key;
-
-    for (const link of links) {
-      const active = link.dataset.wTab === key;
-      link.classList.toggle('w--current', active);
-      link.setAttribute('role', 'tab');
-      link.setAttribute('aria-selected', String(active));
-      link.setAttribute('tabindex', active ? '0' : '-1');
-
-      const details = link.querySelector('.tretment-tab-content-block');
-      if (details) details.style.display = active ? 'block' : 'none';
-    }
-
-    for (const pane of panes) {
-      const active = pane.dataset.wTab === key;
-      pane.classList.toggle('w--tab-active', active);
-      pane.setAttribute('role', 'tabpanel');
+  function activateTab(index, focus = false) {
+    if (!Number.isInteger(index) || index < 0 || index >= tabCount) return;
+    const tabs = [...tabList.querySelectorAll('[data-home-tab]')];
+    const panes = [...paneList.querySelectorAll('[data-home-pane]')];
+    tabs.forEach((tab, i) => {
+      const active = i === index;
+      tab.classList.toggle('w--current', active);
+      tab.setAttribute('aria-selected', String(active));
+      tab.tabIndex = active ? 0 : -1;
+      const details = tab.querySelector('.tretment-tab-content-block');
+      if (details) details.hidden = !active;
+      if (active && focus) tab.focus();
+    });
+    panes.forEach((pane, i) => {
+      const active = i === index;
       pane.hidden = !active;
-    }
-  };
-
-  const tabMenu = root.querySelector('.w-tab-menu');
-  if (tabMenu) tabMenu.setAttribute('role', 'tablist');
-
-  links.forEach((link, index) => {
-    link.addEventListener('click', (event) => {
-      event.preventDefault();
-      activate(link.dataset.wTab);
+      pane.classList.toggle('w--tab-active', active);
     });
-    link.addEventListener('keydown', (event) => {
-      const delta = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1
-                  : event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 0;
-      if (!delta) return;
-      event.preventDefault();
-      const target = links[(index + delta + links.length) % links.length];
-      activate(target.dataset.wTab);
-      target.focus();
-    });
-  });
+  }
 
-  if (defaultTab) activate(defaultTab);
-}
+  function updateServices(services) {
+    serviceList.innerHTML = renderServiceCards(services.slice(0, 6));
+    const tabs = renderTreatmentTabs(services);
+    tabList.innerHTML = tabs.buttons;
+    paneList.innerHTML = tabs.panes;
+    tabCount = Math.min(services.length, 5);
+    tabsRoot.hidden = tabCount === 0;
+    activateTab(0);
+  }
 
-function initContactForm() {
-  const form = document.querySelector('#email-form');
-  if (!form) return;
+  function updateBlogs(posts) {
+    blogList.innerHTML = renderBlogCards(posts.slice(0, 3));
+  }
 
-  // This is a UI preview. Do not pretend that a message was actually sent.
-  form.addEventListener('submit', (event) => {
+  updateServices(demoServices());
+  updateBlogs(demoBlogs());
+
+  tabList.addEventListener('click', event => {
+    const tab = event.target instanceof Element ? event.target.closest('[data-home-tab]') : null;
+    if (tab) activateTab(Number(tab.dataset.homeTab));
+  }, { signal });
+
+  tabList.addEventListener('keydown', event => {
+    const tab = event.target instanceof Element ? event.target.closest('[data-home-tab]') : null;
+    if (!tab || tabCount === 0) return;
+    const current = Number(tab.dataset.homeTab);
+    let next = current;
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = (current + 1) % tabCount;
+    else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = (current - 1 + tabCount) % tabCount;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = tabCount - 1;
+    else return;
     event.preventDefault();
-    const parent = form.closest('.w-form');
-    const pendingMessage = parent?.querySelector('.w-form-fail');
-    const successMessage = parent?.querySelector('.w-form-done');
-    if (successMessage) successMessage.style.display = 'none';
-    if (pendingMessage) {
-      pendingMessage.textContent = 'The contact form is not connected to the server yet. Your message was not sent.';
-      pendingMessage.style.display = 'block';
-      pendingMessage.setAttribute('role', 'status');
+    activateTab(next, true);
+  }, { signal });
+
+  let sendingMessage = false;
+  const submitButton = contactForm.querySelector('[type="submit"]');
+
+  contactForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (sendingMessage || signal.aborted) return;
+
+    contactStatus.hidden = false;
+    contactStatus.dataset.state = 'pending';
+    if (!contactForm.checkValidity()) {
+      contactStatus.textContent = t('home.formRequired');
+      contactStatus.dataset.state = 'error';
+      contactForm.reportValidity();
+      return;
     }
-  });
+
+    const fields = new FormData(contactForm);
+    const payload = {
+      first_name: String(fields.get('first_name') || '').trim(),
+      last_name: String(fields.get('last_name') || '').trim(),
+      email: String(fields.get('email') || '').trim(),
+      phone: String(fields.get('phone') || '').trim(),
+      message: String(fields.get('message') || '').trim(),
+    };
+
+    if (Object.values(payload).some(value => !value)) {
+      contactStatus.textContent = t('home.formRequired');
+      contactStatus.dataset.state = 'error';
+      return;
+    }
+
+    sendingMessage = true;
+    submitButton.disabled = true;
+    contactStatus.textContent = t('home.formSending');
+
+    // Abort on SPA navigation; also timeout an unresponsive server.
+    const requestController = new AbortController();
+    const abortRequest = () => requestController.abort();
+    signal.addEventListener('abort', abortRequest, { once: true });
+    const timeout = setTimeout(abortRequest, 15000);
+    try {
+      const response = await fetch(messagesEndpoint(), {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        credentials: 'omit',
+        cache: 'no-store',
+        signal: requestController.signal,
+      });
+      const json = await response.json().catch(() => null);
+      if (!response.ok || json?.status === false || json?.success === false) {
+        const err = new Error('MESSAGE_API_FAILED');
+        err.status = response.status;
+        throw err;
+      }
+      if (!json || typeof json !== 'object') {
+        throw new Error('INVALID_RESPONSE');
+      }
+      if (signal.aborted || !root.isConnected) return;
+      contactForm.reset();
+      contactStatus.dataset.state = 'success';
+      contactStatus.textContent = t('home.formSent');
+    } catch (error) {
+      if (signal.aborted || !root.isConnected) return;
+      console.error('Home: message request failed.', error);
+      contactStatus.dataset.state = 'error';
+      contactStatus.textContent = error?.status === 422
+        ? t('home.formValidationError')
+        : error?.name === 'AbortError'
+          ? t('home.formTimeout')
+          : t('home.formError');
+    } finally {
+      clearTimeout(timeout);
+      signal.removeEventListener('abort', abortRequest);
+      sendingMessage = false;
+      if (!signal.aborted && root.isConnected) submitButton.disabled = false;
+    }
+  }, { signal });
+
+  async function loadServices() {
+    try {
+      const response = await fetch(`${apiV1()}/services?lang=${language()}`, {
+        headers: { Accept: 'application/json' }, signal, cache: 'no-store', credentials: 'omit',
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const json = await response.json();
+      if (json?.success === false || json?.status === false) throw new Error('API failure');
+      if (signal.aborted || !root.isConnected) return;
+      const records = extractList(json, 'services');
+      const services = records.map(normalizeService).filter(Boolean).slice(0, 6);
+      if (services.length) {
+        updateServices(services);
+        serviceNote.hidden = true;
+      }
+    } catch (error) {
+      if (!signal.aborted) console.info('Home: preview services retained.', error);
+    }
+  }
+
+  async function loadBlogs() {
+    try {
+      const response = await fetch(`${apiV1()}/blogs?lang=${language()}`, {
+        headers: { Accept: 'application/json' }, signal, cache: 'no-store', credentials: 'omit',
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const json = await response.json();
+      if (json?.success === false || json?.status === false) throw new Error('API failure');
+      if (signal.aborted || !root.isConnected) return;
+      const records = extractList(json, 'blogs');
+      const posts = records.map(normalizeBlog).filter(Boolean).slice(0, 3);
+      if (posts.length) {
+        updateBlogs(posts);
+        blogNote.hidden = true;
+      }
+    } catch (error) {
+      if (!signal.aborted) console.info('Home: preview blogs retained.', error);
+    }
+  }
+
+  void loadServices();
+  void loadBlogs();
+  return () => controller.abort();
 }
