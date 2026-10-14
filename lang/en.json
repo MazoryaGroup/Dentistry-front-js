@@ -138,6 +138,7 @@
   "auth.forgot.requestFailed": "Something went wrong. Please try again.",
   "auth.shell.privacyLegal": "Your account information is processed through a secure connection to the server.",
   "auth.forgot.resetTokenExpired": "Your password reset session has expired. Please request a new verification code.",
+   "auth.sessionExpired": "Your session expired after 15 minutes of inactivity. Please sign in again.",
 
 
 
@@ -184,7 +185,66 @@
   "blog.details.notFound": "The requested article was not found.",
   "blog.details.error": "Unable to load the article.",
   "blog.details.retry": "Try Again",
-  "blog.details.back": "Back to Blog"
+  "blog.details.back": "Back to Blog",
+
+  
+  "header.login": "Login",
+  "header.dashboard": "Dashboard",
+  "header.loginAria": "Sign in to your patient account",
+  "header.dashboardAria": "Open patient dashboard",
+  "header.home": "Home",
+  "header.about": "About Us",
+  "header.services": "Services",
+  "header.blog": "Blog",
+  "header.contact": "Contact Us",
+  "header.logo": "Dentistry",
+  "header.menu": "Toggle navigation",
+  "header.language": "Site language",
+
+
+
+
+  
+
+  "footer.eyebrow": "A NEW PERSPECTIVE ON DENTAL CARE",
+
+  "footer.heroTitle": "Your smile deserves",
+  "footer.heroHighlight": "something special.",
+
+  "footer.heroDescription": "A healthy, beautiful smile begins with care and awareness. Connect with us to learn more about the clinic and get answers to your questions.",
+
+  "footer.contactUs": "Contact Us",
+
+  "footer.brandName": "Dr. Zeinolabedin",
+
+  "footer.brandDescription": "A place to explore dental care, treatment options, and practical advice for maintaining good oral health.",
+
+  "footer.brandTag": "Care begins with confidence",
+
+  "footer.explore": "Quick Links",
+  "footer.patients": "For Patients",
+  "footer.getInTouch": "Get in Touch",
+
+  "footer.home": "Home",
+  "footer.about": "About Us",
+  "footer.team": "Our Team",
+  "footer.blog": "Dental Blog",
+
+  "footer.faq": "Frequently Asked Questions",
+  "footer.login": "Patient Login",
+  "footer.register": "Create an Account",
+
+  "footer.contactDescription": "For more information or questions, feel free to reach out through our contact page.",
+
+  "footer.contactLink": "Go to Contact Page",
+
+  "footer.copyright": "All rights reserved.",
+
+  "footer.backToTop": "Back to Top",
+   "footer.parentCompany": "Mazorya Group"
+
+
+
 
 }
 

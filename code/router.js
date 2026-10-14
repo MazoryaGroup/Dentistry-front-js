@@ -1,8 +1,26 @@
 
+/**
+ * Dentistry — SPA Router
+ *
+ * - Static routes
+ * - Dynamic Blog Details by slug
+ * - Dynamic Service Details by ID
+ * - FA / EN language switching
+ * - Login / Register / Dashboard
+ * - 15-minute inactivity session protection
+ * - SPA navigation
+ * - Header / Footer lifecycle
+ */
+
 import {
   Header,
   mountHeader,
 } from '../components/Header.js';
+
+import {
+  Footer,
+  mountFooter,
+} from '../components/Footer.js';
 
 import {
   applyDocumentLanguage,
@@ -12,18 +30,28 @@ import {
 } from './i18n.js';
 
 import {
-  Footer,
-  mountFooter,
-} from '../components/Footer.js';
+  isLoggedInAndActive,
+  initSessionMonitor,
+} from './session.js';
 
 // ============================================
 // PAGES
 // ============================================
 
-import { Home, initHome } from '../pages/Home.js';
-import { About, initAbout } from '../pages/About.js';
+import {
+  Home,
+  initHome,
+} from '../pages/Home.js';
 
-import { Blog, initBlog } from '../pages/Blog.js';
+import {
+  About,
+  initAbout,
+} from '../pages/About.js';
+
+import {
+  Blog,
+  initBlog,
+} from '../pages/Blog.js';
 
 import {
   BlogDetails,
@@ -45,14 +73,20 @@ import {
   initServiceDetails,
 } from '../pages/ServiceDetails.js';
 
-import { Team, initTeam } from '../pages/Team.js';
+import {
+  Team,
+  initTeam,
+} from '../pages/Team.js';
 
 import {
   TeamDetails,
   initTeamDetails,
 } from '../pages/TeamDetails.js';
 
-import { Faq, initFaq } from '../pages/Faq.js';
+import {
+  Faq,
+  initFaq,
+} from '../pages/Faq.js';
 
 import {
   Login,
@@ -84,6 +118,7 @@ import {
 // ============================================
 
 const routes = {
+
   '/': {
     render: Home,
     init: initHome,
@@ -127,7 +162,7 @@ const routes = {
   },
 
   // ========================================
-  // AUTH ROUTES
+  // AUTH PAGES
   // ========================================
 
   '/login': {
@@ -160,6 +195,7 @@ const routes = {
     init: initDashboard,
     title: 'Patient Dashboard',
     standalone: true,
+    requiresAuth: true,
   },
 
   '/checkout': {
@@ -169,20 +205,15 @@ const routes = {
   },
 
   // ========================================
-  // OTHER DETAIL PAGES
+  // OTHER DETAILS
   // ========================================
-
-  '/services/bright-smile-solutions': {
-    render: ServiceDetails,
-    init: initServiceDetails,
-    title: 'Service Details',
-  },
 
   '/team/dr-adam-smith': {
     render: TeamDetails,
     init: initTeamDetails,
     title: 'Team Details',
   },
+
 };
 
 // ============================================
@@ -190,14 +221,35 @@ const routes = {
 // ============================================
 
 const dynamicRoutes = [
+
+  // Blog Details
+  // /post/article-slug
+  // /post/1 (if supported by BlogDetails API)
+
   {
     pattern: /^\/post\/([^/]+)$/,
+
     route: {
       render: BlogDetails,
       init: initBlogDetails,
       title: 'Blog Details',
     },
   },
+
+  // Service Details
+  // /services/1
+  // /services/2
+
+  {
+    pattern: /^\/services\/([1-9]\d*)$/,
+
+    route: {
+      render: ServiceDetails,
+      init: initServiceDetails,
+      title: 'Service Details',
+    },
+  },
+
 ];
 
 // ============================================
@@ -207,16 +259,13 @@ const dynamicRoutes = [
 function normalizePath(path) {
   let value = String(path || '/');
 
-  // Remove trailing slash
-  value = value.replace(/\/+$/, '') || '/';
-
-  // Convert /index.html or /index.htm to /
+  // Convert index.html / index.htm
   value = value.replace(
-    /\/index\.html?$/i,
+    /\/(?:index\.html?|index\.htm)$/i,
     '/'
   ) || '/';
 
-  // Support old Webflow .html URLs
+  // Support legacy Webflow .html URLs
   if (
     value !== '/' &&
     value.endsWith('.html')
@@ -224,16 +273,23 @@ function normalizePath(path) {
     value = value.slice(0, -5);
   }
 
+  // Remove trailing slashes
   return value.replace(/\/+$/, '') || '/';
 }
 
 // ============================================
-// ROUTE RESOLVER
+// RESOLVE ROUTE
 // ============================================
 
 function resolveRoute(path) {
-  // 1. Exact routes
-  if (routes[path]) {
+
+  // 1. Static routes
+  if (
+    Object.prototype.hasOwnProperty.call(
+      routes,
+      path
+    )
+  ) {
     return routes[path];
   }
 
@@ -253,22 +309,18 @@ function resolveRoute(path) {
 // ============================================
 
 function renderMissing(path) {
-  let description =
-    'This page has not been provided yet.';
-
-  if (path.startsWith('/services/')) {
-    description =
-      'This service detail page was not included in the HTML you provided.';
-  } else if (path.startsWith('/team/')) {
-    description =
-      'This team profile was not included in the HTML you provided.';
-  }
+  const description = path.startsWith('/post/')
+    ? 'This blog post could not be found.'
+    : path.startsWith('/services/')
+      ? 'This service could not be found.'
+      : 'This page has not been provided yet.';
 
   return `
     <main
       class="w-container"
       style="padding:100px 20px;min-height:50vh"
     >
+
       <h1>
         ${t('Page not available yet')}
       </h1>
@@ -282,29 +334,65 @@ function renderMissing(path) {
           ${t('Back to home')}
         </a>
       </p>
+
     </main>
   `;
 }
 
 // ============================================
-// CLEANUP
+// PAGE CLEANUP
 // ============================================
 
 let cleanup = [];
 
 function cleanupCurrentPage() {
-  cleanup.forEach(fn => {
+
+  for (const unsubscribe of cleanup) {
+
     try {
-      fn?.();
+      unsubscribe?.();
+
     } catch (error) {
       console.warn(
         'Page cleanup error:',
         error
       );
     }
-  });
+  }
 
   cleanup = [];
+}
+
+// ============================================
+// REDIRECT TO LOGIN
+// ============================================
+
+function redirectToLogin(expired = false) {
+
+  const url = new URL(
+    '/login',
+    window.location.origin
+  );
+
+  // Preserve explicit language query.
+  const lang = new URLSearchParams(
+    window.location.search
+  ).get('lang');
+
+  if (lang === 'fa' || lang === 'en') {
+    url.searchParams.set('lang', lang);
+  }
+
+  // Inform Login page if inactivity expired.
+  if (expired) {
+    url.searchParams.set('expired', '1');
+  }
+
+  window.history.replaceState(
+    window.history.state,
+    '',
+    url.pathname + url.search
+  );
 }
 
 // ============================================
@@ -312,10 +400,11 @@ function cleanupCurrentPage() {
 // ============================================
 
 export function renderRoute() {
-  // Apply current FA / EN language
+
+  // Apply selected language
   applyDocumentLanguage();
 
-  // Stop previous page listeners and requests
+  // Cleanup previous page
   cleanupCurrentPage();
 
   const app = document.getElementById('app');
@@ -326,18 +415,35 @@ export function renderRoute() {
     );
   }
 
-  const path = normalizePath(
+  let path = normalizePath(
     window.location.pathname
   );
 
-  // Find static or dynamic route
-  const route = resolveRoute(path);
+  let route = resolveRoute(path);
 
-  // Login, Register and Dashboard
-  // do not use public Header/Footer.
+  // ========================================
+  // PROTECTED DASHBOARD
+  // ========================================
+
+  if (
+    route?.requiresAuth &&
+    !isLoggedInAndActive()
+  ) {
+
+    redirectToLogin();
+
+    path = '/login';
+    route = routes[path];
+  }
+
+  // ========================================
+  // PAGE SHELL
+  // ========================================
+
+  // Login / Register / Dashboard
+  // do not include public Header / Footer.
   const withShell = !route?.standalone;
 
-  // Render main page
   const pageHTML = route
     ? route.render()
     : renderMissing(path);
@@ -350,7 +456,10 @@ export function renderRoute() {
     ${withShell ? Footer() : ''}
   `;
 
-  // Browser tab title
+  // ========================================
+  // DOCUMENT TITLE
+  // ========================================
+
   document.title = `
     ${t(route?.title || 'Page Not Found')}
     |
@@ -362,12 +471,17 @@ export function renderRoute() {
   // ========================================
 
   const initializers = [
+
     withShell ? mountHeader : null,
+
     route?.init,
+
     withShell ? mountFooter : null,
+
   ];
 
   for (const init of initializers) {
+
     if (typeof init !== 'function') {
       continue;
     }
@@ -379,7 +493,10 @@ export function renderRoute() {
     }
   }
 
-  // Apply translations to rendered HTML
+  // ========================================
+  // TRANSLATE PAGE CONTENT
+  // ========================================
+
   translateElement(app);
 
   // ========================================
@@ -387,20 +504,22 @@ export function renderRoute() {
   // ========================================
 
   if (window.location.hash) {
+
     requestAnimationFrame(() => {
-      let id = '';
+
+      let id = window.location.hash.slice(1);
 
       try {
-        id = decodeURIComponent(
-          window.location.hash.slice(1)
-        );
+        id = decodeURIComponent(id);
+
       } catch {
-        id = window.location.hash.slice(1);
+        // Keep original hash.
       }
 
       document
         .getElementById(id)
         ?.scrollIntoView();
+
     });
   }
 }
@@ -410,144 +529,239 @@ export function renderRoute() {
 // ============================================
 
 export function initRouter() {
-  // First render
-  renderRoute();
+
+  // ========================================
+  // SESSION MONITOR
+  // ========================================
+
+  const stopSessionMonitor = initSessionMonitor(
+    () => {
+
+      // Redirect if the patient is on Dashboard
+      // when the session expires.
+      if (
+        normalizePath(
+          window.location.pathname
+        ) === '/dashboard'
+      ) {
+
+        redirectToLogin(true);
+
+        renderRoute();
+      }
+    }
+  );
 
   // ========================================
   // BROWSER BACK / FORWARD
   // ========================================
 
-  window.addEventListener(
-    'popstate',
-    renderRoute
-  );
+  const onPopState = () => {
+    renderRoute();
+  };
 
   // ========================================
   // LANGUAGE SWITCH
   // ========================================
 
-  document.addEventListener(
-    'click',
-    event => {
-      const button = event.target.closest(
-        '[data-set-language]'
-      );
+  const onLanguageClick = event => {
 
-      if (!button) return;
+    const target = event.target instanceof Element
+      ? event.target
+      : event.target?.parentElement;
 
-      event.preventDefault();
+    const button = target?.closest(
+      '[data-set-language]'
+    );
 
-      const lang = button.getAttribute(
-        'data-set-language'
-      );
+    if (!button) return;
 
-      if (!['fa', 'en'].includes(lang)) {
-        return;
-      }
+    event.preventDefault();
 
-      setLanguage(lang, renderRoute);
+    const lang = button.getAttribute(
+      'data-set-language'
+    );
+
+    if (
+      lang !== 'fa' &&
+      lang !== 'en'
+    ) {
+      return;
     }
-  );
+
+    setLanguage(
+      lang,
+      renderRoute
+    );
+  };
 
   // ========================================
   // SPA LINK NAVIGATION
   // ========================================
 
+  const onNavigateClick = event => {
+
+    // Ignore non-standard clicks.
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+
+    const target = event.target instanceof Element
+      ? event.target
+      : event.target?.parentElement;
+
+    const anchor = target?.closest(
+      'a[href]'
+    );
+
+    if (!anchor) return;
+
+    if (anchor.hasAttribute('download')) {
+      return;
+    }
+
+    // Respect target="_blank"
+    if (
+      anchor.target &&
+      anchor.target !== '_self'
+    ) {
+      return;
+    }
+
+    const raw = anchor.getAttribute('href');
+
+    if (
+      !raw ||
+      raw === '#' ||
+      raw.startsWith('#')
+    ) {
+      return;
+    }
+
+    const url = new URL(
+      anchor.href,
+      window.location.href
+    );
+
+    // External links
+    if (
+      url.origin !== window.location.origin ||
+      !['http:', 'https:'].includes(url.protocol)
+    ) {
+      return;
+    }
+
+    const path = normalizePath(
+      url.pathname
+    );
+
+    // Do not intercept static files.
+    if (
+      /\.(?:pdf|docx?|xlsx?|zip|png|jpg|jpeg|svg|webp|css|js)$/i
+        .test(path)
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const next =
+      path +
+      url.search +
+      url.hash;
+
+    const current =
+      window.location.pathname +
+      window.location.search +
+      window.location.hash;
+
+    if (next === current) {
+      return;
+    }
+
+    // ======================================
+    // UPDATE URL
+    // ======================================
+
+    window.history.pushState(
+      {},
+      '',
+      next
+    );
+
+    // ======================================
+    // RENDER DESTINATION
+    // ======================================
+
+    renderRoute();
+
+    // ======================================
+    // SCROLL TO TOP
+    // ======================================
+
+    if (!url.hash) {
+      window.scrollTo({
+        top: 0,
+        behavior: 'auto',
+      });
+    }
+  };
+
+  // ========================================
+  // REGISTER EVENT LISTENERS
+  // ========================================
+
+  window.addEventListener(
+    'popstate',
+    onPopState
+  );
+
   document.addEventListener(
     'click',
-    event => {
-      const anchor = event.target.closest(
-        'a[href]'
-      );
-
-      if (
-        !anchor ||
-        event.defaultPrevented ||
-        event.button !== 0 ||
-        event.metaKey ||
-        event.ctrlKey ||
-        event.shiftKey ||
-        event.altKey ||
-        anchor.hasAttribute('download')
-      ) {
-        return;
-      }
-
-      if (
-        anchor.target &&
-        anchor.target !== '_self'
-      ) {
-        return;
-      }
-
-      const raw = anchor.getAttribute('href');
-
-      if (
-        !raw ||
-        raw === '#' ||
-        raw.startsWith('#')
-      ) {
-        return;
-      }
-
-      const url = new URL(
-        anchor.href,
-        window.location.href
-      );
-
-      // External links should open normally
-      if (
-        url.origin !== window.location.origin ||
-        !['http:', 'https:'].includes(url.protocol)
-      ) {
-        return;
-      }
-
-      const path = normalizePath(
-        url.pathname
-      );
-
-      // Don't intercept static files
-      if (
-        /\.(?:pdf|docx?|xlsx?|zip|png|jpg|jpeg|svg|webp|css|js)$/i
-          .test(path)
-      ) {
-        return;
-      }
-
-      event.preventDefault();
-
-      const next =
-        path +
-        url.search +
-        url.hash;
-
-      const current =
-        window.location.pathname +
-        window.location.search +
-        window.location.hash;
-
-      if (next === current) {
-        return;
-      }
-
-      // Update URL without reloading page
-      window.history.pushState(
-        {},
-        '',
-        next
-      );
-
-      // Render destination page
-      renderRoute();
-
-      // Scroll to top
-      if (!url.hash) {
-        window.scrollTo({
-          top: 0,
-          behavior: 'auto',
-        });
-      }
-    }
+    onLanguageClick
   );
+
+  document.addEventListener(
+    'click',
+    onNavigateClick
+  );
+
+  // ========================================
+  // FIRST RENDER
+  // ========================================
+
+  renderRoute();
+
+  // ========================================
+  // ROUTER CLEANUP
+  // ========================================
+
+  return () => {
+
+    window.removeEventListener(
+      'popstate',
+      onPopState
+    );
+
+    document.removeEventListener(
+      'click',
+      onLanguageClick
+    );
+
+    document.removeEventListener(
+      'click',
+      onNavigateClick
+    );
+
+    stopSessionMonitor?.();
+
+    cleanupCurrentPage();
+  };
 }

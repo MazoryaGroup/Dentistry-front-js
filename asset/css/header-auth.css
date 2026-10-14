@@ -1,0 +1,150 @@
+/* ============================================
+   DENTISTRY — MINIMAL HEADER AUTH
+============================================ */
+
+.dentistry-header-auth {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 9px 16px;
+
+  background: #fff;
+  color: #111;
+
+  border: 1px solid #dce2e8;
+  border-radius: 6px;
+
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: 0;
+
+  text-decoration: none;
+  white-space: nowrap;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+/* Icon */
+
+.dentistry-header-auth-icon {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  color: inherit;
+}
+
+/* Text */
+
+.dentistry-header-auth-text {
+  display: inline-block;
+  color: inherit;
+  font: inherit;
+}
+
+/* Hover */
+
+.dentistry-header-auth:hover {
+  background: #f1f7fc;
+  border-color: #74adda;
+  color: #111;
+  text-decoration: none;
+}
+
+/* Keyboard focus */
+
+.dentistry-header-auth:focus-visible {
+  outline: 2px solid #74adda;
+  outline-offset: 3px;
+}
+
+/* Desktop */
+
+.dentistry-header-auth-desktop {
+  margin-inline-start: 12px;
+}
+
+/* Hide mobile version on desktop */
+
+.dentistry-header-auth-mobile {
+  display: none !important;
+}
+
+/* Language switch spacing */
+
+.navbar-main-wrapper > .dentistry-lang-switch {
+  flex-shrink: 0;
+  margin-inline-start: 12px;
+}
+
+/* RTL */
+
+html[dir="rtl"] .dentistry-header-auth {
+  direction: rtl;
+}
+
+html[dir="rtl"] .dentistry-header-auth-text {
+  letter-spacing: 0;
+}
+
+/* ============================================
+   TABLET & MOBILE
+============================================ */
+
+@media screen and (max-width: 991px) {
+
+  .dentistry-header-auth-desktop {
+    display: none !important;
+  }
+
+  .nav-menu-block .dentistry-header-auth-mobile {
+    display: inline-flex !important;
+
+    width: auto;
+    min-width: 135px;
+    margin: 15px 20px 20px;
+    padding: 11px 17px;
+
+    justify-content: center;
+
+    background: #fff;
+    color: #111;
+
+    border: 1px solid #dce2e8;
+    border-radius: 6px;
+
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .nav-menu-block .dentistry-header-auth-mobile:hover {
+    background: #f1f7fc;
+    border-color: #74adda;
+  }
+
+  .navbar-main-wrapper > .dentistry-lang-switch {
+    margin-inline-start: auto;
+    margin-inline-end: 12px;
+  }
+}
+
+@media screen and (max-width: 479px) {
+
+  .navbar-main-wrapper > .dentistry-lang-switch {
+    margin-inline-end: 8px;
+  }
+
+  .nav-menu-block .dentistry-header-auth-mobile {
+    margin-inline: 16px;
+  }
+}

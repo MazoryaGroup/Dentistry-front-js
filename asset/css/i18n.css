@@ -30,3 +30,36 @@ html[lang="fa"] .dentistry-portal .dp-checkout-trail {direction:rtl;}
 html[lang="fa"] .dentistry-portal .dp-input-wrap input[readonly] {text-align:right;}
 @media(max-width:991px){.navbar-main-wrapper > .dentistry-lang-switch {margin-inline-start:auto;margin-inline-end:10px;}}
 @media(max-width:479px){.dentistry-lang-switch button {min-height:28px;min-width:33px;padding:3px 7px;}}
+/* Persian Typography */
+
+html[lang="fa"] body,
+html[lang="fa"] .dentistry-portal,
+html[lang="fa"] .navbar,
+html[lang="fa"] .nav-link,
+html[lang="fa"] .dentistry-header-auth,
+html[lang="fa"] button,
+html[lang="fa"] input,
+html[lang="fa"] textarea,
+html[lang="fa"] select {
+  font-family: "Estedad", Tahoma, sans-serif;
+}
+
+html[lang="fa"] body {
+  direction: rtl;
+  font-weight: 400;
+  line-height: 1.9;
+}
+
+html[lang="fa"] h1,
+html[lang="fa"] h2,
+html[lang="fa"] h3 {
+  font-family: "Estedad", Tahoma, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+html[lang="fa"] .nav-link,
+html[lang="fa"] .dentistry-header-auth {
+  font-weight: 500;
+  letter-spacing: 0;
+}

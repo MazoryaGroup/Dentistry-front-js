@@ -1,594 +1,1056 @@
+
 /**
- * Dentistry — ServiceDetails page. Converted from provided Webflow HTML.
- * All page content is currently static; no API calls are made.
- * Shared header and footer are rendered by the router.
+ * Dentistry — Service Details
+ *
+ * API:
+ * GET /api/v1/services/{id}?lang=fa|en
+ * GET /api/v1/services?lang=fa|en
+ *
+ * Supports single-object and array responses.
+ * Vanilla JS + Vite + Webflow CSS
  */
+
+import { serviceApi } from '../code/api.js';
 import { initPageInteractions } from '../code/interactions.js';
 
-const HTML = String.raw`
-<section class="section breadcrumb-section">
-
-      <div class="w-layout-blockcontainer container-fluid w-container">
-
-        <div class="breadcrumb-block two">
-
-          <div class="w-layout-blockcontainer container w-container">
-
-            <div class="breadcrumb-main-title-block">
-
-              <div class="breadcrumb-title-block">
-
-                <h1 class="breadcrumb-title">dental services</h1>
-
-              </div>
-
-              <div class="breadcrumb-subtext-block">
-
-                <div class="breadcrumb-subtext">home</div>
-
-                <div class="breadcrumb-subtext">-</div>
-
-                <div class="breadcrumb-subtext">service details</div>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-
-    </section>
-
-<section class="section service-single-section">
-
-      <div class="w-layout-blockcontainer container w-container">
-
-        <div class="service-single-main-block">
-
-          <div class="w-layout-grid service-single-grid">
-
-            <div class="service-single-main-block-one">
-
-              <div class="service-sticky-block">
-
-                <div class="service-single-left-block" data-w-id="86f814b1-5073-5d91-8758-36bb35f61720">
-
-                  <div class="service-single-box-title">
-
-                    <h3 class="service-single-title">our service</h3>
-
-                  </div>
-
-                  <div class="service-list-wrap w-dyn-list">
-
-                    <div class="service-list w-dyn-items" role="list">
-
-                      <div class="w-dyn-item" role="listitem">
-
-                        <a class="service-list-link w-inline-block" href="/services/smile-design-clinic"><div class="service-list-word">
-
-                            <div class="service-dot-block"></div>
-
-                            <h4 class="service-single-list-name">
-
-                              Smile Design Clinic
-
-                            </h4>
-
-                          </div>
-
-                          <div class="service-single-icon-box">
-
-                            <img alt="Service Single Icon" class="service-single-icon" loading="lazy" src="https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/676923878f05f400928066e8_Vector%20%283%29.svg"/></div></a>
-
-                      </div>
-
-                      <div class="w-dyn-item" role="listitem">
-
-                        <a aria-current="page" class="service-list-link w-inline-block w--current" href="/services/bright-smile-solutions"><div class="service-list-word">
-
-                            <div class="service-dot-block"></div>
-
-                            <h4 class="service-single-list-name">
-
-                              Perfect Smile Clinic
-
-                            </h4>
-
-                          </div>
-
-                          <div class="service-single-icon-box">
-
-                            <img alt="Service Single Icon" class="service-single-icon" loading="lazy" src="https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/676923878f05f400928066e8_Vector%20%283%29.svg"/></div></a>
-
-                      </div>
-
-                      <div class="w-dyn-item" role="listitem">
-
-                        <a class="service-list-link w-inline-block" href="/services/dental-implants"><div class="service-list-word">
-
-                            <div class="service-dot-block"></div>
-
-                            <h4 class="service-single-list-name">
-
-                              Golden Standard
-
-                            </h4>
-
-                          </div>
-
-                          <div class="service-single-icon-box">
-
-                            <img alt="Service Single Icon" class="service-single-icon" loading="lazy" src="https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/676923878f05f400928066e8_Vector%20%283%29.svg"/></div></a>
-
-                      </div>
-
-                      <div class="w-dyn-item" role="listitem">
-
-                        <a class="service-list-link w-inline-block" href="/services/general-dentistry"><div class="service-list-word">
-
-                            <div class="service-dot-block"></div>
-
-                            <h4 class="service-single-list-name">
-
-                              General Dentistry
-
-                            </h4>
-
-                          </div>
-
-                          <div class="service-single-icon-box">
-
-                            <img alt="Service Single Icon" class="service-single-icon" loading="lazy" src="https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/676923878f05f400928066e8_Vector%20%283%29.svg"/></div></a>
-
-                      </div>
-
-                      <div class="w-dyn-item" role="listitem">
-
-                        <a class="service-list-link w-inline-block" href="/services/teeth-whitening"><div class="service-list-word">
-
-                            <div class="service-dot-block"></div>
-
-                            <h4 class="service-single-list-name">
-
-                              Teeth Whitening
-
-                            </h4>
-
-                          </div>
-
-                          <div class="service-single-icon-box">
-
-                            <img alt="Service Single Icon" class="service-single-icon" loading="lazy" src="https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/676923878f05f400928066e8_Vector%20%283%29.svg"/></div></a>
-
-                      </div>
-
-                      <div class="w-dyn-item" role="listitem">
-
-                        <a class="service-list-link w-inline-block" href="/services/root-cannel-treatment"><div class="service-list-word">
-
-                            <div class="service-dot-block"></div>
-
-                            <h4 class="service-single-list-name">
-
-                              rootcannel treatment
-
-                            </h4>
-
-                          </div>
-
-                          <div class="service-single-icon-box">
-
-                            <img alt="Service Single Icon" class="service-single-icon" loading="lazy" src="https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/676923878f05f400928066e8_Vector%20%283%29.svg"/></div></a>
-
-                      </div>
-
-                      <div class="w-dyn-item" role="listitem">
-
-                        <a class="service-list-link w-inline-block" href="/services/removal-teeth"><div class="service-list-word">
-
-                            <div class="service-dot-block"></div>
-
-                            <h4 class="service-single-list-name">
-
-                              removal teeth
-
-                            </h4>
-
-                          </div>
-
-                          <div class="service-single-icon-box">
-
-                            <img alt="Service Single Icon" class="service-single-icon" loading="lazy" src="https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/676923878f05f400928066e8_Vector%20%283%29.svg"/></div></a>
-
-                      </div>
-
-                      <div class="w-dyn-item" role="listitem">
-
-                        <a class="service-list-link w-inline-block" href="/services/oral-hygienic-treatment"><div class="service-list-word">
-
-                            <div class="service-dot-block"></div>
-
-                            <h4 class="service-single-list-name">
-
-                              oral treatment
-
-                            </h4>
-
-                          </div>
-
-                          <div class="service-single-icon-box">
-
-                            <img alt="Service Single Icon" class="service-single-icon" loading="lazy" src="https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/676923878f05f400928066e8_Vector%20%283%29.svg"/></div></a>
-
-                      </div>
-
-                      <div class="w-dyn-item" role="listitem">
-
-                        <a class="service-list-link w-inline-block" href="/services/smiling-teeth"><div class="service-list-word">
-
-                            <div class="service-dot-block"></div>
-
-                            <h4 class="service-single-list-name">
-
-                              smiling teeth
-
-                            </h4>
-
-                          </div>
-
-                          <div class="service-single-icon-box">
-
-                            <img alt="Service Single Icon" class="service-single-icon" loading="lazy" src="https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/676923878f05f400928066e8_Vector%20%283%29.svg"/></div></a>
-
-                      </div>
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-                <div class="service-single-left-block" data-w-id="ab7edbfd-6ffb-4687-8f9c-765ee005a2fb">
-
-                  <div class="service-single-box-title">
-
-                    <h3 class="service-single-title">Company Profile</h3>
-
-                  </div>
-
-                  <div class="download-main-block">
-
-                    <a class="download-button w-inline-block" href="#"><div class="download-wrap">
-
-                        <img alt="Download Image" class="download-image" loading="lazy" src="https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/67721ddbabdfe66195137eaf_1%20%281%29.svg"/>
-
-                        <div class="download-text">Download PDF</div>
-
-                      </div>
-
-                      <div class="download-icon-block">
-
-                        <img alt="Download  Icon" class="download-icon" loading="lazy" src="https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/67721ddbed801d723bd4f52d_1%20%283%29.svg"/></div></a><a class="download-button last w-inline-block" href="#"><div class="download-wrap">
-
-                        <img alt="Download Image" class="download-image" loading="lazy" src="https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/67721ddb8a35f481ea1b1643_1%20%282%29.svg"/>
-
-                        <div class="download-text">Download Word File</div>
-
-                      </div>
-
-                      <div class="download-icon-block">
-
-                        <img alt="Download  Icon" class="download-icon" loading="lazy" src="https://cdn.prod.website-files.com/6768f6d314e679aeffeed929/67721ddbed801d723bd4f52d_1%20%283%29.svg"/></div></a>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            </div>
-
-            <div class="service-single-content-block">
-
-              <div class="w-dyn-list">
-
-                <div class="w-dyn-items" role="list">
-
-                  <div class="w-dyn-item" role="listitem">
-
-                    <div class="service-single-image-block">
-
-                      <h3 class="service-title" data-w-id="e1b9d500-ee96-cbb1-0424-761415846318">
-
-                        Smile Design Clinic
-
-                      </h3>
-
-                      <img alt="Service Single Image" class="service-single-image" data-w-id="5a0f4aac-2936-a86b-8b6c-e17958d83ee6" loading="lazy" sizes="(max-width: 479px) 94vw, (max-width: 767px) 96vw, (max-width: 991px) 97vw, (max-width: 1439px) 98vw, 1270px" src="https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/677399bfd70674aa2f9cc4e0_1%20%281%29.jpg" srcset="
-
-                          https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/677399bfd70674aa2f9cc4e0_1%20%281%29-p-500.jpg   500w,
-
-                          https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/677399bfd70674aa2f9cc4e0_1%20%281%29-p-800.jpg   800w,
-
-                          https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/677399bfd70674aa2f9cc4e0_1%20%281%29-p-1080.jpg 1080w,
-
-                          https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/677399bfd70674aa2f9cc4e0_1%20%281%29.jpg        1400w
-
-                        "/>
-
-                      <div class="service-rich-one w-richtext" data-w-id="1117faa0-53a5-1952-d0da-30a474fdbf53">
-
-                        <p>
-
-                          Dental services are essential for maintaining oral
-
-                          health, preventing diseases, and enhancing the
-
-                          appearance of your smile. From routine checkups and
-
-                          cleanings to advanced procedures like root canals,
-
-                          implants, and cosmetic treatments, dental care
-
-                          addresses a wide range of needs. These services ensure
-
-                          healthy teeth and gums, protect against oral
-
-                          infections, and improve overall confidence.
-
-                        </p>
-
-                      </div>
-
-                      <div class="service-info-two">
-
-                        <img alt="" class="service-image-two" data-w-id="01322ddb-194f-a222-faee-86d0963ea9e0" loading="lazy" sizes="(max-width: 479px) 94vw, (max-width: 767px) 96vw, (max-width: 991px) 47vw, (max-width: 1439px) 48vw, 620px" src="https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/676a5664edeeceaba15db054_service%20extra%20image%20%283%29.webp" srcset="
-
-                            https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/676a5664edeeceaba15db054_service%20extra%20image%20%283%29-p-500.webp   500w,
-
-                            https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/676a5664edeeceaba15db054_service%20extra%20image%20%283%29-p-800.webp   800w,
-
-                            https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/676a5664edeeceaba15db054_service%20extra%20image%20%283%29-p-1080.webp 1080w,
-
-                            https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/676a5664edeeceaba15db054_service%20extra%20image%20%283%29.webp        1400w
-
-                          "/>
-
-                        <div class="w-richtext" data-w-id="3978e663-afd0-431d-8996-194fe6f2260a">
-
-                          <p>
-
-                            Regular visits to the dentist help in early
-
-                            detection of issues, saving time, money, and
-
-                            discomfort in the long run. By prioritizing
-
-                            professional dental care, you can achieve a brighter
-
-                            smile and better overall health.
-
-                          </p>
-
-                        </div>
-
-                      </div>
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-              <div class="w-dyn-list">
-
-                <div class="team-list-block w-dyn-items" role="list">
-
-                  <div class="w-dyn-item" data-w-id="58469d2f-3494-e756-8009-2c28c71dc8cf" role="listitem">
-
-                    <div class="team-info-main-block">
-
-                      <a class="team-link-info-block w-inline-block" href="#"><img alt="Team Image One" class="team-image-one one" loading="lazy" src="https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/679c72b47f96c23ec6baac4a_image%2012.png"/>
-
-                        <div class="team-info-name-block">
-
-                          <h3 class="team-name-one">Dr. Adam Smith</h3>
-
-                          <div class="team-one-dagin">Cosmetic Dentist</div>
-
-                        </div></a>
-
-                      <div class="social-icon-one-block">
-
-                        <a class="social-icon-link-one w-inline-block" href="#"><div class="w-embed">
-
-                            
-
-                            <svg fill="none" height="18" viewbox="0 0 10 18" width="10" xmlns="http://www.w3.org/2000/svg">
-
-                              <path d="M6.06741 18V9.78996H8.82208L9.23536 6.58941H6.06741V4.54632C6.06741 3.61998 6.32359 2.98869 7.65347 2.98869L9.34686 2.98799V0.125307C9.05401 0.0872508 8.04877 0 6.87877 0C4.43564 0 2.76302 1.49127 2.76302 4.22934V6.58941H0V9.78996H2.76302V18H6.06741Z" fill="currentColor" fill-opacity="0.88"></path>
-
-                            </svg></div></a><a class="social-icon-link-one w-inline-block" href="#"><div class="w-embed">
-
-                            
-
-                            <svg fill="none" height="18" viewbox="0 0 18 18" width="18" xmlns="http://www.w3.org/2000/svg">
-
-                              <g clip-path="url(#clip0_138_15)">
-
-                                <path d="M10.6764 7.62177L17.2333 0H15.6795L9.98621 6.61788L5.439 0H0.194336L7.07061 10.0074L0.194336 18H1.74818L7.76044 11.0113L12.5626 18H17.8073L10.6761 7.62177H10.6764ZM8.54823 10.0956L7.85152 9.09906L2.30805 1.16971H4.69467L9.16831 7.56895L9.86502 8.56546L15.6802 16.8835H13.2936L8.54823 10.096V10.0956Z" fill="currentColor" fill-opacity="0.88"></path>
-
-                              </g>
-
-                            </svg></div></a><a class="social-icon-link-one w-inline-block" href="#"><div class="w-embed">
-
-                            
-
-                            <svg fill="none" height="18" viewbox="0 0 18 18" width="18" xmlns="http://www.w3.org/2000/svg">
-
-                              <g clip-path="url(#clip0_138_5)">
-
-                                <path d="M14.2358 3.33105C13.9949 3.33105 13.7988 3.52712 13.7988 3.76805C13.7988 4.00897 13.9949 4.20504 14.2358 4.20504C14.4768 4.20504 14.6728 4.00901 14.6728 3.76805C14.6728 3.52709 14.4768 3.33105 14.2358 3.33105Z" fill="currentColor" fill-opacity="0.9"></path>
-
-                                <path d="M9.00299 5.12598C6.86682 5.12598 5.12891 6.86389 5.12891 9.00006C5.12891 11.1362 6.86682 12.8742 9.00299 12.8742C11.1392 12.8742 12.8771 11.1363 12.8771 9.00009C12.8771 6.86393 11.1392 5.12598 9.00299 5.12598Z" fill="currentColor" fill-opacity="0.9"></path>
-
-                                <path d="M13.0597 0H4.92857C2.20772 0 -0.00585938 2.21358 -0.00585938 4.93446V13.0656C-0.00585938 15.7865 2.20772 18 4.92857 18H13.0597C15.7806 18 17.9941 15.7864 17.9941 13.0656V4.93446C17.9941 2.21358 15.7806 0 13.0597 0ZM8.99414 13.9371C6.27182 13.9371 4.05711 11.7223 4.05711 9C4.05711 6.27768 6.27185 4.06301 8.99414 4.06301C11.7164 4.06301 13.9312 6.27771 13.9312 9C13.9312 11.7223 11.7164 13.9371 8.99414 13.9371ZM14.2265 5.26767C13.3994 5.26767 12.7265 4.59478 12.7265 3.7677C12.7265 2.94061 13.3994 2.26768 14.2265 2.26768C15.0536 2.26768 15.7265 2.94057 15.7265 3.76766C15.7265 4.59475 15.0536 5.26767 14.2265 5.26767Z" fill="currentColor" fill-opacity="0.88"></path>
-
-                              </g>
-
-                            </svg></div></a>
-
-                      </div>
-
-                    </div>
-
-                  </div>
-
-                  <div class="w-dyn-item" data-w-id="58469d2f-3494-e756-8009-2c28c71dc8cf" role="listitem">
-
-                    <div class="team-info-main-block">
-
-                      <a class="team-link-info-block w-inline-block" href="#"><img alt="Team Image One" class="team-image-one one" loading="lazy" src="https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/679c7445bd38a452b8e0b373_team%20image%20%282%29.png"/>
-
-                        <div class="team-info-name-block">
-
-                          <h3 class="team-name-one">Dr. Michel Martin</h3>
-
-                          <div class="team-one-dagin">General Dentist</div>
-
-                        </div></a>
-
-                      <div class="social-icon-one-block">
-
-                        <a class="social-icon-link-one w-inline-block" href="#"><div class="w-embed">
-
-                            
-
-                            <svg fill="none" height="18" viewbox="0 0 10 18" width="10" xmlns="http://www.w3.org/2000/svg">
-
-                              <path d="M6.06741 18V9.78996H8.82208L9.23536 6.58941H6.06741V4.54632C6.06741 3.61998 6.32359 2.98869 7.65347 2.98869L9.34686 2.98799V0.125307C9.05401 0.0872508 8.04877 0 6.87877 0C4.43564 0 2.76302 1.49127 2.76302 4.22934V6.58941H0V9.78996H2.76302V18H6.06741Z" fill="currentColor" fill-opacity="0.88"></path>
-
-                            </svg></div></a><a class="social-icon-link-one w-inline-block" href="#"><div class="w-embed">
-
-                            
-
-                            <svg fill="none" height="18" viewbox="0 0 18 18" width="18" xmlns="http://www.w3.org/2000/svg">
-
-                              <g clip-path="url(#clip0_138_15)">
-
-                                <path d="M10.6764 7.62177L17.2333 0H15.6795L9.98621 6.61788L5.439 0H0.194336L7.07061 10.0074L0.194336 18H1.74818L7.76044 11.0113L12.5626 18H17.8073L10.6761 7.62177H10.6764ZM8.54823 10.0956L7.85152 9.09906L2.30805 1.16971H4.69467L9.16831 7.56895L9.86502 8.56546L15.6802 16.8835H13.2936L8.54823 10.096V10.0956Z" fill="currentColor" fill-opacity="0.88"></path>
-
-                              </g>
-
-                            </svg></div></a><a class="social-icon-link-one w-inline-block" href="#"><div class="w-embed">
-
-                            
-
-                            <svg fill="none" height="18" viewbox="0 0 18 18" width="18" xmlns="http://www.w3.org/2000/svg">
-
-                              <g clip-path="url(#clip0_138_5)">
-
-                                <path d="M14.2358 3.33105C13.9949 3.33105 13.7988 3.52712 13.7988 3.76805C13.7988 4.00897 13.9949 4.20504 14.2358 4.20504C14.4768 4.20504 14.6728 4.00901 14.6728 3.76805C14.6728 3.52709 14.4768 3.33105 14.2358 3.33105Z" fill="currentColor" fill-opacity="0.9"></path>
-
-                                <path d="M9.00299 5.12598C6.86682 5.12598 5.12891 6.86389 5.12891 9.00006C5.12891 11.1362 6.86682 12.8742 9.00299 12.8742C11.1392 12.8742 12.8771 11.1363 12.8771 9.00009C12.8771 6.86393 11.1392 5.12598 9.00299 5.12598Z" fill="currentColor" fill-opacity="0.9"></path>
-
-                                <path d="M13.0597 0H4.92857C2.20772 0 -0.00585938 2.21358 -0.00585938 4.93446V13.0656C-0.00585938 15.7865 2.20772 18 4.92857 18H13.0597C15.7806 18 17.9941 15.7864 17.9941 13.0656V4.93446C17.9941 2.21358 15.7806 0 13.0597 0ZM8.99414 13.9371C6.27182 13.9371 4.05711 11.7223 4.05711 9C4.05711 6.27768 6.27185 4.06301 8.99414 4.06301C11.7164 4.06301 13.9312 6.27771 13.9312 9C13.9312 11.7223 11.7164 13.9371 8.99414 13.9371ZM14.2265 5.26767C13.3994 5.26767 12.7265 4.59478 12.7265 3.7677C12.7265 2.94061 13.3994 2.26768 14.2265 2.26768C15.0536 2.26768 15.7265 2.94057 15.7265 3.76766C15.7265 4.59475 15.0536 5.26767 14.2265 5.26767Z" fill="currentColor" fill-opacity="0.88"></path>
-
-                              </g>
-
-                            </svg></div></a>
-
-                      </div>
-
-                    </div>
-
-                  </div>
-
-                  <div class="w-dyn-item" data-w-id="58469d2f-3494-e756-8009-2c28c71dc8cf" role="listitem">
-
-                    <div class="team-info-main-block">
-
-                      <a class="team-link-info-block w-inline-block" href="#"><img alt="Team Image One" class="team-image-one one" loading="lazy" src="https://cdn.prod.website-files.com/676a470e1aa6955efd039fb4/679c745448e62cb3588e5bce_team%20image%206.png"/>
-
-                        <div class="team-info-name-block">
-
-                          <h3 class="team-name-one">Dr. Archie White</h3>
-
-                          <div class="team-one-dagin">Dental Assistant</div>
-
-                        </div></a>
-
-                      <div class="social-icon-one-block">
-
-                        <a class="social-icon-link-one w-inline-block" href="#"><div class="w-embed">
-
-                            
-
-                            <svg fill="none" height="18" viewbox="0 0 10 18" width="10" xmlns="http://www.w3.org/2000/svg">
-
-                              <path d="M6.06741 18V9.78996H8.82208L9.23536 6.58941H6.06741V4.54632C6.06741 3.61998 6.32359 2.98869 7.65347 2.98869L9.34686 2.98799V0.125307C9.05401 0.0872508 8.04877 0 6.87877 0C4.43564 0 2.76302 1.49127 2.76302 4.22934V6.58941H0V9.78996H2.76302V18H6.06741Z" fill="currentColor" fill-opacity="0.88"></path>
-
-                            </svg></div></a><a class="social-icon-link-one w-inline-block" href="#"><div class="w-embed">
-
-                            
-
-                            <svg fill="none" height="18" viewbox="0 0 18 18" width="18" xmlns="http://www.w3.org/2000/svg">
-
-                              <g clip-path="url(#clip0_138_15)">
-
-                                <path d="M10.6764 7.62177L17.2333 0H15.6795L9.98621 6.61788L5.439 0H0.194336L7.07061 10.0074L0.194336 18H1.74818L7.76044 11.0113L12.5626 18H17.8073L10.6761 7.62177H10.6764ZM8.54823 10.0956L7.85152 9.09906L2.30805 1.16971H4.69467L9.16831 7.56895L9.86502 8.56546L15.6802 16.8835H13.2936L8.54823 10.096V10.0956Z" fill="currentColor" fill-opacity="0.88"></path>
-
-                              </g>
-
-                            </svg></div></a><a class="social-icon-link-one w-inline-block" href="#"><div class="w-embed">
-
-                            
-
-                            <svg fill="none" height="18" viewbox="0 0 18 18" width="18" xmlns="http://www.w3.org/2000/svg">
-
-                              <g clip-path="url(#clip0_138_5)">
-
-                                <path d="M14.2358 3.33105C13.9949 3.33105 13.7988 3.52712 13.7988 3.76805C13.7988 4.00897 13.9949 4.20504 14.2358 4.20504C14.4768 4.20504 14.6728 4.00901 14.6728 3.76805C14.6728 3.52709 14.4768 3.33105 14.2358 3.33105Z" fill="currentColor" fill-opacity="0.9"></path>
-
-                                <path d="M9.00299 5.12598C6.86682 5.12598 5.12891 6.86389 5.12891 9.00006C5.12891 11.1362 6.86682 12.8742 9.00299 12.8742C11.1392 12.8742 12.8771 11.1363 12.8771 9.00009C12.8771 6.86393 11.1392 5.12598 9.00299 5.12598Z" fill="currentColor" fill-opacity="0.9"></path>
-
-                                <path d="M13.0597 0H4.92857C2.20772 0 -0.00585938 2.21358 -0.00585938 4.93446V13.0656C-0.00585938 15.7865 2.20772 18 4.92857 18H13.0597C15.7806 18 17.9941 15.7864 17.9941 13.0656V4.93446C17.9941 2.21358 15.7806 0 13.0597 0ZM8.99414 13.9371C6.27182 13.9371 4.05711 11.7223 4.05711 9C4.05711 6.27768 6.27185 4.06301 8.99414 4.06301C11.7164 4.06301 13.9312 6.27771 13.9312 9C13.9312 11.7223 11.7164 13.9371 8.99414 13.9371ZM14.2265 5.26767C13.3994 5.26767 12.7265 4.59478 12.7265 3.7677C12.7265 2.94061 13.3994 2.26768 14.2265 2.26768C15.0536 2.26768 15.7265 2.94057 15.7265 3.76766C15.7265 4.59475 15.0536 5.26767 14.2265 5.26767Z" fill="currentColor" fill-opacity="0.88"></path>
-
-                              </g>
-
-                            </svg></div></a>
-
-                      </div>
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-
-    </section>
-`;
-
-export function ServiceDetails() {
-  return HTML;
+// ============================================
+// LANGUAGE
+// ============================================
+
+function getCurrentLang() {
+  const lang = (
+    document.documentElement.lang || ''
+  ).toLowerCase();
+
+  return lang === 'fa' || lang.startsWith('fa-')
+    ? 'fa'
+    : 'en';
 }
 
+const labels = {
+  fa: {
+    home: 'خانه',
+    services: 'خدمات دندان‌پزشکی',
+    details: 'جزئیات خدمت',
+    otherServices: 'سایر خدمات',
+    // duration: 'مدت زمان',
+    // minutes: 'دقیقه',
+    // price: 'قیمت',
+    // deposit: 'بیعانه',
+    loading: 'در حال دریافت اطلاعات خدمت...',
+    notFound: 'خدمت موردنظر پیدا نشد.',
+    error: 'دریافت اطلاعات خدمت با مشکل مواجه شد.',
+    retry: 'تلاش مجدد',
+    back: 'بازگشت به خدمات',
+  },
+
+  en: {
+    home: 'Home',
+    services: 'Dental Services',
+    details: 'Service Details',
+    otherServices: 'Our Services',
+    // duration: 'Duration',
+    // minutes: 'minutes',
+    // price: 'Price',
+    // deposit: 'Deposit',
+    loading: 'Loading service details...',
+    notFound: 'Service not found.',
+    error: 'Unable to load service details.',
+    retry: 'Try Again',
+    back: 'Back to Services',
+  },
+};
+
+function tr(key, lang = getCurrentLang()) {
+  return labels[lang]?.[key] || key;
+}
+
+// ============================================
+// HELPERS
+// ============================================
+
+function escapeHTML(value) {
+  return String(value ?? '').replace(
+    /[&<>"']/g,
+    char => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    })[char]
+  );
+}
+
+function getServiceId() {
+  const path = location.pathname.replace(/\/+$/, '');
+  const match = path.match(/^\/services\/([1-9]\d*)$/);
+
+  return match ? match[1] : '';
+}
+
+function getAssetOrigin() {
+  const base =
+    import.meta.env.VITE_ASSET_BASE_URL ||
+    import.meta.env.VITE_API_BASE_URL ||
+    '/';
+
+  try {
+    return new URL(base, location.origin).origin;
+  } catch {
+    return location.origin;
+  }
+}
+
+function safeImageURL(value) {
+  if (value && typeof value === 'object') {
+    value =
+      value.url ??
+      value.full_url ??
+      value.src ??
+      value.path ??
+      '';
+  }
+
+  if (typeof value !== 'string') return '';
+
+  const raw = value.trim();
+
+  if (!raw || /[<>"'\u0000-\u001F]/.test(raw)) {
+    return '';
+  }
+
+  const path = /^(storage|uploads|images)\//i.test(raw)
+    ? `/${raw}`
+    : raw;
+
+  try {
+    const url = new URL(path, getAssetOrigin());
+
+    return ['http:', 'https:'].includes(url.protocol)
+      ? url.href
+      : '';
+  } catch {
+    return '';
+  }
+}
+
+function textValue(value) {
+  return typeof value === 'string'
+    ? value.trim()
+    : '';
+}
+
+function firstText(...values) {
+  for (const value of values) {
+    const result = textValue(value);
+
+    if (result) return result;
+  }
+
+  return '';
+}
+
+function numberValue(value) {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  const result = Number(value);
+
+  return Number.isFinite(result)
+    ? result
+    : null;
+}
+
+function formatNumber(value, lang) {
+  return new Intl.NumberFormat(
+    lang === 'fa' ? 'fa-IR' : 'en-US',
+    {
+      maximumFractionDigits: 2,
+    }
+  ).format(value);
+}
+
+function renderText(value) {
+  const text = textValue(value);
+
+  if (!text) return '';
+
+  return text
+    .split(/\n\s*\n/)
+    .filter(Boolean)
+    .map(part => `
+      <p>
+        ${escapeHTML(part).replace(/\n/g, '<br>')}
+      </p>
+    `)
+    .join('');
+}
+
+// ============================================
+// EXTRACT API DATA
+// ============================================
+
+function checkResponse(response) {
+  if (
+    response?.status === false ||
+    response?.success === false
+  ) {
+    throw new Error(
+      response?.message || 'SERVICE_API_ERROR'
+    );
+  }
+}
+
+function extractServices(response) {
+  const data = response?.data;
+
+  const candidates = [
+    data,
+    data?.data,
+    data?.services,
+    data?.services?.data,
+    data?.items,
+  ];
+
+  return candidates.find(Array.isArray) ?? [];
+}
+
+function extractService(response, id, lang) {
+  checkResponse(response);
+
+  const data = response?.data;
+
+  const raw =
+    data?.service ??
+    data?.data ??
+    data;
+
+  // New API can return an array even for details.
+  if (Array.isArray(raw)) {
+    const matchingId = raw.filter(
+      item => String(item?.id) === String(id)
+    );
+
+    // Prefer the exact requested language.
+    return matchingId.find(
+      item => item.locale === lang
+    ) ?? matchingId.find(
+      item => item.locale == null
+    ) ?? null;
+  }
+
+  // Standard single-service response.
+  if (
+    raw &&
+    typeof raw === 'object' &&
+    String(raw.id) === String(id) &&
+    (raw.locale == null || raw.locale === lang)
+  ) {
+    return raw;
+  }
+
+  return null;
+}
+
+// ============================================
+// NORMALIZE NEW SERVICE STRUCTURE
+// ============================================
+
+function normalizeService(item) {
+  if (
+    !item ||
+    typeof item !== 'object' ||
+    Array.isArray(item)
+  ) {
+    return null;
+  }
+
+  const name = firstText(
+    item.name,
+    item.title_1
+  );
+
+  if (!name || item.id == null) return null;
+
+  return {
+    id: item.id,
+    locale: textValue(item.locale),
+
+    name,
+
+    // Section 1
+    title1: firstText(
+      item.title_1,
+      item.name
+    ),
+
+    description1: firstText(
+      item.description_1,
+      item.description
+    ),
+
+    image1: safeImageURL(
+      item.image_1_url ??
+      item.image_1
+    ),
+
+    // Section 2
+    title2: textValue(item.title_2),
+
+    description2: textValue(
+      item.description_2
+    ),
+
+    image2: safeImageURL(
+      item.image_2_url ??
+      item.image_2
+    ),
+
+    // // Service information
+    // duration: numberValue(item.duration),
+    // price: numberValue(item.price),
+    // depositAmount: numberValue(
+    //   item.deposit_amount
+    // ),
+  };
+}
+
+// ============================================
+// SVG ICONS
+// ============================================
+
+const toothIcon = `
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="70"
+    height="70"
+    viewBox="0 0 48 48"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path
+      d="M24 9C19 6 12 4 8 10
+         C3 17 7 26 9 32
+         C11 39 13 43 17 42
+         C21 41 20 29 24 29
+         C28 29 27 41 31 42
+         C35 43 37 39 39 32
+         C41 26 45 17 40 10
+         C36 4 29 6 24 9Z"
+    />
+  </svg>
+`;
+
+const arrowIcon = `
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M5 12h14"/>
+    <path d="m13 6 6 6-6 6"/>
+  </svg>
+`;
+
+// ============================================
+// SERVICE FACTS
+// ============================================
+
+function renderServiceFacts(service, lang) {
+  const facts = [];
+
+  // if (service.duration !== null) {
+  //   facts.push({
+  //     label: tr('duration', lang),
+  //     value: `${formatNumber(service.duration, lang)} ${tr('minutes', lang)}`,
+  //   });
+  // }
+
+  // if (service.price !== null) {
+  //   facts.push({
+  //     label: tr('price', lang),
+  //     value: formatNumber(service.price, lang),
+  //   });
+  // }
+
+  // if (service.depositAmount !== null) {
+  //   facts.push({
+  //     label: tr('deposit', lang),
+  //     value: formatNumber(service.depositAmount, lang),
+  //   });
+  // }
+
+  if (!facts.length) return '';
+
+  return `
+    <div class="dp-service-facts">
+      ${facts.map(fact => `
+        <div class="dp-service-fact">
+
+          <span class="dp-service-fact-label">
+            ${escapeHTML(fact.label)}
+          </span>
+
+          <strong class="dp-service-fact-value">
+            ${escapeHTML(fact.value)}
+          </strong>
+
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// ============================================
+// MAIN SERVICE CONTENT
+// ============================================
+
+function renderServiceContent(service, lang) {
+  const title1 = escapeHTML(service.title1);
+
+  const firstImage = service.image1
+    ? `
+      <img
+        class="service-single-image"
+        src="${escapeHTML(service.image1)}"
+        alt="${title1}"
+        loading="eager"
+        decoding="async"
+      />
+    `
+    : `
+      <div
+        class="service-single-image dp-service-details-placeholder"
+        aria-hidden="true"
+      >
+        ${toothIcon}
+      </div>
+    `;
+
+  const firstDescription = service.description1
+    ? `
+      <div class="service-rich-one w-richtext">
+        ${renderText(service.description1)}
+      </div>
+    `
+    : '';
+
+  const hasSection2 = Boolean(
+    service.title2 ||
+    service.description2 ||
+    service.image2
+  );
+
+  const section2 = hasSection2
+    ? `
+      <div class="service-info-two dp-service-section-two">
+
+        ${
+          service.image2
+            ? `
+              <img
+                class="service-image-two"
+                src="${escapeHTML(service.image2)}"
+                alt="${escapeHTML(service.title2 || service.name)}"
+                loading="lazy"
+                decoding="async"
+              />
+            `
+            : ''
+        }
+
+        ${
+          service.title2 || service.description2
+            ? `
+              <div class="w-richtext dp-service-second-content">
+
+                ${
+                  service.title2
+                    ? `
+                      <h2 class="dp-service-second-title">
+                        ${escapeHTML(service.title2)}
+                      </h2>
+                    `
+                    : ''
+                }
+
+                ${renderText(service.description2)}
+
+              </div>
+            `
+            : ''
+        }
+
+      </div>
+    `
+    : '';
+
+  return `
+    <div class="w-dyn-list">
+      <div class="w-dyn-items" role="list">
+        <div class="w-dyn-item" role="listitem">
+
+          <div class="service-single-image-block">
+
+            <!-- SECTION 1 -->
+
+            <h1 class="service-title">
+              ${title1}
+            </h1>
+
+            ${firstImage}
+
+            ${firstDescription}
+
+            <!-- SERVICE DETAILS -->
+
+            ${renderServiceFacts(service, lang)}
+
+            <!-- SECTION 2 -->
+
+            ${section2}
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ============================================
+// SIDEBAR SERVICES
+// ============================================
+
+function renderSidebarServices(services, currentId) {
+  return `
+    <div class="service-list-wrap w-dyn-list">
+
+      <div
+        class="service-list w-dyn-items"
+        role="list"
+      >
+
+        ${services.map(service => {
+          const current =
+            String(service.id) === String(currentId);
+
+          return `
+            <div class="w-dyn-item" role="listitem">
+
+              <a
+                href="/services/${encodeURIComponent(String(service.id))}"
+                class="service-list-link w-inline-block ${current ? 'w--current' : ''}"
+                ${current ? 'aria-current="page"' : ''}
+              >
+
+                <div class="service-list-word">
+
+                  <div class="service-dot-block"></div>
+
+                  <h4 class="service-single-list-name">
+                    ${escapeHTML(service.name)}
+                  </h4>
+
+                </div>
+
+                <div class="service-single-icon-box">
+                  <span class="service-single-icon">
+                    ${arrowIcon}
+                  </span>
+                </div>
+
+              </a>
+            </div>
+          `;
+        }).join('')}
+
+      </div>
+    </div>
+  `;
+}
+
+// ============================================
+// PAGE HTML
+// ============================================
+
+export function ServiceDetails() {
+  const lang = getCurrentLang();
+
+  return `
+    <main
+      class="dentistry-service-details-page"
+      data-service-details-page
+    >
+
+      <!-- BREADCRUMB -->
+
+      <section class="section breadcrumb-section">
+
+        <div
+          class="w-layout-blockcontainer container-fluid w-container"
+        >
+          <div class="breadcrumb-block two">
+
+            <div
+              class="w-layout-blockcontainer container w-container"
+            >
+
+              <div class="breadcrumb-main-title-block">
+
+                <div class="breadcrumb-title-block">
+
+                  <h1
+                    class="breadcrumb-title"
+                    data-details-page-title
+                  >
+                    ${tr('services', lang)}
+                  </h1>
+
+                </div>
+
+                <div class="breadcrumb-subtext-block">
+
+                  <a
+                    href="/"
+                    class="breadcrumb-subtext"
+                    data-details-home
+                  >
+                    ${tr('home', lang)}
+                  </a>
+
+                  <span
+                    class="breadcrumb-subtext"
+                    aria-hidden="true"
+                  >
+                    -
+                  </span>
+
+                  <a
+                    href="/service"
+                    class="breadcrumb-subtext"
+                    data-details-services
+                  >
+                    ${tr('services', lang)}
+                  </a>
+
+                  <span
+                    class="breadcrumb-subtext"
+                    aria-hidden="true"
+                  >
+                    -
+                  </span>
+
+                  <span
+                    class="breadcrumb-subtext"
+                    aria-current="page"
+                    data-details-breadcrumb
+                  >
+                    ${tr('details', lang)}
+                  </span>
+
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- STATUS -->
+
+      <div
+        class="dp-service-details-status"
+        data-details-status
+        role="status"
+        aria-live="polite"
+      >
+        ${tr('loading', lang)}
+      </div>
+
+      <!-- SERVICE DETAILS -->
+
+      <section
+        class="section service-single-section"
+        data-details-section
+        hidden
+      >
+
+        <div
+          class="w-layout-blockcontainer container w-container"
+        >
+
+          <div class="service-single-main-block">
+
+            <div class="w-layout-grid service-single-grid">
+
+              <!-- SIDEBAR -->
+
+              <div class="service-single-main-block-one">
+
+                <div class="service-sticky-block">
+
+                  <div
+                    class="service-single-left-block"
+                    data-details-sidebar-box
+                    hidden
+                  >
+
+                    <div class="service-single-box-title">
+
+                      <h3
+                        class="service-single-title"
+                        data-details-sidebar-title
+                      >
+                        ${tr('otherServices', lang)}
+                      </h3>
+
+                    </div>
+
+                    <div data-details-sidebar></div>
+
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- MAIN CONTENT -->
+
+              <div class="service-single-content-block">
+                <div data-details-content></div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+  `;
+}
+
+// ============================================
+// INITIALIZE
+// ============================================
+
 export function initServiceDetails() {
-  return initPageInteractions(document.getElementById('app'));
+  const root = document.querySelector(
+    '[data-service-details-page]'
+  );
+
+  if (!root) return () => {};
+
+  const lifecycle = new AbortController();
+
+  let requestController = null;
+  let activeLang = getCurrentLang();
+
+  const serviceId = getServiceId();
+
+  const status = root.querySelector(
+    '[data-details-status]'
+  );
+
+  const section = root.querySelector(
+    '[data-details-section]'
+  );
+
+  const content = root.querySelector(
+    '[data-details-content]'
+  );
+
+  const sidebar = root.querySelector(
+    '[data-details-sidebar]'
+  );
+
+  const sidebarBox = root.querySelector(
+    '[data-details-sidebar-box]'
+  );
+
+  const cleanupInteractions = initPageInteractions(
+    document.getElementById('app')
+  );
+
+  // ============================================
+  // LANGUAGE LABELS
+  // ============================================
+
+  function updateLabels(lang) {
+    const selectors = {
+      '[data-details-page-title]': 'services',
+      '[data-details-home]': 'home',
+      '[data-details-services]': 'services',
+      '[data-details-breadcrumb]': 'details',
+      '[data-details-sidebar-title]': 'otherServices',
+    };
+
+    for (const [selector, key] of Object.entries(selectors)) {
+      const element = root.querySelector(selector);
+
+      if (element) {
+        element.textContent = tr(key, lang);
+      }
+    }
+  }
+
+  // ============================================
+  // STATUS
+  // ============================================
+
+  function showStatus(message, retry = false) {
+    status.hidden = false;
+    status.textContent = message;
+
+    if (retry) {
+      const button = document.createElement('button');
+
+      button.type = 'button';
+      button.className = 'dp-service-details-retry';
+      button.dataset.detailsRetry = '';
+      button.textContent = tr('retry');
+
+      status.appendChild(button);
+    }
+  }
+
+  function hideStatus() {
+    status.hidden = true;
+    status.textContent = '';
+  }
+
+  function resetPage() {
+    section.hidden = true;
+    sidebarBox.hidden = true;
+
+    content.innerHTML = '';
+    sidebar.innerHTML = '';
+  }
+
+  // ============================================
+  // SIDEBAR
+  // ============================================
+
+  async function loadSidebar(lang, id, signal) {
+    try {
+      const response = await serviceApi.list(
+        lang,
+        signal
+      );
+
+      if (
+        signal.aborted ||
+        lifecycle.signal.aborted ||
+        !root.isConnected ||
+        getCurrentLang() !== lang
+      ) {
+        return;
+      }
+
+      checkResponse(response);
+
+      const services = extractServices(response)
+        .filter(item =>
+          !item.locale || item.locale === lang
+        )
+        .map(normalizeService)
+        .filter(Boolean);
+
+      if (!services.length) {
+        sidebarBox.hidden = true;
+        return;
+      }
+
+      sidebar.innerHTML = renderSidebarServices(
+        services,
+        id
+      );
+
+      sidebarBox.hidden = false;
+
+    } catch (error) {
+      if (
+        !signal.aborted &&
+        !lifecycle.signal.aborted
+      ) {
+        console.warn(
+          'Failed to load sidebar services:',
+          error
+        );
+
+        sidebarBox.hidden = true;
+      }
+    }
+  }
+
+  // ============================================
+  // LOAD SERVICE DETAILS
+  // ============================================
+
+  async function loadDetails() {
+    requestController?.abort();
+
+    requestController = new AbortController();
+
+    const signal = requestController.signal;
+    const lang = getCurrentLang();
+
+    activeLang = lang;
+
+    updateLabels(lang);
+    resetPage();
+
+    if (!serviceId) {
+      showStatus(tr('notFound', lang));
+      return;
+    }
+
+    showStatus(tr('loading', lang));
+
+    try {
+      // Fetch detail by ID and selected language.
+      const response = await serviceApi.show(
+        serviceId,
+        lang,
+        signal
+      );
+
+      if (
+        signal.aborted ||
+        lifecycle.signal.aborted ||
+        !root.isConnected ||
+        getCurrentLang() !== lang
+      ) {
+        return;
+      }
+
+      // Works with an object OR an array.
+      const rawService = extractService(
+        response,
+        serviceId,
+        lang
+      );
+
+      const service = rawService
+        ? normalizeService(rawService)
+        : null;
+
+      if (!service) {
+        showStatus(tr('notFound', lang));
+        return;
+      }
+
+      // Render two content sections.
+      content.innerHTML = renderServiceContent(
+        service,
+        lang
+      );
+
+      section.hidden = false;
+      hideStatus();
+
+      document.title = `${service.name} | Dentistry`;
+
+      // Sidebar uses current language.
+      void loadSidebar(
+        lang,
+        serviceId,
+        signal
+      );
+
+    } catch (error) {
+      if (
+        signal.aborted ||
+        lifecycle.signal.aborted
+      ) {
+        return;
+      }
+
+      console.error(
+        'Service details API failed:',
+        error
+      );
+
+      const notFound =
+        error?.status === 404 ||
+        error?.statusCode === 404;
+
+      showStatus(
+        notFound
+          ? tr('notFound', lang)
+          : tr('error', lang),
+        !notFound
+      );
+    }
+  }
+
+  // ============================================
+  // RETRY
+  // ============================================
+
+  root.addEventListener(
+    'click',
+    event => {
+      const button = event.target.closest(
+        '[data-details-retry]'
+      );
+
+      if (!button) return;
+
+      event.preventDefault();
+      void loadDetails();
+    },
+    { signal: lifecycle.signal }
+  );
+
+  // ============================================
+  // LANGUAGE SWITCH
+  // ============================================
+
+  const observer = new MutationObserver(() => {
+    const lang = getCurrentLang();
+
+    if (lang !== activeLang) {
+      void loadDetails();
+    }
+  });
+
+  observer.observe(
+    document.documentElement,
+    {
+      attributes: true,
+      attributeFilter: ['lang', 'dir'],
+    }
+  );
+
+  // First request
+  void loadDetails();
+
+  // ============================================
+  // CLEANUP
+  // ============================================
+
+  return () => {
+    lifecycle.abort();
+    requestController?.abort();
+    observer.disconnect();
+
+    if (typeof cleanupInteractions === 'function') {
+      cleanupInteractions();
+    }
+  };
 }

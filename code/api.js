@@ -347,19 +347,45 @@ export const profileApi = {
 
 export const blogApi = {
   list(lang = 'en', signal = null) {
-    const language = lang === 'fa' ? 'fa' : 'en';
-
     return apiGet(
-      `/v1/blogs?lang=${language}`,
+      `/v1/blogs?lang=${lang === 'fa' ? 'fa' : 'en'}`,
       { signal }
     );
   },
 
   show(slug, lang = 'en', signal = null) {
+    return apiGet(
+      `/v1/blogs/${encodeURIComponent(slug)}?lang=${lang === 'fa' ? 'fa' : 'en'}`,
+      { signal }
+    );
+  },
+};
+// ============================================
+// CONTACT MESSAGES
+// ============================================
+
+export const messageApi = {
+  send: (payload, signal = null) =>
+    apiPost('/messages', payload, { signal }),
+};
+
+
+
+export const serviceApi = {
+  list(lang = 'en', signal = null) {
     const language = lang === 'fa' ? 'fa' : 'en';
 
     return apiGet(
-      `/v1/blogs/${encodeURIComponent(slug)}?lang=${language}`,
+      `/v1/services?lang=${language}`,
+      { signal }
+    );
+  },
+
+  show(id, lang = 'en', signal = null) {
+    const language = lang === 'fa' ? 'fa' : 'en';
+
+    return apiGet(
+      `/v1/services/${encodeURIComponent(id)}?lang=${language}`,
       { signal }
     );
   },

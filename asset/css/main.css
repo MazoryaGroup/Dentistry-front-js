@@ -7482,3 +7482,87 @@ blockquote {
   font-style: normal;
   font-display: swap;
 }
+
+.dentistry-service-details-page [hidden] {
+  display: none !important;
+}
+
+.dp-service-section-two {
+  margin-top: 35px;
+}
+
+.dp-service-second-content {
+  line-height: 1.9;
+}
+
+.dp-service-second-title {
+  margin-bottom: 18px;
+  font-size: clamp(24px, 3vw, 34px);
+  font-weight: 600;
+  color: #111;
+}
+
+.dp-service-second-content p,
+.service-rich-one p {
+  line-height: 2;
+}
+
+.dp-service-details-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  background: #eef6fc;
+  color: #74adda;
+}
+
+/* Dentistry — Dynamic Blog Details */
+
+.dentistry-blog-details-page [hidden] {
+  display: none !important;
+}
+
+.dp-blog-details-status {
+  padding: 60px 20px;
+  text-align: center;
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.dp-blog-details-retry {
+  display: block;
+  margin: 18px auto 0;
+  padding: 11px 24px;
+  border: 1px solid #74adda;
+  border-radius: 6px;
+  background: #fff;
+  color: #111;
+  font: inherit;
+  cursor: pointer;
+}
+
+.dp-blog-details-retry:hover {
+  background: #74adda;
+}
+
+.dentistry-blog-details-page .blog-single-main-image {
+  width: 100%;
+  object-fit: cover;
+}
+
+.dentistry-blog-details-page .dp-blog-more-content {
+  margin-top: 30px;
+  line-height: 1.9;
+}
+
+.dentistry-blog-details-page .blog-richtext {
+  line-height: 1.9;
+}
+
+.dentistry-blog-details-page .blog-extra-image-list:empty {
+  display: none;
+}
+
+html[dir="rtl"] .dentistry-blog-details-page {
+  direction: rtl;
+}

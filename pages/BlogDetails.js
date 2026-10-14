@@ -2,64 +2,68 @@
 /**
  * Dentistry — Blog Details
  *
- * APIs:
- * GET /api/v1/blogs?lang=fa|en
  * GET /api/v1/blogs/{slug}?lang=fa|en
+ * GET /api/v1/blogs?lang=fa|en
  *
- * Supports:
- * /post/1             -> Find article by ID from list
- * /post/article-slug  -> Fetch article by slug
- *
- * Vanilla JavaScript + Vite + Webflow CSS
+ * Webflow layout
+ * Right sidebar: Other Blogs only
  */
 
 import { blogApi } from '../code/api.js';
-import { t } from '../code/i18n.js';
+import { getLanguage, t } from '../code/i18n.js';
 import { initPageInteractions } from '../code/interactions.js';
 
 // ============================================
 // LANGUAGE
 // ============================================
 
-function currentLang() {
-  const lang = (
-    document.documentElement.lang || ''
-  ).toLowerCase();
+const translations = {
+  fa: {
+    home: 'خانه',
+    blog: 'وبلاگ',
+    details: 'جزئیات مقاله',
+    otherBlogs: 'سایر مقالات',
+    loading: 'در حال دریافت مقاله...',
+    loadingBlogs: 'در حال دریافت سایر مقالات...',
+    notFound: 'مقاله موردنظر پیدا نشد.',
+    error: 'دریافت مقاله با مشکل مواجه شد.',
+    otherEmpty: 'مقاله دیگری برای نمایش وجود ندارد.',
+    otherError: 'دریافت سایر مقالات با مشکل مواجه شد.',
+    retry: 'تلاش مجدد',
+    gallery: 'تصاویر مقاله',
+  },
 
-  if (lang === 'fa' || lang.startsWith('fa-')) {
-    return 'fa';
-  }
+  en: {
+    home: 'Home',
+    blog: 'Dental Blog',
+    details: 'Blog Details',
+    otherBlogs: 'Other Blogs',
+    loading: 'Loading article...',
+    loadingBlogs: 'Loading other articles...',
+    notFound: 'Article not found.',
+    error: 'Unable to load this article.',
+    otherEmpty: 'No other articles available.',
+    otherError: 'Unable to load other articles.',
+    retry: 'Try Again',
+    gallery: 'Article Images',
+  },
+};
 
-  if (lang === 'en' || lang.startsWith('en-')) {
-    return 'en';
-  }
+function currentLanguage() {
+  return getLanguage() === 'fa' ? 'fa' : 'en';
+}
 
-  return document.documentElement.dir === 'rtl'
-    ? 'fa'
-    : 'en';
+function tr(key, language = currentLanguage()) {
+  const translationKey = `blog.details.${key}`;
+  const result = t(translationKey);
+
+  return result !== translationKey
+    ? result
+    : translations[language][key];
 }
 
 // ============================================
-// CURRENT ARTICLE IDENTIFIER
-// ============================================
-
-function currentSlug() {
-  const pathname = window.location.pathname
-    .replace(/\/+$/, '');
-
-  const match = pathname.match(/\/post\/([^/]+)$/);
-
-  if (!match) return '';
-
-  try {
-    return decodeURIComponent(match[1]);
-  } catch {
-    return match[1];
-  }
-}
-
-// ============================================
-// HTML HELPERS
+// HELPERS
 // ============================================
 
 function escapeHTML(value) {
@@ -81,22 +85,40 @@ function textValue(value) {
     : '';
 }
 
-function getAssetOrigin() {
+function firstText(...values) {
+  for (const value of values) {
+    const result = textValue(value);
+
+    if (result) return result;
+  }
+
+  return '';
+}
+
+function getBlogSlug() {
+  const path = window.location.pathname
+    .replace(/\/+$/, '');
+
+  const match = path.match(/^\/post\/([^/]+)$/);
+
+  if (!match) return '';
+
   try {
-    return new URL(
-      import.meta.env.VITE_API_BASE_URL || '/',
-      window.location.origin
-    ).origin;
+    return decodeURIComponent(match[1]);
   } catch {
-    return window.location.origin;
+    return match[1];
   }
 }
+
+// ============================================
+// IMAGE URL
+// ============================================
 
 function safeImageURL(value) {
   if (value && typeof value === 'object') {
     value =
+      value.image_url ??
       value.url ??
-      value.full_url ??
       value.src ??
       value.path ??
       '';
@@ -115,185 +137,68 @@ function safeImageURL(value) {
     return '';
   }
 
-  const path = /^(storage|uploads|images)\//i.test(raw)
-    ? `/${raw}`
-    : raw;
+  const base =
+    import.meta.env.VITE_ASSET_BASE_URL ||
+    import.meta.env.VITE_API_BASE_URL ||
+    '/';
 
   try {
-    const url = new URL(path, getAssetOrigin());
-
-    if (
-      url.protocol !== 'http:' &&
-      url.protocol !== 'https:'
-    ) {
-      return '';
-    }
-
-    return url.href;
-  } catch {
-    return '';
-  }
-}
-
-function safeLinkURL(value) {
-  if (typeof value !== 'string') {
-    return '';
-  }
-
-  const raw = value.trim();
-
-  if (
-    !raw ||
-    /[<>"'\u0000-\u001F]/.test(raw)
-  ) {
-    return '';
-  }
-
-  try {
-    const url = new URL(
-      raw,
+    const origin = new URL(
+      base,
       window.location.origin
-    );
+    ).origin;
 
-    return [
-      'http:',
-      'https:',
-      'mailto:',
-      'tel:',
-    ].includes(url.protocol)
+    const path = /^(storage|uploads|images)\//i.test(raw)
+      ? `/${raw}`
+      : raw;
+
+    const url = new URL(path, origin);
+
+    return ['http:', 'https:'].includes(url.protocol)
       ? url.href
       : '';
+
   } catch {
     return '';
   }
 }
 
 // ============================================
-// RICH TEXT SANITIZER
+// API TRANSLATION
 // ============================================
 
-function sanitizeRichHTML(value) {
+function getTranslation(item, language) {
+  const values = item?.translations;
+
+  if (Array.isArray(values)) {
+    return values.find(row =>
+      row.locale === language ||
+      row.lang === language
+    ) || {};
+  }
+
+  if (values && typeof values === 'object') {
+    return values[language] || {};
+  }
+
   if (
-    typeof value !== 'string' ||
-    !value.trim()
+    item?.translation &&
+    (
+      !item.translation.locale ||
+      item.translation.locale === language
+    )
   ) {
-    return '';
+    return item.translation;
   }
 
-  const allowedTags = new Set([
-    'p', 'br',
-    'h2', 'h3', 'h4', 'h5', 'h6',
-    'b', 'strong',
-    'i', 'em', 'u', 's',
-    'blockquote',
-    'ul', 'ol', 'li',
-    'a', 'img',
-    'figure', 'figcaption',
-    'div', 'span', 'hr',
-    'table', 'thead', 'tbody',
-    'tr', 'th', 'td',
-    'pre', 'code',
-  ]);
-
-  const blockedTags = new Set([
-    'script', 'style', 'iframe',
-    'object', 'embed', 'svg',
-    'math', 'form', 'input',
-    'button', 'template',
-    'link', 'meta',
-  ]);
-
-  // Plain text from Laravel
-  if (!/<[a-z][\s\S]*?>/i.test(value)) {
-    return value
-      .split(/\n\s*\n/)
-      .filter(Boolean)
-      .map(part => `
-        <p>
-          ${escapeHTML(part).replace(/\n/g, '<br>')}
-        </p>
-      `)
-      .join('');
-  }
-
-  const documentHTML = new DOMParser()
-    .parseFromString(value, 'text/html');
-
-  function clean(node) {
-    if (node.nodeType === Node.TEXT_NODE) {
-      return escapeHTML(node.textContent);
-    }
-
-    if (node.nodeType !== Node.ELEMENT_NODE) {
-      return '';
-    }
-
-    const tag = node.tagName.toLowerCase();
-
-    if (blockedTags.has(tag)) {
-      return '';
-    }
-
-    const inner = [...node.childNodes]
-      .map(clean)
-      .join('');
-
-    if (!allowedTags.has(tag)) {
-      return inner;
-    }
-
-    if (tag === 'br' || tag === 'hr') {
-      return `<${tag}>`;
-    }
-
-    if (tag === 'img') {
-      const src = safeImageURL(
-        node.getAttribute('src')
-      );
-
-      if (!src) return '';
-
-      return `
-        <img
-          src="${escapeHTML(src)}"
-          alt="${escapeHTML(node.getAttribute('alt') || '')}"
-          loading="lazy"
-          decoding="async"
-        >
-      `;
-    }
-
-    if (tag === 'a') {
-      const href = safeLinkURL(
-        node.getAttribute('href')
-      );
-
-      if (!href) return inner;
-
-      return `
-        <a
-          href="${escapeHTML(href)}"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          ${inner}
-        </a>
-      `;
-    }
-
-    return `<${tag}>${inner}</${tag}>`;
-  }
-
-  return [...documentHTML.body.childNodes]
-    .map(clean)
-    .join('');
+  return {};
 }
 
 // ============================================
-// DATE
+// FORMAT DATE
 // ============================================
 
-function formatDate(value, lang) {
+function formatBlogDate(value, language) {
   if (!value) {
     return {
       iso: '',
@@ -303,11 +208,9 @@ function formatDate(value, lang) {
 
   const raw = String(value);
 
-  const date = new Date(
-    /^\d{4}-\d{2}-\d{2}$/.test(raw)
-      ? `${raw}T12:00:00Z`
-      : raw
-  );
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(raw)
+    ? new Date(`${raw}T12:00:00Z`)
+    : new Date(raw);
 
   if (Number.isNaN(date.getTime())) {
     return {
@@ -320,7 +223,7 @@ function formatDate(value, lang) {
     iso: date.toISOString().slice(0, 10),
 
     label: new Intl.DateTimeFormat(
-      lang === 'fa' ? 'fa-IR' : 'en-US',
+      language === 'fa' ? 'fa-IR' : 'en-US',
       {
         year: 'numeric',
         month: 'long',
@@ -332,13 +235,29 @@ function formatDate(value, lang) {
 }
 
 // ============================================
-// EXTRACT API RESPONSE
+// API RESPONSE
 // ============================================
+
+function checkResponse(response) {
+  if (
+    response?.status === false ||
+    response?.success === false
+  ) {
+    const error = new Error(
+      response?.message || 'BLOG_API_ERROR'
+    );
+
+    error.status =
+      response?.statusCode || 500;
+
+    throw error;
+  }
+}
 
 function extractPosts(response) {
   const data = response?.data;
 
-  const candidates = [
+  return [
     data,
     data?.data,
     data?.blogs,
@@ -346,43 +265,65 @@ function extractPosts(response) {
     data?.posts,
     data?.posts?.data,
     data?.items,
-  ];
-
-  return candidates.find(Array.isArray) ?? null;
+  ].find(Array.isArray) || [];
 }
 
-function extractArticle(response) {
+function extractArticle(response, slug, language) {
+  checkResponse(response);
+
   const data = response?.data;
 
-  const candidates = [
-    data?.blog,
-    data?.post,
-    data?.article,
-    data?.data?.blog,
-    data?.data?.post,
-    data?.data?.article,
-    data?.data,
-    data,
-  ];
+  const candidate =
+    data?.blog ??
+    data?.post ??
+    data?.article ??
+    data?.data ??
+    data;
 
-  return candidates.find(item =>
-    item &&
-    typeof item === 'object' &&
-    !Array.isArray(item) &&
-    (
-      item.id != null ||
-      item.title_1 != null ||
-      item.slug != null ||
-      item.title != null
-    )
-  ) ?? null;
+  if (Array.isArray(candidate)) {
+    return candidate.find(item =>
+      (
+        String(item?.slug ?? item?.blog_slug) === slug ||
+        String(item?.id) === slug
+      ) &&
+      (!item.locale || item.locale === language)
+    ) || null;
+  }
+
+  if (
+    !candidate ||
+    typeof candidate !== 'object'
+  ) {
+    return null;
+  }
+
+  const candidateSlug =
+    candidate.slug ??
+    candidate.blog_slug;
+
+  if (
+    candidateSlug != null &&
+    String(candidateSlug) !== slug &&
+    String(candidate.id) !== slug
+  ) {
+    return null;
+  }
+
+  if (
+    candidate.locale &&
+    candidate.locale !== language
+  ) {
+    return null;
+  }
+
+  return candidate;
 }
 
 // ============================================
-// ARTICLE NORMALIZATION
+// NORMALIZE BLOG
 // ============================================
 
-function normalizePost(item, lang) {
+function normalizeBlog(item, language) {
   if (
     !item ||
     typeof item !== 'object'
@@ -390,348 +331,437 @@ function normalizePost(item, lang) {
     return null;
   }
 
-  const title = textValue(
-    item.title_1 ?? item.title
+  const translation = getTranslation(
+    item,
+    language
   );
 
-  if (!title) return null;
+  const title1 = firstText(
+    translation.title_1,
+    item.title_1,
+    translation.title,
+    item.title
+  );
+
+  if (!title1) return null;
+
+  const image1 = safeImageURL(
+    item.image_1_url ??
+    item.image_1 ??
+    item.image_url ??
+    item.image ??
+    translation.image_1
+  );
+
+  const extraImages = [
+    item.image_2_url ?? item.image_2,
+    item.image_3_url ?? item.image_3,
+    item.image_4_url ?? item.image_4,
+
+    ...(Array.isArray(item.gallery)
+      ? item.gallery
+      : []),
+
+    ...(Array.isArray(item.images)
+      ? item.images
+      : []),
+  ];
+
+  const gallery = [
+    ...new Set(
+      extraImages
+        .map(safeImageURL)
+        .filter(url =>
+          url && url !== image1
+        )
+    ),
+  ];
+
+  const date = formatBlogDate(
+    item.date ??
+    item.published_at ??
+    item.created_at,
+    language
+  );
 
   return {
     id: item.id ?? null,
 
-    slug: textValue(
-      item.slug ?? item.blog_slug
+    slug: firstText(
+      item.slug,
+      item.blog_slug,
+      translation.slug
     ),
 
-    title,
+    title1,
 
-    image: safeImageURL(
-      item.image_1 ??
-      item.image_url ??
-      item.image
+    description1: firstText(
+      translation.description_1,
+      item.description_1,
+      translation.description,
+      item.description,
+      item.content
     ),
 
-    date: formatDate(
-      item.date ??
-      item.published_at ??
-      item.created_at,
-      lang
+    title2: firstText(
+      translation.title_2,
+      item.title_2
     ),
+
+    description2: firstText(
+      translation.description_2,
+      item.description_2
+    ),
+
+    title3: firstText(
+      translation.title_3,
+      item.title_3
+    ),
+
+    description3: firstText(
+      translation.description_3,
+      item.description_3
+    ),
+
+    image1,
+    gallery,
+
+    date,
   };
 }
 
-function normalizeArticle(item, lang, identifier) {
-  const basic = normalizePost(item, lang);
-
-  if (!basic) return null;
-
-  return {
-    ...basic,
-
-    slug: basic.slug || identifier,
-
-    secondImage: safeImageURL(
-      item.image_2
-    ),
-
-    readingTime: item.reading_time ?? null,
-
-    sections: [
-      {
-        title: basic.title,
-        description: textValue(item.description_1),
-      },
-      {
-        title: textValue(item.title_2),
-        description: textValue(item.description_2),
-      },
-      {
-        title: textValue(item.title_3),
-        description: textValue(item.description_3),
-      },
-    ],
-
-    categories: normalizeCategories(item),
-  };
-}
-
-function normalizeCategories(item) {
-  const raw =
-    item.categories ??
-    item.category ??
-    [];
-
-  const list = Array.isArray(raw)
-    ? raw
-    : [raw];
-
-  return [
-    ...new Set(
-      list
-        .map(category => {
-          if (typeof category === 'string') {
-            return category.trim();
-          }
-
-          if (
-            category &&
-            typeof category === 'object'
-          ) {
-            return textValue(
-              category.name ??
-              category.title
-            );
-          }
-
-          return '';
-        })
-        .filter(Boolean)
-    ),
-  ];
-}
-
 // ============================================
-// GENERATE POST URL
+// SAFE RICH TEXT
 // ============================================
 
-function postURL(post) {
-  // Use real slug when available.
-  // Otherwise use numeric ID.
-  const key =
-    post.slug ||
-    (
-      post.id != null
-        ? String(post.id)
-        : ''
-    );
+function renderRichText(source) {
+  if (!source) return '';
 
-  if (!key) return '';
+  if (!/<[a-z][\s\S]*?>/i.test(source)) {
+    return source
+      .split(/\n\s*\n/)
+      .filter(Boolean)
+      .map(part => `
+        <p>
+          ${escapeHTML(part).replace(/\n/g, '<br>')}
+        </p>
+      `)
+      .join('');
+  }
 
-  return `/post/${encodeURIComponent(key)}`;
-}
+  const allowed = new Set([
+    'p', 'br', 'strong', 'b',
+    'em', 'i', 'u', 's',
+    'h2', 'h3', 'h4', 'h5', 'h6',
+    'ul', 'ol', 'li',
+    'blockquote', 'a',
+    'div', 'span', 'hr',
+  ]);
 
-// ============================================
-// ARTICLE HEADER
-// ============================================
+  const blocked = new Set([
+    'script', 'style', 'iframe',
+    'object', 'embed', 'svg',
+    'math', 'form', 'input',
+    'button', 'template',
+  ]);
 
-function renderArticleHeader(article) {
-  const image = article.image
-    ? `
-      <img
-        class="blog-single-main-image"
-        src="${escapeHTML(article.image)}"
-        alt="${escapeHTML(article.title)}"
-        loading="eager"
-        decoding="async"
-      >
-    `
-    : '';
+  const template = document.createElement(
+    'template'
+  );
 
-  const category = article.categories.length
-    ? `
-      <div class="blog-one-data">
-        ${escapeHTML(article.categories[0])}
-      </div>
-    `
-    : '';
+  template.innerHTML = source;
 
-  const date = article.date.label
-    ? `
-      <div class="blog-one-data-block">
-        <time
-          class="blog-date-one"
-          datetime="${escapeHTML(article.date.iso)}"
-        >
-          ${escapeHTML(article.date.label)}
-        </time>
-      </div>
-    `
-    : '';
+  function clean(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return escapeHTML(node.textContent);
+    }
 
-  return `
-    <div class="w-dyn-list">
-      <div class="w-dyn-items" role="list">
-        <div class="w-dyn-item" role="listitem">
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+      return '';
+    }
 
-          <div class="blog-single-info-inner-block">
+    const tag = node.tagName.toLowerCase();
 
-            ${image}
+    if (blocked.has(tag)) return '';
 
-            <div class="blog-one-meta">
-              ${category}
-              ${date}
-            </div>
+    const children = Array.from(node.childNodes)
+      .map(clean)
+      .join('');
 
-            <h1 class="blog-single-title">
-              ${escapeHTML(article.title)}
-            </h1>
+    if (!allowed.has(tag)) {
+      return children;
+    }
 
-          </div>
+    if (tag === 'br' || tag === 'hr') {
+      return `<${tag}>`;
+    }
 
-        </div>
-      </div>
-    </div>
-  `;
-}
+    if (tag === 'a') {
+      const href = node.getAttribute('href') || '';
 
-// ============================================
-// ARTICLE CONTENT
-// ============================================
+      try {
+        const url = new URL(
+          href,
+          window.location.origin
+        );
 
-function renderArticleContent(article) {
-  return article.sections
-    .map((section, index) => {
-      if (!section.title && !section.description) {
-        return '';
+        if (
+          ['http:', 'https:', 'mailto:', 'tel:']
+            .includes(url.protocol)
+        ) {
+          return `
+            <a
+              href="${escapeHTML(url.href)}"
+              rel="noopener noreferrer"
+            >
+              ${children}
+            </a>
+          `;
+        }
+      } catch {
+        // Ignore unsafe links.
       }
 
-      // title_1 is already the main H1.
-      const heading = index > 0 && section.title
-        ? `
-          <h2>
-            ${escapeHTML(section.title)}
-          </h2>
-        `
-        : '';
+      return children;
+    }
 
-      const description = sanitizeRichHTML(
-        section.description
-      );
+    return `<${tag}>${children}</${tag}>`;
+  }
 
-      return `
-        <div class="dp-blog-content-section">
-          ${heading}
-          ${description}
-        </div>
-      `;
-    })
+  return Array.from(template.content.childNodes)
+    .map(clean)
     .join('');
 }
 
 // ============================================
-// EXTRA IMAGE
+// RENDER MAIN ARTICLE
 // ============================================
 
-function renderGallery(image, title) {
-  if (!image) return '';
+function renderArticle(post, language) {
+  const hero = post.image1
+    ? `
+      <img
+        class="blog-single-main-image"
+        src="${escapeHTML(post.image1)}"
+        alt="${escapeHTML(post.title1)}"
+        loading="eager"
+        decoding="async"
+      />
+    `
+    : '';
+
+  const dateHTML = post.date.label
+    ? `
+      <div class="blog-one-meta">
+
+        <div class="blog-one-data-block">
+          <time
+            class="blog-date-one"
+            datetime="${escapeHTML(post.date.iso)}"
+          >
+            ${escapeHTML(post.date.label)}
+          </time>
+        </div>
+
+      </div>
+    `
+    : '';
+
+  const galleryHTML = post.gallery.length
+    ? `
+      <div
+        class="blog-extra-image-list"
+        aria-label="${escapeHTML(tr('gallery', language))}"
+      >
+
+        ${post.gallery.map(image => `
+          <div class="w-dyn-list">
+            <div class="w-dyn-items" role="list">
+
+              <div class="w-dyn-item" role="listitem">
+
+                <a
+                  href="${escapeHTML(image)}"
+                  class="blog-image-lightbox w-inline-block"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+
+                  <img
+                    class="blog-image-extra"
+                    src="${escapeHTML(image)}"
+                    alt="${escapeHTML(post.title1)}"
+                    loading="lazy"
+                  />
+
+                </a>
+
+              </div>
+
+            </div>
+          </div>
+        `).join('')}
+
+      </div>
+    `
+    : '';
+
+  function additionalSection(title, description) {
+    if (!title && !description) return '';
+
+    return `
+      <div class="w-richtext dp-blog-more-content">
+
+        ${title
+          ? `<h3>${escapeHTML(title)}</h3>`
+          : ''
+        }
+
+        ${renderRichText(description)}
+
+      </div>
+    `;
+  }
 
   return `
     <div class="w-dyn-list">
+
       <div class="w-dyn-items" role="list">
 
         <div class="w-dyn-item" role="listitem">
 
-          <a
-            class="blog-image-lightbox w-inline-block"
-            href="${escapeHTML(image)}"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <img
-              class="blog-image-extra"
-              src="${escapeHTML(image)}"
-              alt="${escapeHTML(title)}"
-              loading="lazy"
-              decoding="async"
-            >
-          </a>
+          <div class="blog-single-info-inner-block">
 
-        </div>
-      </div>
-    </div>
-  `;
-}
+            ${hero}
 
-// ============================================
-// SIDEBAR CATEGORIES
-// ============================================
+            ${dateHTML}
 
-function renderCategories(categories) {
-  return `
-    <div class="w-dyn-items" role="list">
+            <h1 class="blog-single-title">
+              ${escapeHTML(post.title1)}
+            </h1>
 
-      ${categories.map(category => `
-        <div class="w-dyn-item" role="listitem">
+            ${
+              post.description1
+                ? `
+                  <div class="blog-richtext w-richtext">
+                    ${renderRichText(post.description1)}
+                  </div>
+                `
+                : ''
+            }
 
-          <div class="blog-single-link">
-            <div class="blog-dot"></div>
-
-            <h3 class="blog-single-category-title">
-              ${escapeHTML(category)}
-            </h3>
           </div>
 
         </div>
-      `).join('')}
+
+      </div>
 
     </div>
+
+    ${galleryHTML}
+
+    ${additionalSection(
+      post.title2,
+      post.description2
+    )}
+
+    ${additionalSection(
+      post.title3,
+      post.description3
+    )}
   `;
 }
 
 // ============================================
-// RECENT POST
+// OTHER BLOGS SIDEBAR
 // ============================================
 
-function renderRecentPost(post) {
-  const url = postURL(post);
-
-  const content = `
-    ${
-      post.image
-        ? `
-          <img
-            class="blog-resent-image"
-            src="${escapeHTML(post.image)}"
-            alt="${escapeHTML(post.title)}"
-            loading="lazy"
-            decoding="async"
-          >
-        `
-        : ''
-    }
-
-    <div class="recent-info-block">
-
-      <h3 class="recent-heading">
-        ${escapeHTML(post.title)}
-      </h3>
-
-      ${
-        post.date.label
-          ? `
-            <div class="recent-date-block">
-              <time
-                class="recent-date"
-                datetime="${escapeHTML(post.date.iso)}"
-              >
-                ${escapeHTML(post.date.label)}
-              </time>
-            </div>
-          `
-          : ''
-      }
-
-    </div>
-  `;
-
+function renderOtherBlogs(posts, language) {
   return `
-    <div class="w-dyn-item" role="listitem">
-      ${
-        url
-          ? `
-            <a
-              class="recent-link w-inline-block"
-              href="${escapeHTML(url)}"
-            >
-              ${content}
-            </a>
-          `
-          : `
-            <div class="recent-link w-inline-block">
-              ${content}
+    <div class="w-dyn-list">
+
+      <div
+        class="w-dyn-items dp-other-blogs-list"
+        role="list"
+      >
+
+        ${posts.map(post => {
+
+          const content = `
+            ${
+              post.image1
+                ? `
+                  <img
+                    class="blog-resent-image"
+                    src="${escapeHTML(post.image1)}"
+                    alt="${escapeHTML(post.title1)}"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                `
+                : `
+                  <div
+                    class="dp-other-blog-placeholder"
+                    aria-hidden="true"
+                  >
+                    ✦
+                  </div>
+                `
+            }
+
+            <div class="recent-info-block">
+
+              <h3 class="recent-heading">
+                ${escapeHTML(post.title1)}
+              </h3>
+
+              ${
+                post.date.label
+                  ? `
+                    <div class="recent-date-block">
+                      <time
+                        class="recent-date"
+                        datetime="${escapeHTML(post.date.iso)}"
+                      >
+                        ${escapeHTML(post.date.label)}
+                      </time>
+                    </div>
+                  `
+                  : ''
+              }
+
             </div>
-          `
-      }
+          `;
+
+          return `
+            <div
+              class="w-dyn-item"
+              role="listitem"
+            >
+
+              ${
+                post.slug
+                  ? `
+                    <a
+                      href="/post/${encodeURIComponent(post.slug)}"
+                      class="recent-link w-inline-block"
+                    >
+                      ${content}
+                    </a>
+                  `
+                  : `
+                    <div class="recent-link">
+                      ${content}
+                    </div>
+                  `
+              }
+
+            </div>
+          `;
+        }).join('')}
+
+      </div>
+
     </div>
   `;
 }
@@ -741,8 +771,10 @@ function renderRecentPost(post) {
 // ============================================
 
 export function BlogDetails() {
+  const language = currentLanguage();
+
   return `
-    <div
+    <main
       class="dentistry-blog-details-page"
       data-blog-details-page
     >
@@ -754,18 +786,23 @@ export function BlogDetails() {
         <div
           class="w-layout-blockcontainer container-fluid w-container"
         >
+
           <div class="breadcrumb-block three">
 
             <div
               class="w-layout-blockcontainer container w-container"
             >
+
               <div class="breadcrumb-main-title-block">
 
                 <div class="breadcrumb-title-block">
 
-                  <h1 class="breadcrumb-title">
-                    ${t('blog.details.page')}
-                  </h1>
+                  <h2
+                    class="breadcrumb-title"
+                    data-blog-heading
+                  >
+                    ${escapeHTML(tr('blog', language))}
+                  </h2>
 
                 </div>
 
@@ -774,44 +811,43 @@ export function BlogDetails() {
                   <a
                     href="/"
                     class="breadcrumb-subtext"
+                    data-blog-home
                   >
-                    ${t('blog.home')}
+                    ${escapeHTML(tr('home', language))}
                   </a>
 
-                  <span
-                    class="breadcrumb-subtext"
-                    aria-hidden="true"
-                  >
+                  <span class="breadcrumb-subtext">
                     -
                   </span>
 
                   <a
                     href="/blog"
                     class="breadcrumb-subtext"
+                    data-blog-link
                   >
-                    ${t('blog.title')}
+                    ${escapeHTML(tr('blog', language))}
                   </a>
 
-                  <span
-                    class="breadcrumb-subtext"
-                    aria-hidden="true"
-                  >
+                  <span class="breadcrumb-subtext">
                     -
                   </span>
 
                   <span
                     class="breadcrumb-subtext"
+                    data-blog-crumb
                     aria-current="page"
                   >
-                    ${t('blog.details.breadcrumb')}
+                    ${escapeHTML(tr('details', language))}
                   </span>
 
                 </div>
 
               </div>
+
             </div>
 
           </div>
+
         </div>
       </section>
 
@@ -819,108 +855,81 @@ export function BlogDetails() {
 
       <div
         class="dp-blog-details-status"
-        data-blog-details-status
+        data-blog-status
         role="status"
         aria-live="polite"
       >
-        ${t('blog.details.loading')}
+        ${escapeHTML(tr('loading', language))}
       </div>
 
-      <!-- ARTICLE DETAILS -->
+      <!-- BLOG DETAILS -->
 
       <section
         class="section blog-single-section"
-        data-blog-details-section
+        data-blog-section
         hidden
       >
+
         <div
           class="w-layout-blockcontainer container w-container"
         >
+
           <div class="w-layout-grid blog-single-grid">
 
             <!-- MAIN ARTICLE -->
 
-            <div class="blog-single-info-main-block">
+            <div
+              class="blog-single-info-main-block"
+              data-blog-article
+            ></div>
 
-              <!-- Title, date and main image -->
+            <!-- RIGHT SIDEBAR -->
 
-              <div data-blog-article></div>
-
-              <!-- Description 1, 2 and 3 -->
-
-              <div
-                class="blog-richtext w-richtext"
-                data-blog-content
-              ></div>
-
-              <!-- Second image -->
-
-              <div
-                class="blog-extra-image-list"
-                data-blog-gallery
-                hidden
-              ></div>
-
-            </div>
-
-            <!-- SIDEBAR -->
-
-            <div class="blog-single-info-right-block">
+            <aside
+              class="blog-single-info-right-block"
+              aria-label="${escapeHTML(tr('otherBlogs', language))}"
+              data-other-blogs-aside
+            >
 
               <div class="blog-single-sticky-block">
 
-                <!-- CATEGORIES -->
+                <div class="service-single-left-block last">
 
-                <div
-                  class="service-single-left-block"
-                  data-blog-categories-box
-                  hidden
-                >
                   <div class="service-single-box-title">
-                    <h3 class="service-single-title">
-                      ${t('blog.details.categories')}
+
+                    <h3
+                      class="service-single-title"
+                      data-other-blogs-heading
+                    >
+                      ${escapeHTML(tr('otherBlogs', language))}
                     </h3>
+
                   </div>
+
+                  <!-- OTHER BLOGS FROM API -->
 
                   <div
-                    class="blog-categorie-block w-dyn-list"
-                    data-blog-categories
-                  ></div>
-
-                </div>
-
-                <!-- RECENT ARTICLES -->
-
-                <div
-                  class="service-single-left-block last"
-                  data-blog-recent-box
-                  hidden
-                >
-                  <div class="service-single-box-title">
-                    <h3 class="service-single-title">
-                      ${t('blog.details.recent')}
-                    </h3>
-                  </div>
-
-                  <div class="w-dyn-list">
-                    <div
-                      class="w-dyn-items"
-                      role="list"
-                      data-blog-recent
-                    ></div>
+                    data-other-blogs-list
+                    aria-live="polite"
+                  >
+                    <p class="dp-other-blogs-message">
+                      ${escapeHTML(tr('loadingBlogs', language))}
+                    </p>
                   </div>
 
                 </div>
 
               </div>
 
-            </div>
+            </aside>
 
           </div>
+
         </div>
+
       </section>
 
-    </div>
+    </main>
   `;
 }
 
@@ -933,58 +942,44 @@ export function initBlogDetails() {
     '[data-blog-details-page]'
   );
 
-  if (!root) {
-    return () => {};
-  }
+  if (!root) return () => {};
 
   const lifecycle = new AbortController();
 
   let requestController = null;
-  let renderedLang = currentLang();
 
-  const identifier = currentSlug();
+  let activeLanguage = currentLanguage();
+
+  const slug = getBlogSlug();
 
   // ============================================
   // ELEMENTS
   // ============================================
 
   const status = root.querySelector(
-    '[data-blog-details-status]'
+    '[data-blog-status]'
   );
 
   const section = root.querySelector(
-    '[data-blog-details-section]'
+    '[data-blog-section]'
   );
 
-  const articleEl = root.querySelector(
+  const article = root.querySelector(
     '[data-blog-article]'
   );
 
-  const contentEl = root.querySelector(
-    '[data-blog-content]'
+  const otherBlogsList = root.querySelector(
+    '[data-other-blogs-list]'
   );
 
-  const galleryEl = root.querySelector(
-    '[data-blog-gallery]'
+  const otherBlogsHeading = root.querySelector(
+    '[data-other-blogs-heading]'
   );
 
-  const categoriesBox = root.querySelector(
-    '[data-blog-categories-box]'
+  const otherBlogsAside = root.querySelector(
+    '[data-other-blogs-aside]'
   );
 
-  const categoriesEl = root.querySelector(
-    '[data-blog-categories]'
-  );
-
-  const recentBox = root.querySelector(
-    '[data-blog-recent-box]'
-  );
-
-  const recentEl = root.querySelector(
-    '[data-blog-recent]'
-  );
-
-  // Preserve existing Webflow interactions.
   const cleanupInteractions = initPageInteractions(
     document.getElementById('app')
   );
@@ -993,7 +988,7 @@ export function initBlogDetails() {
   // STATUS
   // ============================================
 
-  function showStatus(message, retry = false) {
+  function setStatus(message, retry = false) {
     status.hidden = false;
     status.textContent = message;
 
@@ -1002,8 +997,8 @@ export function initBlogDetails() {
 
       button.type = 'button';
       button.className = 'dp-blog-details-retry';
-      button.dataset.blogDetailsRetry = '';
-      button.textContent = t('blog.details.retry');
+      button.dataset.blogRetry = '';
+      button.textContent = tr('retry');
 
       status.appendChild(button);
     }
@@ -1015,78 +1010,60 @@ export function initBlogDetails() {
   }
 
   // ============================================
-  // RESET PAGE
+  // UPDATE LABELS
   // ============================================
 
-  function clearView() {
+  function updateLabels(language) {
+    const fields = {
+      '[data-blog-heading]': 'blog',
+      '[data-blog-home]': 'home',
+      '[data-blog-link]': 'blog',
+      '[data-blog-crumb]': 'details',
+      '[data-other-blogs-heading]': 'otherBlogs',
+    };
+
+    for (const [selector, key] of Object.entries(fields)) {
+      const element = root.querySelector(selector);
+
+      if (element) {
+        element.textContent = tr(key, language);
+      }
+    }
+
+    otherBlogsAside.setAttribute(
+      'aria-label',
+      tr('otherBlogs', language)
+    );
+  }
+
+  // ============================================
+  // RESET
+  // ============================================
+
+  function reset(language) {
     section.hidden = true;
 
-    articleEl.innerHTML = '';
-    contentEl.innerHTML = '';
-    galleryEl.innerHTML = '';
-    categoriesEl.innerHTML = '';
-    recentEl.innerHTML = '';
+    article.innerHTML = '';
 
-    galleryEl.hidden = true;
-    categoriesBox.hidden = true;
-    recentBox.hidden = true;
+    otherBlogsList.innerHTML = `
+      <p class="dp-other-blogs-message">
+        ${escapeHTML(tr('loadingBlogs', language))}
+      </p>
+    `;
   }
 
   // ============================================
-  // DISPLAY ARTICLE
+  // LOAD OTHER BLOGS
   // ============================================
 
-  function renderDetails(article) {
-    // Main image, title, date
-    articleEl.innerHTML =
-      renderArticleHeader(article);
-
-    // All three content sections
-    contentEl.innerHTML =
-      renderArticleContent(article);
-
-    // image_2
-    if (
-      article.secondImage &&
-      article.secondImage !== article.image
-    ) {
-      galleryEl.innerHTML = renderGallery(
-        article.secondImage,
-        article.title
-      );
-
-      galleryEl.hidden = false;
-    }
-
-    // Optional categories
-    if (article.categories.length) {
-      categoriesEl.innerHTML = renderCategories(
-        article.categories
-      );
-
-      categoriesBox.hidden = false;
-    }
-
-    // Show article
-    section.hidden = false;
-    hideStatus();
-
-    // SEO title
-    document.title = `${article.title} | Dentistry`;
-  }
-
-  // ============================================
-  // RECENT POSTS
-  // ============================================
-
-  async function loadRecent(
-    lang,
-    article,
+  async function loadOtherBlogs(
+    language,
+    currentPost,
     signal
   ) {
     try {
       const response = await blogApi.list(
-        lang,
+        language,
         signal
       );
 
@@ -1094,174 +1071,191 @@ export function initBlogDetails() {
         signal.aborted ||
         lifecycle.signal.aborted ||
         !root.isConnected ||
-        currentLang() !== lang
+        currentLanguage() !== language
       ) {
         return;
       }
 
-      const items = extractPosts(response);
+      checkResponse(response);
 
-      if (!items) {
-        recentBox.hidden = true;
+      // All blogs from Laravel API
+      const posts = extractPosts(response)
+        .filter(item =>
+          !item.locale ||
+          item.locale === language
+        )
+        .map(item =>
+          normalizeBlog(item, language)
+        )
+        .filter(Boolean);
+
+      // ======================================
+      // EXCLUDE CURRENT ARTICLE
+      // ======================================
+
+      const otherPosts = posts.filter(post => {
+
+        // Exclude using ID when available.
+        if (
+          currentPost.id != null &&
+          post.id != null &&
+          String(post.id) === String(currentPost.id)
+        ) {
+          return false;
+        }
+
+        // Exclude using slug.
+        if (
+          post.slug &&
+          (
+            post.slug === slug ||
+            post.slug === currentPost.slug
+          )
+        ) {
+          return false;
+        }
+
+        return true;
+
+      });
+
+      // Remove duplicates by ID or slug.
+      const unique = [];
+      const seen = new Set();
+
+      for (const post of otherPosts) {
+        const key = post.id != null
+          ? `id:${post.id}`
+          : post.slug
+            ? `slug:${post.slug}`
+            : `title:${post.title1}`;
+
+        if (seen.has(key)) continue;
+
+        seen.add(key);
+        unique.push(post);
+      }
+
+      // Maximum 5 other articles
+      const selected = unique.slice(0, 5);
+
+      if (!selected.length) {
+        otherBlogsList.innerHTML = `
+          <p class="dp-other-blogs-message">
+            ${escapeHTML(tr('otherEmpty', language))}
+          </p>
+        `;
+
         return;
       }
 
-      const recentPosts = items
-        .map(item => normalizePost(item, lang))
-        .filter(post => {
-          if (!post) return false;
-
-          // Exclude currently opened article.
-          if (
-            article.id != null &&
-            post.id != null &&
-            String(post.id) === String(article.id)
-          ) {
-            return false;
-          }
-
-          if (
-            article.slug &&
-            post.slug &&
-            post.slug === article.slug
-          ) {
-            return false;
-          }
-
-          return true;
-        })
-        .sort((a, b) =>
-          b.date.iso.localeCompare(a.date.iso)
-        )
-        .slice(0, 4);
-
-      recentEl.innerHTML = recentPosts
-        .map(renderRecentPost)
-        .join('');
-
-      recentBox.hidden = recentPosts.length === 0;
+      otherBlogsList.innerHTML = renderOtherBlogs(
+        selected,
+        language
+      );
 
     } catch (error) {
-      if (!signal.aborted) {
-        console.warn(
-          'Recent blogs could not be loaded:',
-          error
-        );
-
-        recentBox.hidden = true;
+      if (
+        signal.aborted ||
+        lifecycle.signal.aborted
+      ) {
+        return;
       }
+
+      console.error(
+        'Other blogs API error:',
+        error
+      );
+
+      otherBlogsList.innerHTML = `
+        <p class="dp-other-blogs-message">
+          ${escapeHTML(tr('otherError', language))}
+        </p>
+      `;
     }
   }
 
   // ============================================
-  // FETCH ARTICLE BY SLUG OR ID
+  // LOAD ARTICLE
   // ============================================
 
-  async function loadArticle() {
-    // Cancel previous request
+  async function load() {
     requestController?.abort();
 
     requestController = new AbortController();
 
     const signal = requestController.signal;
-    const lang = currentLang();
 
-    renderedLang = lang;
+    const language = currentLanguage();
 
-    clearView();
+    activeLanguage = language;
 
-    if (!identifier) {
-      showStatus(t('blog.details.notFound'));
+    updateLabels(language);
+    reset(language);
+
+    if (!slug) {
+      setStatus(tr('notFound', language));
       return;
     }
 
-    showStatus(t('blog.details.loading'));
+    setStatus(tr('loading', language));
 
     try {
-      let rawArticle = null;
+      // GET /api/v1/blogs/{slug}?lang=fa|en
 
-      // ========================================
-      // CASE 1: NUMERIC ARTICLE ID
-      // Example: /post/1
-      // ========================================
-
-      if (/^\d+$/.test(identifier)) {
-        // Current backend list returns:
-        // { success: true, data: [{ id: 1, ... }] }
-        //
-        // So we find the article using its ID.
-        const response = await blogApi.list(
-          lang,
-          signal
-        );
-
-        const posts = extractPosts(response);
-
-        if (posts) {
-          rawArticle = posts.find(
-            post =>
-              String(post.id) === identifier
-          ) ?? null;
-        }
-
-      } else {
-        // ======================================
-        // CASE 2: REAL ARTICLE SLUG
-        // Example: /post/dental-care-guide
-        // ======================================
-
-        const response = await blogApi.show(
-          identifier,
-          lang,
-          signal
-        );
-
-        rawArticle = extractArticle(response);
-      }
-
-      // ========================================
-      // CHECK REQUEST STATE
-      // ========================================
+      const response = await blogApi.show(
+        slug,
+        language,
+        signal
+      );
 
       if (
         signal.aborted ||
         lifecycle.signal.aborted ||
         !root.isConnected ||
-        currentLang() !== lang
+        currentLanguage() !== language
       ) {
         return;
       }
 
-      // ========================================
-      // NORMALIZE ARTICLE
-      // ========================================
+      const rawPost = extractArticle(
+        response,
+        slug,
+        language
+      );
 
-      const article = rawArticle
-        ? normalizeArticle(
-            rawArticle,
-            lang,
-            identifier
-          )
-        : null;
+      const post = normalizeBlog(
+        rawPost,
+        language
+      );
 
-      if (!article) {
-        showStatus(t('blog.details.notFound'));
+      if (!post) {
+        setStatus(tr('notFound', language));
         return;
       }
 
-      // ========================================
+      // ======================================
       // RENDER ARTICLE
-      // ========================================
+      // ======================================
 
-      renderDetails(article);
+      article.innerHTML = renderArticle(
+        post,
+        language
+      );
 
-      // ========================================
-      // LOAD RECENT POSTS
-      // ========================================
+      section.hidden = false;
 
-      void loadRecent(
-        lang,
-        article,
+      hideStatus();
+
+      document.title = `${post.title1} | Dentistry`;
+
+      // ======================================
+      // FETCH OTHER ARTICLES
+      // ======================================
+
+      void loadOtherBlogs(
+        language,
+        post,
         signal
       );
 
@@ -1274,57 +1268,55 @@ export function initBlogDetails() {
       }
 
       console.error(
-        'Blog details API failed:',
+        'Blog Details API error:',
         error
       );
 
-      if (error?.status === 404) {
-        showStatus(t('blog.details.notFound'));
-        return;
-      }
+      const notFound =
+        error?.status === 404 ||
+        error?.statusCode === 404;
 
-      showStatus(
-        t('blog.details.error'),
-        true
+      setStatus(
+        tr(
+          notFound ? 'notFound' : 'error',
+          language
+        ),
+        !notFound
       );
     }
   }
 
   // ============================================
-  // RETRY BUTTON
+  // RETRY
   // ============================================
 
   root.addEventListener(
     'click',
     event => {
-      const button = event.target.closest(
-        '[data-blog-details-retry]'
-      );
-
-      if (!button) return;
-
-      event.preventDefault();
-
-      void loadArticle();
+      if (
+        event.target instanceof Element &&
+        event.target.closest('[data-blog-retry]')
+      ) {
+        event.preventDefault();
+        void load();
+      }
     },
     { signal: lifecycle.signal }
   );
 
   // ============================================
-  // LANGUAGE SWITCH
+  // LANGUAGE CHANGE
   // ============================================
 
-  const languageObserver = new MutationObserver(
-    () => {
-      const nextLang = currentLang();
+  const observer = new MutationObserver(() => {
+    const language = currentLanguage();
 
-      if (nextLang !== renderedLang) {
-        void loadArticle();
-      }
+    if (language !== activeLanguage) {
+      void load();
     }
-  );
+  });
 
-  languageObserver.observe(
+  observer.observe(
     document.documentElement,
     {
       attributes: true,
@@ -1336,7 +1328,7 @@ export function initBlogDetails() {
   // INITIAL LOAD
   // ============================================
 
-  void loadArticle();
+  void load();
 
   // ============================================
   // CLEANUP
@@ -1347,7 +1339,7 @@ export function initBlogDetails() {
 
     requestController?.abort();
 
-    languageObserver.disconnect();
+    observer.disconnect();
 
     if (typeof cleanupInteractions === 'function') {
       cleanupInteractions();

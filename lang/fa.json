@@ -147,6 +147,7 @@
   "auth.forgot.requestFailed": "در انجام درخواست مشکلی پیش آمد. دوباره تلاش کنید.",
   "auth.shell.privacyLegal": "اطلاعات حساب کاربری شما از طریق ارتباط امن با سرور پردازش می‌شود.",
   "auth.forgot.resetTokenExpired": "مهلت بازیابی رمز عبور به پایان رسیده است. لطفاً دوباره کد تأیید دریافت کنید.",
+  "auth.sessionExpired": "به دلیل ۱۵ دقیقه بی‌فعالیتی، نشست شما منقضی شده است. لطفاً دوباره وارد شوید.",
 
 
 
@@ -190,7 +191,67 @@
   "blog.details.notFound": "مقاله موردنظر پیدا نشد.",
   "blog.details.error": "دریافت اطلاعات مقاله با مشکل مواجه شد.",
   "blog.details.retry": "تلاش مجدد",
-  "blog.details.back": "بازگشت به مقالات"
+  "blog.details.back": "بازگشت به مقالات",
+
+
+
+
+
+
+  "header.login": "ورود",
+  "header.dashboard": "داشبورد",
+  "header.loginAria": "ورود به حساب بیمار",
+  "header.dashboardAria": "ورود به داشبورد بیمار",
+  "header.home": "خانه",
+  "header.about": "درباره ما",
+  "header.services": "خدمات",
+  "header.blog": "وبلاگ",
+  "header.contact": "تماس با ما",
+  "header.logo": "دندان‌پزشکی",
+  "header.menu": "باز و بسته کردن منو",
+  "header.language": "زبان سایت",
+
+
+  
+
+  "footer.eyebrow": "نگاهی نو به مراقبت از لبخند شما",
+
+  "footer.heroTitle": "لبخند شما شایسته",
+  "footer.heroHighlight": "بهترین توجه است.",
+
+  "footer.heroDescription": "لبخندی سالم و زیبا از مراقبت و آگاهی آغاز می‌شود. برای آشنایی بیشتر با کلینیک و دریافت پاسخ پرسش‌های خود، با ما در ارتباط باشید.",
+
+  "footer.contactUs": "تماس با ما",
+
+  "footer.brandName": "دکتر زین‌العابدین",
+
+  "footer.brandDescription": "فضایی برای آشنایی با خدمات دندان‌پزشکی، روش‌های درمان و نکات کاربردی مراقبت از سلامت دهان و دندان.",
+
+  "footer.brandTag": "مراقبت با اطمینان آغاز می‌شود",
+
+  "footer.explore": "دسترسی سریع",
+  "footer.patients": "خدمات بیماران",
+  "footer.getInTouch": "ارتباط با ما",
+
+  "footer.home": "خانه",
+  "footer.about": "درباره ما",
+  "footer.team": "تیم پزشکی",
+  "footer.blog": "مقالات آموزشی",
+
+  "footer.faq": "سوالات متداول",
+  "footer.login": "ورود بیماران",
+  "footer.register": "ایجاد حساب کاربری",
+
+  "footer.contactDescription": "برای دریافت اطلاعات بیشتر یا مطرح کردن پرسش‌های خود، می‌توانید از طریق صفحه تماس با ما در ارتباط باشید.",
+
+  "footer.contactLink": "رفتن به صفحه تماس",
+
+  "footer.copyright": "تمامی حقوق محفوظ است.",
+
+  "footer.backToTop": "بازگشت به بالا",
+  "footer.parentCompany": "زیرمجموعه"
+
+
 }
 
 
