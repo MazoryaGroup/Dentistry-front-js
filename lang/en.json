@@ -408,10 +408,46 @@
   "home.service6Description": "Learn about root canal therapy for teeth requiring pulp assessment and treatment.",
   "home.blog1Title": "Common Mistakes When Brushing Teeth",
   "home.blog2Title": "Teeth Whitening: Safety and Best Practices",
-  "home.blog3Title": "Understanding Non-Vital Teeth"
+  "home.blog3Title": "Understanding Non-Vital Teeth",
+  "home.firstName": "First Name",
+  "home.lastName": "Last Name",
+  "home.formSending": "Sending your message...",
+  "home.formSent": "Your message was submitted successfully.",
+  "home.formValidationError": "Please review the information you entered and try again.",
+  "home.formTimeout": "The request timed out. Please try again.",
+  "home.formError": "The message could not be sent. Please try again.",
+  
 
 
+
+  "contactPage.contact": "Contact Us",
+  "contactPage.home": "Home",
+  "contactPage.breadcrumb": "Breadcrumb",
+  "contactPage.contactInformation": "Contact Information",
+
+  "contactPage.touch": "Get in Touch",
+  "contactPage.heading": "Get Free Information!",
+  "contactPage.imageAlt": "Dental clinic contact illustration",
+
+  "contactPage.addressLabel": "Address",
+  "contactPage.addressText": "Tehran, Fereshteh Street, next to the Swiss Embassy, No. 3, 5th Floor, Unit 18",
+  "contactPage.emailLabel": "Email",
+  "contactPage.phoneLabel": "Phone",
+
+  "contactPage.firstName": "First Name",
+  "contactPage.lastName": "Last Name",
+  "contactPage.email": "Email",
+  "contactPage.phone": "Phone",
+  "contactPage.phonePlaceholder": "09123456789",
+  "contactPage.message": "Message",
+
+  "contactPage.submit": "Send Message",
+  "contactPage.sending": "Sending...",
+  "contactPage.success": "Your message has been sent successfully.",
+  "contactPage.error": "Unable to send your message. Please try again.",
+  "contactPage.validation": "Please check the form fields."
 }
+
 
 
 

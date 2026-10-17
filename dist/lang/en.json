@@ -1,0 +1,418 @@
+{
+  "auth.shell.asideLabel": "Patient Portal Introduction",
+  "auth.shell.care": "Dental Care",
+  "auth.shell.private": "Your Privacy Is Protected",
+  "auth.shell.easy": "Easy Appointments",
+  "auth.shell.priority": "Your Smile, Our Priority",
+  "auth.shell.tagline": "A Better Dental Experience Starts Here",
+  "auth.shell.back": "Back to Website",
+  "auth.shell.portal": "Patient Portal",
+  "auth.shell.loginLegal": "Sign in using your mobile number and verification code, or your email and password.",
+
+  "auth.login.title": "Welcome Back",
+  "auth.login.subtitle": "Choose your preferred method to sign in to your account.",
+  "auth.login.sideTitle": "Every Beautiful Smile Begins with Great Care.",
+  "auth.login.sideCopy": "Your personal space to manage appointments and track your dental treatments.",
+
+  "auth.login.methodPhone": "Mobile Login",
+  "auth.login.methodEmail": "Email Login",
+
+  "auth.login.phone": "Mobile Number",
+  "auth.login.phonePlaceholder": "09123456789",
+  "auth.login.sendCode": "Send Verification Code",
+  "auth.login.codeSentTo": "A verification code has been sent to:",
+  "auth.login.code": "6-Digit Verification Code",
+  "auth.login.codePlaceholder": "Enter the 6-digit code",
+  "auth.login.codeValidity": "The verification code is valid for 2 minutes.",
+  "auth.login.verify": "Verify and Sign In",
+  "auth.login.editPhone": "Change Mobile Number",
+  "auth.login.resend": "Resend Code",
+
+  "auth.login.email": "Email Address",
+  "auth.login.emailPlaceholder": "example@email.com",
+  "auth.login.password": "Password",
+  "auth.login.passwordPlaceholder": "Enter your password",
+  "auth.login.signIn": "Sign In",
+  "auth.login.forgotPassword": "Forgot Password?",
+
+  "auth.login.newPatient": "New to Our Clinic?",
+  "auth.login.createAccount": "Create an Account",
+
+  "auth.login.invalidPhone": "Please enter a valid mobile number.",
+  "auth.login.invalidEmail": "Please enter a valid email address.",
+  "auth.login.enterPassword": "Please enter your password.",
+  "auth.login.invalidCredentials": "Invalid email or password.",
+  "auth.login.invalidCodeFormat": "Please enter the 6-digit verification code.",
+  "auth.login.invalidCode": "The verification code is incorrect or has expired.",
+  "auth.login.noAccount": "No account was found with this mobile number. Please register first.",
+
+  "auth.login.tooMany": "Too many requests. Please try again later.",
+  "auth.login.timeout": "The request timed out. Please try again.",
+  "auth.login.networkError": "Unable to connect to the server. Please check your internet connection.",
+  "auth.login.serverError": "The clinic server is temporarily unavailable.",
+  "auth.login.sent": "Verification code sent successfully.",
+  "auth.login.resent": "A new verification code has been sent.",
+  "auth.login.invalidApiToken": "Login was verified, but a valid authentication token was not received from the server.",
+
+
+  
+
+  "auth.register.title": "Patient Registration",
+  "auth.register.subtitle": "Enter your information to create your patient account.",
+  "auth.register.sideTitle": "A Personal Space for a Healthier Smile.",
+  "auth.register.sideCopy": "Manage your appointments, treatment plans and payments in one place.",
+
+  "auth.register.name": "Full Name",
+  "auth.register.namePlaceholder": "Enter your full name",
+  "auth.register.phone": "Mobile Number",
+  "auth.register.referral": "Referral Code (Optional)",
+  "auth.register.referralPlaceholder": "Enter your referral code if you have one",
+
+  "auth.register.sendCode": "Send Verification Code",
+  "auth.register.codeSentTo": "A verification code was sent to:",
+  "auth.register.code": "6-Digit Verification Code",
+  "auth.register.codePlaceholder": "Enter the 6-digit code",
+  "auth.register.codeValidity": "The verification code is valid for 2 minutes.",
+  "auth.register.verify": "Verify and Register",
+  "auth.register.editPhone": "Edit Information",
+  "auth.register.resend": "Resend Code",
+
+  "auth.register.haveAccount": "Already have an account?",
+  "auth.register.signIn": "Sign In",
+  "auth.register.success": "Your account has been created successfully.",
+  "auth.register.goToLogin": "Go to Login",
+
+  "auth.register.invalidName": "Please enter a valid full name.",
+  "auth.register.invalidPhone": "Please enter a valid mobile number.",
+  "auth.register.invalidCodeFormat": "Please enter the 6-digit verification code.",
+  "auth.register.invalidCode": "The verification code is incorrect or has expired.",
+  "auth.register.invalidData": "Your registration information is invalid. Please review it.",
+  "auth.register.alreadyRegistered": "This mobile number is already registered.",
+  "auth.register.sessionExpired": "Your registration session has expired. Please try again.",
+
+  "auth.register.sent": "Verification code sent successfully.",
+  "auth.register.resent": "A new verification code has been sent.",
+  "auth.register.tooMany": "Too many requests. Please try again later.",
+  "auth.register.timeout": "The request timed out. Please try again.",
+  "auth.register.networkError": "Unable to connect to the server. Please check your internet connection.",
+  "auth.register.serverError": "The clinic server is temporarily unavailable.",
+  "auth.register.requestFailed": "Something went wrong. Please try again.",
+
+
+
+  
+  "auth.forgot.title": "Reset Your Password",
+  "auth.forgot.subtitle": "Enter your mobile number to receive a verification code.",
+  "auth.forgot.sideTitle": "Your Smile Is Always Our Priority.",
+  "auth.forgot.sideCopy": "Recover your account securely and get back to managing your dental care.",
+  "auth.forgot.phone": "Mobile Number",
+  "auth.forgot.sendCode": "Send Verification Code",
+  "auth.forgot.codeSentTo": "A verification code was sent to:",
+  "auth.forgot.code": "6-Digit Verification Code",
+  "auth.forgot.codePlaceholder": "Enter the 6-digit code",
+  "auth.forgot.verify": "Verify Code",
+  "auth.forgot.changePhone": "Change Mobile Number",
+  "auth.forgot.resend": "Resend Code",
+  "auth.forgot.verifiedPhone": "Verified mobile number:",
+  "auth.forgot.newPassword": "New Password",
+  "auth.forgot.newPasswordPlaceholder": "At least 8 characters",
+  "auth.forgot.confirmPassword": "Confirm New Password",
+  "auth.forgot.confirmPlaceholder": "Enter your new password again",
+  "auth.forgot.resetPassword": "Reset Password",
+  "auth.forgot.backToLogin": "Back to Login",
+  "auth.forgot.success": "Your password has been reset successfully. You can now sign in.",
+  "auth.forgot.invalidPhone": "Please enter a valid mobile number.",
+  "auth.forgot.invalidCodeFormat": "The verification code must contain 6 digits.",
+  "auth.forgot.invalidCode": "The verification code is invalid or has expired.",
+  "auth.forgot.shortPassword": "Your password must contain at least 8 characters.",
+  "auth.forgot.passwordMismatch": "The passwords do not match.",
+  "auth.forgot.sessionExpired": "Recovery information is missing. Please request a new code.",
+  "auth.forgot.invalidData": "The submitted information is invalid.",
+  "auth.forgot.sent": "Verification code sent successfully.",
+  "auth.forgot.resent": "A new verification code has been sent.",
+  "auth.forgot.verified": "Mobile number verified. Please enter your new password.",
+  "auth.forgot.tooMany": "Too many requests. Please try again later.",
+  "auth.forgot.timeout": "The request timed out.",
+  "auth.forgot.serverError": "The server is temporarily unavailable.",
+  "auth.forgot.networkError": "Unable to connect to the server.",
+  "auth.forgot.requestFailed": "Something went wrong. Please try again.",
+  "auth.shell.privacyLegal": "Your account information is processed through a secure connection to the server.",
+  "auth.forgot.resetTokenExpired": "Your password reset session has expired. Please request a new verification code.",
+   "auth.sessionExpired": "Your session expired after 15 minutes of inactivity. Please sign in again.",
+
+
+
+
+  
+  "profile.dashboard": "Patient Dashboard",
+  "profile.title": "My Profile",
+  "profile.subtitle": "Your account information and personal details.",
+  "profile.information": "Personal Information",
+  "profile.name": "Full Name",
+  "profile.email": "Email Address",
+  "profile.phone": "Mobile Number",
+  "profile.referral": "Referral Code",
+  "profile.notSet": "Not provided",
+  "profile.loading": "Loading your profile...",
+  "profile.loaded": "Your profile is up to date.",
+  "profile.partial": "Basic details loaded; full profile is unavailable.",
+  "profile.loadError": "Unable to load your profile information.",
+  "profile.reload": "Reload",
+  "profile.logout": "Sign Out",
+  "profile.phoneHint": "Your mobile number can only be changed after SMS verification.",
+
+
+
+
+  
+  "blog.title": "Blog",
+  "blog.home": "Home",
+  "blog.latest": "Latest Updates",
+  "blog.heading": "Find the Latest News and Updates Here.",
+  "blog.loading": "Loading articles...",
+  "blog.empty": "No articles are available at the moment.",
+  "blog.error": "Unable to load articles. Please try again.",
+  "blog.retry": "Try Again",
+  "blog.readArticle": "Read Article",
+
+
+  
+  "blog.details.page": "Dental Blog",
+  "blog.details.breadcrumb": "Blog Details",
+  "blog.details.categories": "Categories",
+  "blog.details.recent": "Recent Posts",
+  "blog.details.loading": "Loading article...",
+  "blog.details.notFound": "The requested article was not found.",
+  "blog.details.error": "Unable to load the article.",
+  "blog.details.retry": "Try Again",
+  "blog.details.back": "Back to Blog",
+
+  
+  "header.login": "Login",
+  "header.dashboard": "Dashboard",
+  "header.loginAria": "Sign in to your patient account",
+  "header.dashboardAria": "Open patient dashboard",
+  "header.home": "Home",
+  "header.about": "About Us",
+  "header.services": "Services",
+  "header.blog": "Blog",
+  "header.contact": "Contact Us",
+  "header.logo": "Dentistry",
+  "header.menu": "Toggle navigation",
+  "header.language": "Site language",
+
+
+
+
+  
+
+  "footer.eyebrow": "A NEW PERSPECTIVE ON DENTAL CARE",
+
+  "footer.heroTitle": "Your smile deserves",
+  "footer.heroHighlight": "something special.",
+
+  "footer.heroDescription": "A healthy, beautiful smile begins with care and awareness. Connect with us to learn more about the clinic and get answers to your questions.",
+
+  "footer.contactUs": "Contact Us",
+
+  "footer.brandName": "Dr. Zeinolabedin",
+
+  "footer.brandDescription": "A place to explore dental care, treatment options, and practical advice for maintaining good oral health.",
+
+  "footer.brandTag": "Care begins with confidence",
+
+  "footer.explore": "Quick Links",
+  "footer.patients": "For Patients",
+  "footer.getInTouch": "Get in Touch",
+
+  "footer.home": "Home",
+  "footer.about": "About Us",
+  "footer.team": "Our Team",
+  "footer.blog": "Dental Blog",
+
+  "footer.faq": "Frequently Asked Questions",
+  "footer.login": "Patient Login",
+  "footer.register": "Create an Account",
+
+  "footer.contactDescription": "For more information or questions, feel free to reach out through our contact page.",
+
+  "footer.contactLink": "Go to Contact Page",
+
+  "footer.copyright": "All rights reserved.",
+
+  "footer.backToTop": "Back to Top",
+   "footer.parentCompany": "Mazorya Group",
+
+
+
+
+
+  "about.breadcrumb": "About Us",
+  "about.home": "Home",
+  "about.imageAlt": "Dental clinic interior",
+
+  "about.introEyebrow": "About Us",
+  "about.introTitle": "A Thoughtful Approach to Your Smile",
+  "about.introDescription": "Oral health is an important part of overall well-being. Understanding preventive care, exploring treatment options, and asking informed questions can help patients make better decisions about their dental health.",
+
+  "about.feature1Title": "Information Before Decisions",
+  "about.feature1Description": "Understanding treatment steps and discussing concerns are important parts of making informed choices.",
+
+  "about.feature2Title": "Individual Treatment Needs",
+  "about.feature2Description": "Every patient has different oral health needs. Appropriate treatment depends on a professional examination and clinical assessment.",
+
+  "about.contactButton": "Contact Us",
+
+  "about.treatmentEyebrow": "Dental Services",
+  "about.treatmentTitle": "Explore Dental Treatments",
+  "about.treatmentDescription": "Discover the dental services currently listed by the clinic and visit each service page to learn more.",
+
+  "about.servicesLoading": "Loading services...",
+  "about.servicesEmpty": "No services are currently available.",
+  "about.servicesError": "Unable to load services.",
+  "about.retry": "Try Again",
+  "about.serviceDetails": "View Details",
+
+  "about.teamEyebrow": "Get in Touch",
+  "about.teamTitle": "We're Here for Your Questions",
+  "about.teamDescription": "Whether you want to learn more about available services, explore treatment options, or ask about visiting the clinic, you can reach out through our contact page.",
+
+  "about.teamButton": "Contact Us",
+
+  "about.faqEyebrow": "FAQ",
+  "about.faqTitle": "Frequently Asked Questions",
+
+  "about.faq1Question": "How often should I visit the dentist?",
+  "about.faq1Answer": "Regular dental checkups are recommended for many patients. The appropriate interval depends on your oral health needs and your dentist's assessment.",
+
+  "about.faq2Question": "What causes tooth decay?",
+  "about.faq2Answer": "Bacteria in dental plaque produce acids when they break down sugars and fermentable carbohydrates. Over time, these acids can remove minerals from tooth enamel and lead to cavities.",
+
+  "about.faq3Question": "How can I prevent gum disease?",
+  "about.faq3Answer": "Regular brushing with fluoride toothpaste, cleaning between teeth, routine dental checkups, and early attention to symptoms such as bleeding gums can help maintain gum health.",
+
+  "about.faq4Question": "Are teeth whitening treatments safe?",
+  "about.faq4Answer": "Professional whitening is generally safe when the method is appropriate and supervised by a dentist. Temporary sensitivity or gum irritation may occur, and whitening is not suitable for everyone.",
+
+  "about.faq5Question": "What are dental implants?",
+  "about.faq5Answer": "Dental implants are used to replace missing teeth. A post, typically made of titanium, is placed in the jawbone and later supports a dental restoration. Suitability depends on a professional examination and individual clinical conditions.",
+
+
+"about.teamPreview": "معرفی پزشکان این بخش پس از تکمیل اطلاعات تیم پزشکی نمایش داده می‌شود.",
+
+   
+
+  "about.demoTreatment1Title": "Smile Design",
+  "about.demoTreatment1Description": "Explore cosmetic dental options that may improve the appearance and harmony of your smile.",
+
+  "about.demoTreatment2Title": "Cosmetic Dentistry",
+  "about.demoTreatment2Description": "Discover aesthetic dental treatment options tailored to individual needs and goals.",
+
+  "about.demoTreatment3Title": "Dental Implants",
+  "about.demoTreatment3Description": "Learn about dental implants as an option for replacing missing teeth.",
+
+  "about.demoTreatment4Title": "Teeth Whitening",
+  "about.demoTreatment4Description": "Explore professional teeth whitening options under dental supervision.",
+
+  "about.demoTreatment5Title": "General Dentistry",
+  "about.demoTreatment5Description": "Routine examinations, preventive care, and assessment of common oral health concerns.",
+
+  "about.servicesDemoNote": "These services are currently displayed as a design preview.",
+
+
+
+
+
+"about.doctor1Name": "Dr. Fiona Park",
+"about.doctor1Role": "General Dentistry",
+
+"about.doctor2Name": "Dr. John Martin",
+"about.doctor2Role": "Cosmetic Dentistry",
+
+"about.doctor3Name": "Dr. Archie White",
+"about.doctor3Role": "Dental Care",
+
+"about.doctor4Name": "Dr. Maria Angel",
+"about.doctor4Role": "Restorative Dentistry",
+
+"about.teamDemoNote": "Names and images are for demonstration only and will be replaced with the actual medical team.",
+
+"teamDetails.home": "Home",
+"teamDetails.team": "Our Medical Team",
+"teamDetails.specialty": "Area of Practice",
+"teamDetails.information": "Doctor Information",
+"teamDetails.informationText": "Professional credentials, experience, and availability will be displayed after the clinic provides verified information.",
+"teamDetails.eyebrow": "Doctor Profile",
+"teamDetails.aboutTitle": "About",
+"teamDetails.aboutDescription": "Explore the general field of dental care associated with this profile. Individual professional information will be completed in the final version.",
+"teamDetails.focusTitle": "Areas of Dental Care",
+"teamDetails.focus1": "General dentistry includes examinations, preventive care, and assessment of common oral health conditions.",
+"teamDetails.focus2": "Cosmetic dentistry explores treatments that may improve smile appearance, tooth shape, and dental aesthetics.",
+"teamDetails.focus3": "Dental care includes oral hygiene, preventive education, and follow-up of patients' dental needs.",
+"teamDetails.focus4": "Restorative dentistry focuses on restoring damaged teeth and improving their appearance and function.",
+"teamDetails.approachTitle": "Choosing the Right Treatment",
+"teamDetails.approachDescription": "Appropriate treatment depends on a dental examination, clinical assessment, and the individual needs of each patient.",
+"teamDetails.previewBadge": "Demo Profile",
+"teamDetails.previewNotice": "This is a design preview. The displayed name, photo, and specialty are examples and do not establish that this doctor works at the clinic.",
+"teamDetails.backToDoctors": "Back to Our Doctors",
+"teamDetails.contactButton": "Contact the Clinic",
+"teamDetails.notFound": "Doctor profile not found.",
+
+
+  "home.heroTitle": "Open Wide to a World of Smiles",
+  "home.heroDescription": "Explore dental services, understand treatment options, and connect with the clinic as you take the first step toward better oral health.",
+  "home.heroImageAlt": "Dental care and smile illustration",
+  "home.bookNow": "Book an Appointment",
+  "home.aboutEyebrow": "Who We Are",
+  "home.aboutTitle": "A Thoughtful Approach to Dental Care",
+  "home.aboutDescription": "Every patient has individual needs. Clinical assessment, clear explanations of treatment options, and attention to preventive care can help people make informed choices.",
+  "home.aboutImageAlt": "Dental clinic environment",
+  "home.aboutFeature1": "Clear information about dental treatments",
+  "home.aboutFeature2": "Attention to each patient’s unique needs",
+  "home.questions": "Have Questions?",
+  "home.contactUs": "Contact the Clinic",
+  "home.readMore": "Read More",
+  "home.servicesEyebrow": "Our Services",
+  "home.servicesTitle": "Personalized Dental Care Options",
+  "home.allServices": "View All Services",
+  "home.demoServicesNote": "The services shown here are design-preview examples.",
+  "home.treatmentEyebrow": "Treatments",
+  "home.treatmentTitle": "Explore Dental Treatment Options",
+  "home.contactEyebrow": "Get in Touch",
+  "home.contactTitle": "Have a Question? Send Us a Message",
+  "home.contactImageAlt": "Dental clinic contact section",
+  "home.name": "Full Name",
+  "home.email": "Email Address",
+  "home.phone": "Phone Number",
+  "home.subject": "Subject",
+  "home.message": "Your Message",
+  "home.submit": "Send Message",
+  "home.contactDemoNote": "This form is a preview and does not send messages to a server. Please use the Contact Us page to reach the clinic.",
+  "home.formRequired": "Please enter your name and message, and review the fields.",
+  "home.formNotConnected": "The form is not connected to a server yet. Your message was not sent. Please use the Contact Us page.",
+  "home.blogEyebrow": "Dental Insights",
+  "home.blogTitle": "Oral Health Articles",
+  "home.allBlogs": "View All Articles",
+  "home.demoBlogNote": "These articles are design-preview examples and will be replaced by published clinic articles.",
+  "home.service1Title": "Smile Design",
+  "home.service1Description": "Explore cosmetic options that may improve the appearance and harmony of your smile.",
+  "home.service2Title": "Cosmetic Dentistry",
+  "home.service2Description": "Discover aesthetic treatments suited to individual dental needs and goals.",
+  "home.service3Title": "Dental Implants",
+  "home.service3Description": "Learn about dental implants as an option for replacing missing teeth.",
+  "home.service4Title": "General Dentistry",
+  "home.service4Description": "Routine examinations, oral hygiene guidance, and preventive care.",
+  "home.service5Title": "Teeth Whitening",
+  "home.service5Description": "Explore professional whitening methods and their limitations.",
+  "home.service6Title": "Root Canal Treatment",
+  "home.service6Description": "Learn about root canal therapy for teeth requiring pulp assessment and treatment.",
+  "home.blog1Title": "Common Mistakes When Brushing Teeth",
+  "home.blog2Title": "Teeth Whitening: Safety and Best Practices",
+  "home.blog3Title": "Understanding Non-Vital Teeth"
+
+
+}
+
+
+
+

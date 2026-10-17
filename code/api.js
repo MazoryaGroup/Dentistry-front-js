@@ -1,13 +1,38 @@
 
+/**
+ * ============================================
+ * DENTISTRY — CENTRAL API SERVICE
+ * ============================================
+ *
+ * Laravel Backend + Vanilla JS / Vite
+ *
+ * Authentication: JWT
+ * Languages: English / Persian
+ *
+ * All frontend API calls should use this file.
+ */
+
+// ============================================
+// IMPORTS
+// ============================================
+
 import { getAuthToken } from './auth.js';
 
 // ============================================
 // API CONFIG
 // ============================================
 
-const API_BASE_URL = 'http://127.0.0.1:8000/api';
+// Laravel backend URL
+// Change this URL if your backend address changes.
 
+export const API_BASE_URL =
+  'http://127.0.0.1:8000/api';
+
+// Request timeout: 15 seconds
 const REQUEST_TIMEOUT = 15000;
+
+// Clean trailing slashes
+const apiBase = API_BASE_URL.replace(/\/+$/, '');
 
 // ============================================
 // API ERROR
@@ -16,6 +41,7 @@ const REQUEST_TIMEOUT = 15000;
 export class ApiError extends Error {
   constructor(message, status = 0, errors = null) {
     super(message);
+
     this.name = 'ApiError';
     this.status = status;
     this.errors = errors;
@@ -36,19 +62,32 @@ export async function apiRequest(
   } = {}
 ) {
   const controller = new AbortController();
+
   let timedOut = false;
 
-  const abortRequest = () => controller.abort();
+  // ========================================
+  // ABORT HANDLING
+  // ========================================
+
+  const abortRequest = () => {
+    controller.abort();
+  };
 
   if (signal) {
     if (signal.aborted) {
       controller.abort();
     } else {
-      signal.addEventListener('abort', abortRequest, {
-        once: true,
-      });
+      signal.addEventListener(
+        'abort',
+        abortRequest,
+        { once: true }
+      );
     }
   }
+
+  // ========================================
+  // TIMEOUT
+  // ========================================
 
   const timeout = setTimeout(() => {
     timedOut = true;
@@ -56,62 +95,139 @@ export async function apiRequest(
   }, REQUEST_TIMEOUT);
 
   try {
+    // ======================================
+    // HEADERS
+    // ======================================
+
     const headers = {
       Accept: 'application/json',
     };
 
     if (body !== null) {
-      headers['Content-Type'] = 'application/json';
+      headers['Content-Type'] =
+        'application/json';
     }
+
+    // ======================================
+    // JWT AUTHENTICATION
+    // ======================================
 
     if (auth) {
       const token = getAuthToken();
 
       if (!token) {
-        throw new ApiError('Unauthenticated', 401);
+        throw new ApiError(
+          'Unauthenticated.',
+          401
+        );
       }
 
       headers.Authorization = `Bearer ${token}`;
     }
 
-    const url =
-      `${API_BASE_URL}/${endpoint.replace(/^\/+/, '')}`;
+    // ======================================
+    // REQUEST URL
+    // ======================================
+
+    const path = String(endpoint || '')
+      .replace(/^\/+/, '');
+
+    const url = `${apiBase}/${path}`;
+
+    // ======================================
+    // FETCH
+    // ======================================
 
     const response = await fetch(url, {
-      method,
+      method: method.toUpperCase(),
       headers,
-      body: body !== null
-        ? JSON.stringify(body)
-        : undefined,
+
+      body:
+        body !== null
+          ? JSON.stringify(body)
+          : undefined,
+
       signal: controller.signal,
+
       cache: 'no-store',
+
       credentials: 'omit',
     });
 
-    const result = await response.json().catch(() => null);
+    // ======================================
+    // RESPONSE
+    // ======================================
 
-    if (!response.ok || result?.success === false) {
+    // Handle endpoints returning HTTP 204
+    if (response.status === 204) {
+      return {
+        success: true,
+        statusCode: 204,
+      };
+    }
+
+    const result = await response
+      .json()
+      .catch(() => null);
+
+    // ======================================
+    // API ERRORS
+    // ======================================
+
+    const responseStatusCode =
+      Number(result?.statusCode);
+
+    if (
+      !response.ok ||
+      result?.success === false ||
+      result?.status === false ||
+      (
+        Number.isFinite(responseStatusCode) &&
+        responseStatusCode >= 400
+      )
+    ) {
       throw new ApiError(
         result?.message || 'API request failed.',
-        response.ok
-          ? Number(result?.statusCode || response.status)
+
+        response.ok && responseStatusCode >= 400
+          ? responseStatusCode
           : response.status,
+
         result?.errors ?? null
       );
     }
 
-    if (!result || typeof result !== 'object') {
-      throw new ApiError('Invalid server response.', 502);
+    // ======================================
+    // INVALID RESPONSE
+    // ======================================
+
+    if (
+      !result ||
+      typeof result !== 'object'
+    ) {
+      throw new ApiError(
+        'Invalid server response.',
+        502
+      );
     }
 
     return result;
 
   } catch (error) {
+    // ======================================
+    // KNOWN API ERRORS
+    // ======================================
+
     if (error instanceof ApiError) {
       throw error;
     }
 
+    // ======================================
+    // ABORT / TIMEOUT
+    // ======================================
+
     if (error?.name === 'AbortError') {
+      // Navigation cancelled the request
       if (signal?.aborted) {
         throw error;
       }
@@ -124,6 +240,15 @@ export async function apiRequest(
       );
     }
 
+    // ======================================
+    // NETWORK ERROR
+    // ======================================
+
+    console.error('API Network Error:', {
+      endpoint,
+      message: error?.message,
+    });
+
     throw new ApiError(
       'Unable to connect to the server.',
       0
@@ -132,10 +257,12 @@ export async function apiRequest(
   } finally {
     clearTimeout(timeout);
 
-    signal?.removeEventListener(
-      'abort',
-      abortRequest
-    );
+    if (signal) {
+      signal.removeEventListener(
+        'abort',
+        abortRequest
+      );
+    }
   }
 }
 
@@ -150,7 +277,11 @@ export function apiGet(endpoint, options = {}) {
   });
 }
 
-export function apiPost(endpoint, body = {}, options = {}) {
+export function apiPost(
+  endpoint,
+  body = {},
+  options = {}
+) {
   return apiRequest(endpoint, {
     ...options,
     method: 'POST',
@@ -158,7 +289,11 @@ export function apiPost(endpoint, body = {}, options = {}) {
   });
 }
 
-export function apiPut(endpoint, body = {}, options = {}) {
+export function apiPut(
+  endpoint,
+  body = {},
+  options = {}
+) {
   return apiRequest(endpoint, {
     ...options,
     method: 'PUT',
@@ -166,7 +301,22 @@ export function apiPut(endpoint, body = {}, options = {}) {
   });
 }
 
-export function apiDelete(endpoint, options = {}) {
+export function apiPatch(
+  endpoint,
+  body = {},
+  options = {}
+) {
+  return apiRequest(endpoint, {
+    ...options,
+    method: 'PATCH',
+    body,
+  });
+}
+
+export function apiDelete(
+  endpoint,
+  options = {}
+) {
   return apiRequest(endpoint, {
     ...options,
     method: 'DELETE',
@@ -178,15 +328,28 @@ export function apiDelete(endpoint, options = {}) {
 // ============================================
 
 export const loginApi = {
-  loginWithEmail(email, password, signal = null) {
+
+  // Login with email and password
+  loginWithEmail(
+    email,
+    password,
+    signal = null
+  ) {
     return apiPost(
       '/v1/auth/login',
-      { email, password },
+      {
+        email,
+        password,
+      },
       { signal }
     );
   },
 
-  sendCode(phone, signal = null) {
+  // Send phone login OTP
+  sendCode(
+    phone,
+    signal = null
+  ) {
     return apiPost(
       '/v1/auth/login/phone/send-code',
       { phone },
@@ -194,13 +357,22 @@ export const loginApi = {
     );
   },
 
-  verifyCode(phone, code, signal = null) {
+  // Verify phone login OTP
+  verifyCode(
+    phone,
+    code,
+    signal = null
+  ) {
     return apiPost(
       '/v1/auth/login/phone/verify',
-      { phone, code },
+      {
+        phone,
+        code,
+      },
       { signal }
     );
   },
+
 };
 
 // ============================================
@@ -208,7 +380,14 @@ export const loginApi = {
 // ============================================
 
 export const registerApi = {
-  sendCode(name, phone, referralCode = '', signal = null) {
+
+  // Send registration OTP
+  sendCode(
+    name,
+    phone,
+    referralCode = '',
+    signal = null
+  ) {
     return apiPost(
       '/v1/auth/register/send-code',
       {
@@ -220,6 +399,7 @@ export const registerApi = {
     );
   },
 
+  // Verify registration OTP
   verifyCode(
     phone,
     code,
@@ -238,6 +418,7 @@ export const registerApi = {
       { signal }
     );
   },
+
 };
 
 // ============================================
@@ -245,8 +426,12 @@ export const registerApi = {
 // ============================================
 
 export const forgotPasswordApi = {
-  // 1. Send OTP
-  sendCode(phone, signal = null) {
+
+  // Step 1: Send OTP
+  sendCode(
+    phone,
+    signal = null
+  ) {
     return apiPost(
       '/v1/auth/forgot-password/send-code',
       { phone },
@@ -254,8 +439,12 @@ export const forgotPasswordApi = {
     );
   },
 
-  // 2. Verify OTP and receive reset_token
-  verifyCode(phone, code, signal = null) {
+  // Step 2: Verify OTP
+  verifyCode(
+    phone,
+    code,
+    signal = null
+  ) {
     return apiPost(
       '/v1/auth/forgot-password/verify',
       {
@@ -266,7 +455,7 @@ export const forgotPasswordApi = {
     );
   },
 
-  // 3. Reset password using reset_token
+  // Step 3: Reset password
   resetPassword(
     phone,
     code,
@@ -287,93 +476,158 @@ export const forgotPasswordApi = {
       { signal }
     );
   },
+
 };
+
+// ============================================
+// PROFILE API — AUTH REQUIRED
+// ============================================
+
 export const profileApi = {
+
+  // Current authenticated client
   me(signal = null) {
-    return apiGet('/v1/auth/me', {
-      auth: true,
-      signal,
-    });
+    return apiGet(
+      '/v1/auth/me',
+      {
+        auth: true,
+        signal,
+      }
+    );
   },
 
+  // Get profile
   getProfile(signal = null) {
-    return apiGet('/v1/auth/profile', {
-      auth: true,
-      signal,
-    });
+    return apiGet(
+      '/v1/auth/profile',
+      {
+        auth: true,
+        signal,
+      }
+    );
   },
 
-  // Assumed PUT; confirm with backend request examples.
-  updateProfile(payload, signal = null) {
-    return apiPut('/v1/auth/profile', payload, {
-      auth: true,
-      signal,
-    });
+  // Update profile
+  updateProfile(
+    payload,
+    signal = null
+  ) {
+    return apiPut(
+      '/v1/auth/profile',
+      payload,
+      {
+        auth: true,
+        signal,
+      }
+    );
   },
 
+  // Refresh JWT token
   refresh(signal = null) {
-    return apiPost('/v1/auth/refresh', {}, {
-      auth: true,
-      signal,
-    });
+    return apiPost(
+      '/v1/auth/refresh',
+      {},
+      {
+        auth: true,
+        signal,
+      }
+    );
   },
 
+  // Logout
   logout(signal = null) {
-    return apiPost('/v1/auth/logout', {}, {
-      auth: true,
-      signal,
-    });
+    return apiPost(
+      '/v1/auth/logout',
+      {},
+      {
+        auth: true,
+        signal,
+      }
+    );
   },
 
-  changePhoneSendCode(payload, signal = null) {
+  // Send OTP for phone change
+  changePhoneSendCode(
+    payload,
+    signal = null
+  ) {
     return apiPost(
       '/v1/auth/profile/change-phone/send-code',
       payload,
-      { auth: true, signal }
+      {
+        auth: true,
+        signal,
+      }
     );
   },
 
-  changePhoneVerify(payload, signal = null) {
+  // Verify OTP for phone change
+  changePhoneVerify(
+    payload,
+    signal = null
+  ) {
     return apiPost(
       '/v1/auth/profile/change-phone/verify',
       payload,
-      { auth: true, signal }
+      {
+        auth: true,
+        signal,
+      }
     );
   },
+
 };
+
 // ============================================
 // BLOG API — PUBLIC
 // ============================================
 
 export const blogApi = {
-  list(lang = 'en', signal = null) {
+
+  // GET /api/v1/blogs?lang=en
+  list(
+    lang = 'en',
+    signal = null
+  ) {
+    const language =
+      lang === 'fa' ? 'fa' : 'en';
+
     return apiGet(
-      `/v1/blogs?lang=${lang === 'fa' ? 'fa' : 'en'}`,
+      `/v1/blogs?lang=${language}`,
       { signal }
     );
   },
 
-  show(slug, lang = 'en', signal = null) {
+  // GET /api/v1/blogs/{slug}?lang=en
+  show(
+    slug,
+    lang = 'en',
+    signal = null
+  ) {
+    const language =
+      lang === 'fa' ? 'fa' : 'en';
+
     return apiGet(
-      `/v1/blogs/${encodeURIComponent(slug)}?lang=${lang === 'fa' ? 'fa' : 'en'}`,
+      `/v1/blogs/${encodeURIComponent(slug)}?lang=${language}`,
       { signal }
     );
   },
-};
-// ============================================
-// CONTACT MESSAGES
-// ============================================
 
-export const messageApi = {
-  send: (payload, signal = null) =>
-    apiPost('/messages', payload, { signal }),
 };
 
-
+// ============================================
+// SERVICE API — PUBLIC
+// ============================================
 
 export const serviceApi = {
-  list(lang = 'en', signal = null) {
-    const language = lang === 'fa' ? 'fa' : 'en';
+
+  // GET /api/v1/services?lang=en
+  list(
+    lang = 'en',
+    signal = null
+  ) {
+    const language =
+      lang === 'fa' ? 'fa' : 'en';
 
     return apiGet(
       `/v1/services?lang=${language}`,
@@ -381,12 +635,48 @@ export const serviceApi = {
     );
   },
 
-  show(id, lang = 'en', signal = null) {
-    const language = lang === 'fa' ? 'fa' : 'en';
+  // GET /api/v1/services/{id}?lang=en
+  show(
+    id,
+    lang = 'en',
+    signal = null
+  ) {
+    const language =
+      lang === 'fa' ? 'fa' : 'en';
 
     return apiGet(
       `/v1/services/${encodeURIComponent(id)}?lang=${language}`,
       { signal }
     );
   },
+
 };
+
+// ============================================
+// CONTACT / MESSAGE API — PUBLIC
+// ============================================
+
+export const messageApi = {
+
+  // POST /api/messages
+  send(
+    payload,
+    signal = null
+  ) {
+    return apiPost(
+      '/messages',
+      payload,
+      { signal }
+    );
+  },
+
+};
+
+// ============================================
+// API ALIASES
+// ============================================
+
+// Compatibility with Home.js versions using plural names.
+export const servicesApi = serviceApi;
+export const blogsApi = blogApi;
+export const messagesApi = messageApi;

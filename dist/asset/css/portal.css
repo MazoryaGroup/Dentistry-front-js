@@ -671,3 +671,174 @@
     gap: 8px;
   }
 }
+
+.dentistry-portal[data-portal-page="register"]
+.dp-form[hidden],
+.dentistry-portal[data-portal-page="register"]
+[data-register-step][hidden] {
+  display: none !important;
+}
+
+.dentistry-portal[data-portal-page="register"]
+.dp-otp-hint {
+  color: #000;
+  opacity: 0.65;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.dentistry-portal[data-portal-page="register"]
+.dp-text-button {
+  border: 0;
+  background: transparent;
+  color: #000;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dentistry-portal[data-portal-page="register"]
+.dp-text-button:hover {
+  color: #74adda;
+}
+
+.dentistry-portal[data-portal-page="register"]
+.dp-text-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.dentistry-portal[data-portal-page="register"]
+.dp-btn-primary {
+  background: #74adda;
+  color: #000;
+}
+
+.dentistry-portal[data-portal-page="register"]
+.dp-btn-primary:hover {
+  background: #000;
+  color: #fff;
+}
+
+.dentistry-portal[data-portal-page="register"]
+.dp-demo-note {
+  background: rgba(116, 173, 218, 0.12);
+  border-color: #74adda;
+  color: #000;
+}
+
+.dentistry-portal[data-portal-page="register"]
+.dp-form-extras {
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.dentistry-portal[data-portal-page="forgot-password"]
+[data-forgot-step][hidden] {
+  display: none !important;
+}
+
+.dentistry-portal[data-portal-page="forgot-password"]
+.dp-form {
+  margin-top: 18px;
+}
+
+.dentistry-portal[data-portal-page="forgot-password"]
+.dp-otp-instruction {
+  font-size: 13px;
+  color: #000;
+  line-height: 1.8;
+}
+
+.dentistry-portal[data-portal-page="forgot-password"]
+.dp-text-button {
+  border: 0;
+  background: transparent;
+  color: #000;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dentistry-portal[data-portal-page="forgot-password"]
+.dp-text-button:hover {
+  color: #74adda;
+}
+
+.dentistry-portal[data-portal-page="forgot-password"]
+.dp-text-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dentistry-portal[data-portal-page="forgot-password"]
+.dp-btn-primary {
+  background: #74adda;
+  color: #000;
+}
+
+.dentistry-portal[data-portal-page="forgot-password"]
+.dp-btn-primary:hover {
+  background: #000;
+  color: #fff;
+}
+.dentistry-portal .dp-login-forgot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 18px;
+  margin-bottom: 20px;
+}
+
+.dentistry-portal .dp-login-forgot a {
+  color: #000000;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.dentistry-portal .dp-login-forgot a:hover {
+  color: #74adda;
+}
+
+.dentistry-portal .dp-patient-profile {
+  padding: 28px;
+}
+
+.dentistry-portal .dp-profile-status {
+  margin-bottom: 20px;
+  color: #000;
+  font-size: 12px;
+}
+
+.dentistry-portal .dp-profile-status[data-state="error"] {
+  color: #b42318;
+}
+
+.dentistry-portal .dp-profile-hint {
+  margin-top: 22px;
+  padding: 14px;
+  border: 1px solid #74adda;
+  border-radius: 10px;
+  background: rgba(116, 173, 218, 0.1);
+  color: #000;
+  font-size: 12px;
+}
+
+.dentistry-portal [data-dashboard-logout] {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: start;
+  font: inherit;
+}
+
+.dentistry-portal [data-dashboard-logout]:hover {
+  color: #74adda;
+}
+
+@media (max-width: 650px) {
+  .dentistry-portal .dp-patient-profile {
+    padding: 18px;
+  }
+}

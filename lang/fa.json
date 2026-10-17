@@ -421,7 +421,45 @@
   "home.service6Description": "آشنایی با درمان کانال ریشه برای دندان‌هایی که نیاز به بررسی و درمان پالپ دارند.",
   "home.blog1Title": "اشتباهات رایج هنگام مسواک زدن",
   "home.blog2Title": "سفید کردن دندان؛ روش‌های ایمن و نکات مهم",
-  "home.blog3Title": "آشنایی با مشکلات دندان غیرزنده"
+  "home.blog3Title": "آشنایی با مشکلات دندان غیرزنده",
+  "home.firstName": "نام",
+  "home.lastName": "نام خانوادگی",
+  "home.formSending": "در حال ارسال پیام…",
+  "home.formSent": "پیام شما با موفقیت ثبت شد.",
+  "home.formValidationError": "اطلاعات ارسال‌شده معتبر نیست. لطفاً فیلدها را بررسی کنید.",
+  "home.formTimeout": "مهلت ارسال پیام به پایان رسید. دوباره تلاش کنید.",
+  "home.formError": "ارسال پیام انجام نشد. لطفاً دوباره تلاش کنید.",
+
+  
+
+  
+
+  "contactPage.contact": "تماس با ما",
+  "contactPage.home": "صفحه اصلی",
+  "contactPage.breadcrumb": "مسیر صفحه",
+  "contactPage.contactInformation": "اطلاعات تماس",
+
+  "contactPage.touch": "با ما در ارتباط باشید",
+  "contactPage.heading": "دریافت مشاوره و اطلاعات رایگان",
+  "contactPage.imageAlt": "تصویر بخش تماس کلینیک دندان‌پزشکی",
+
+  "contactPage.addressLabel": "آدرس",
+  "contactPage.addressText": "تهران، خیابان فرشته، جنب سفارت سوئیس، پلاک ۳، طبقه پنجم، واحد ۱۸",
+  "contactPage.emailLabel": "ایمیل",
+  "contactPage.phoneLabel": "شماره تماس",
+
+  "contactPage.firstName": "نام",
+  "contactPage.lastName": "نام خانوادگی",
+  "contactPage.email": "آدرس ایمیل",
+  "contactPage.phone": "شماره تماس",
+  "contactPage.phonePlaceholder": "09123456789",
+  "contactPage.message": "پیام شما",
+
+  "contactPage.submit": "ارسال پیام",
+  "contactPage.sending": "در حال ارسال...",
+  "contactPage.success": "پیام شما با موفقیت ارسال شد.",
+  "contactPage.error": "ارسال پیام با مشکل مواجه شد. لطفاً دوباره تلاش کنید.",
+  "contactPage.validation": "لطفاً اطلاعات فرم را بررسی کنید."
 
 
 

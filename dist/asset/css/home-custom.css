@@ -1,0 +1,241 @@
+/* Dentistry Home — scoped additions over original Webflow CSS */
+.dp-home-page {
+  --dp-blue: #74adda;
+  --dp-navy: #142d40;
+  --dp-muted: #667d8d;
+}
+.dp-home-page *, .dp-home-page *::before, .dp-home-page *::after { box-sizing: border-box; }
+.dp-home-page [hidden] { display: none !important; }
+.dp-home-page .button-icon-block svg { width: 19px; height: 19px; }
+.dp-home-page a:focus-visible, .dp-home-page button:focus-visible,
+.dp-home-page input:focus-visible, .dp-home-page textarea:focus-visible {
+  outline: 2px solid var(--dp-blue);
+  outline-offset: 3px;
+}
+.dp-home-page .hero-one-section .hero-title { line-height: 1.13; }
+.dp-home-page .hero-one-section .section-description,
+.dp-home-page .aboutus-description { line-height: 1.9; }
+.dp-home-page .hero-image { display: block; width: 100%; object-fit: contain; }
+.dp-home-page .about-image-block img { max-width: 100%; }
+.dp-home-page .about-two-icon-block svg { width: 40px; height: 40px; }
+.dp-home-page .about-contact-link { text-decoration: underline; text-underline-offset: 4px; }
+.dp-home-page .about-contact-link:hover { color: #2a6b9b; }
+
+/* Services — preserve Webflow classes, stabilize 3-column card grid. */
+.dp-home-page .service-grid-block {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+  align-items: stretch;
+}
+.dp-home-page .service-grid-block > .w-dyn-list,
+.dp-home-page .service-grid-block .w-dyn-items,
+.dp-home-page .service-grid-block .w-dyn-item { min-width: 0; height: 100%; }
+.dp-home-page .dp-home-service-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  overflow: hidden;
+  border: 1px solid #e4edf2;
+  border-radius: 18px;
+  background: #fff;
+  padding: 25px;
+  transition: box-shadow .2s ease, transform .2s ease;
+}
+.dp-home-page .dp-home-service-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 13px 32px rgba(25, 57, 81, .08);
+}
+.dp-home-page .dp-home-service-card .service-link {
+  display: block;
+  height: auto;
+  text-decoration: none;
+  color: inherit;
+}
+.dp-home-page .dp-home-service-card .service-info-inner-block { margin-bottom: 15px; }
+.dp-home-page .dp-home-service-card .service-icon-inner-block { display: flex; align-items: center; gap: 14px; }
+.dp-home-page .dp-home-service-card .service-icon-block {
+  display: flex;
+  flex: 0 0 51px;
+  align-items: center;
+  justify-content: center;
+  width: 51px;
+  height: 51px;
+  border-radius: 12px;
+  color: #3d7ea9;
+  background: #e8f4fc;
+}
+.dp-home-page .dp-home-service-card .service-icon-block svg { width: 34px; height: 34px; }
+.dp-home-page .dp-home-service-card .service-title-one { margin: 0; line-height: 1.5; font-size: clamp(16px, 1.5vw, 20px); }
+.dp-home-page .dp-home-service-card .service-description {
+  margin: 0;
+  color: var(--dp-muted);
+  font-size: 14px;
+  line-height: 1.9;
+}
+.dp-home-page .dp-home-service-card .service-link-block { margin-top: auto; padding-top: 22px; }
+.dp-home-page .dp-home-service-card .link-block { display: inline-flex; gap: 8px; align-items: center; }
+.dp-home-page .dp-home-service-card .link-button { color: #327aa9; }
+.dp-home-preview-note { margin: 18px 0 0; color: #7c8f9c; font-size: 12px; line-height: 1.8; }
+.dp-home-section-link { display: flex; justify-content: center; margin: 26px 0 0; }
+
+/* Treatment tabs */
+.dp-home-page .dp-home-treatment-tabs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 30px;
+  width: 100%;
+  align-items: stretch;
+}
+.dp-home-page .dp-home-treatment-tabs .tretment-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  width: 100%;
+}
+.dp-home-page .dp-home-treatment-tabs .tretment-tab-link-main {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  height: auto;
+  text-align: start;
+  border: 1px solid #e3edf4;
+  border-radius: 13px;
+  background: #fff;
+  color: var(--dp-navy);
+  cursor: pointer;
+  font: inherit;
+  overflow: hidden;
+}
+.dp-home-page .dp-home-treatment-tabs .tretment-link-main-block,
+.dp-home-page .dp-home-treatment-tabs .tretment-inner-block { display: block; width: 100%; height: auto; }
+.dp-home-page .dp-home-treatment-tabs .tretment-tab-link {
+  display: block;
+  padding: 17px 20px;
+  min-height: 0;
+  width: 100%;
+  height: auto;
+  background: transparent !important;
+  font-size: 16px;
+  font-weight: 600;
+}
+.dp-home-page .dp-home-treatment-tabs .tretment-round-block { display: none; }
+.dp-home-page .dp-home-treatment-tabs .tretment-tab-link-main.w--current { border-color: #9ac5e2; background: #e9f5fd; }
+.dp-home-page .dp-home-treatment-tabs .tretment-tab-content-block {
+  display: block;
+  padding: 0 20px 16px;
+  height: auto;
+  width: auto;
+  background: transparent;
+}
+.dp-home-page .dp-home-treatment-tabs .tretment-tab-content-inner-block { display: flex; align-items: flex-start; gap: 12px; }
+.dp-home-page .dp-home-treatment-tabs .tretment-icon-box { display: flex; flex: 0 0 30px; color: #4b94c3; }
+.dp-home-page .dp-home-treatment-tabs .tretment-icon-box svg { width: 30px; height: 30px; }
+.dp-home-page .dp-home-treatment-tabs .tretment-description {
+  margin: 0;
+  color: var(--dp-muted);
+  font-size: 13px;
+  line-height: 1.8;
+}
+.dp-home-page .dp-home-treatment-tabs .tretment-content {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  overflow: visible;
+}
+.dp-home-page .dp-home-treatment-tabs .tretment-tab-pane,
+.dp-home-page .dp-home-treatment-tabs .tretment-content-link { width: 100%; height: 100%; }
+.dp-home-page .dp-home-treatment-tabs .tretment-content-link {
+  display: block;
+  min-height: 340px;
+  overflow: hidden;
+  border-radius: 18px;
+}
+.dp-home-page .dp-home-treatment-tabs .tretment-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 340px;
+  max-height: 520px;
+  object-fit: cover;
+}
+.dp-home-treatment-placeholder, .dp-home-blog-placeholder {
+  display: grid;
+  min-height: 250px;
+  place-items: center;
+  color: #74adda;
+  background: #e9f4fc;
+}
+
+/* Contact form: non-deceptive preview until backend endpoint is agreed. */
+.dp-home-page .dp-home-contact .contact-image-one { display: block; width: 100%; height: 100%; object-fit: cover; }
+.dp-home-page .dp-home-contact .input-field,
+.dp-home-page .dp-home-contact .text-area { font-family: inherit; }
+.dp-home-page .dp-home-contact .dp-home-submit { display: inline-flex; align-items: center; gap: 16px; border: 0; cursor: pointer; font: inherit; }
+.dp-home-contact-demo-note { margin: 14px 0 0; color: #c9d9e5; font-size: 12px; line-height: 1.8; }
+.dp-home-contact-status {
+  padding: 12px 16px;
+  margin: 12px 0 0;
+  border-radius: 8px;
+  background: #e9f3fa;
+  color: #214c6c;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.dp-home-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Blog */
+.dp-home-page .dp-home-blog-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+  width: 100%;
+}
+.dp-home-page .dp-home-blog-grid > .w-dyn-item { min-width: 0; }
+.dp-home-page .dp-home-blog-card { display: flex; flex-direction: column; height: 100%; }
+.dp-home-page .dp-home-blog-card .blog-link-block { display: block; width: 100%; text-decoration: none; color: inherit; }
+.dp-home-page .dp-home-blog-card .blog-image-block { position: relative; overflow: hidden; border-radius: 14px; aspect-ratio: 1.25; }
+.dp-home-page .dp-home-blog-card .blog-image { display: block; width: 100%; height: 100%; object-fit: cover; }
+.dp-home-page .dp-home-blog-card .blog-title { margin: 15px 0; font-size: clamp(17px, 1.6vw, 22px); line-height: 1.6; }
+.dp-home-page .dp-home-blog-card .blog-button-block { margin-top: auto; padding-top: 10px; }
+.dp-home-page .dp-home-blog-card .blog-date-block { position: absolute; bottom: 12px; inset-inline-start: 12px; padding: 7px 12px; border-radius: 7px; background: #fff; }
+.dp-home-page .dp-home-blog-card .blog-date { font-size: 12px; }
+
+html[dir="rtl"] .dp-home-page { direction: rtl; }
+html[dir="rtl"] .dp-home-page .section-title,
+html[dir="rtl"] .dp-home-page .hero-title { letter-spacing: 0; }
+html[dir="rtl"] .dp-home-page .button-icon-block svg { transform: scaleX(-1); }
+html[dir="rtl"] .dp-home-page .service-link, html[dir="rtl"] .dp-home-page .blog-link-block { text-align: right; }
+
+@media(max-width:991px) {
+  .dp-home-page .service-grid-block { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dp-home-page .dp-home-blog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dp-home-page .dp-home-treatment-tabs { gap: 20px; }
+}
+@media(max-width:767px) {
+  .dp-home-page .dp-home-treatment-tabs { grid-template-columns: 1fr; }
+  .dp-home-page .dp-home-treatment-tabs .tretment-image,
+  .dp-home-page .dp-home-treatment-tabs .tretment-content-link { min-height: 270px; max-height: 360px; }
+  .dp-home-page .dp-home-blog-grid { grid-template-columns: 1fr; }
+}
+@media(max-width:479px) {
+  .dp-home-page .service-grid-block { grid-template-columns: 1fr; }
+  .dp-home-page .dp-home-service-card { padding: 20px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .dp-home-page .dp-home-service-card { transition: none; }
+  .dp-home-page .dp-home-service-card:hover { transform: none; }
+}
