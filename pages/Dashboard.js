@@ -1,958 +1,320 @@
-
+/**
+ * Dentistry — Patient Dashboard / Premium UI shell
+ * UI-first: no sample appointments, treatments, records or prices.
+ * Existing authenticated PatientProfile + logout remain connected.
+ * API-ready hooks: data-dashboard-*; sections: overview, appointments,
+ * treatments, records, billing, profile.
+ */
 import {
-  dpIcon,
-  demoNote,
-  money,
-  portalHeading,
-} from '../components/PortalUI.js';
-
-import { languageSwitch, t } from '../code/i18n.js';
-
+  t, getLanguage, languageSwitch, setLanguage,
+} from '../code/i18n.js';
 import {
   PatientProfile,
   initPatientProfile,
 } from '../components/PatientProfile.js';
-
 import { profileApi } from '../code/api.js';
+import { clearAuthToken, getAuthToken } from '../code/auth.js';
+import '../asset/css/portal.css';
+import '../asset/css/dashboard.css';
 
-import {
-  clearAuthToken,
-  getAuthToken,
-} from '../code/auth.js';
+const fallback = {
+  en: {
+    portal: 'Patient portal', workspace: 'YOUR WORKSPACE', general: 'GENERAL', account: 'ACCOUNT',
+    overview: 'Overview', appointments: 'Appointments', treatments: 'Treatment plans',
+    records: 'Dental records', billing: 'Payments & invoices', profile: 'My profile',
+    menu: 'Open navigation', close: 'Close navigation', language: 'Language',
+    logout: 'Sign out', loggingOut: 'Signing out…', support: 'Need a hand?',
+    supportText: 'Our clinic team is here to help you.', contact: 'Contact clinic',
+    greeting: 'Welcome to your space', subtitle: 'Everything about your dental care, in one calm place.',
+    healthTag: 'YOUR CARE, SIMPLIFIED', yourNextVisit: 'Your next appointment',
+    noNextVisit: 'No upcoming appointment yet', nextVisitHint: 'When you book a visit, the details will appear here.',
+    exploreServices: 'Explore services', viewAppointments: 'View appointments',
+    overviewLabel: 'AT A GLANCE', overviewHeading: 'Your health overview',
+    upcoming: 'Upcoming visits', activePlans: 'Active plans', balance: 'Amount due',
+    dataPending: 'Awaiting connection', currency: '—',
+    quickActions: 'Quick actions', quickActionsCopy: 'The things you need, just a click away.',
+    actionServices: 'Explore treatments', actionServicesCopy: 'Learn about available dental services.',
+    actionProfile: 'Update your profile', actionProfileCopy: 'Keep your contact information current.',
+    actionHelp: 'Get in touch', actionHelpCopy: 'Ask our team a question.',
+    journey: 'Care timeline', journeyCopy: 'Your visits and treatment milestones will be here.',
+    gentleReminder: 'A little peace of mind', gentleReminderCopy: 'Your treatment history is kept in your account. Records will appear only when available and authorized for you.',
+    sectionOverviewEyebrow: 'PATIENT HOME',
+    sectionAppointmentsEyebrow: 'YOUR SCHEDULE', appointmentTitle: 'Appointments',
+    appointmentSubtitle: 'Review future and past appointments in one place.',
+    appointmentsEmptyTitle: 'Your schedule starts here', appointmentsEmptyCopy: 'You have no appointment information to display yet. Once appointment services are connected, your visits will appear here.',
+    sectionTreatmentsEyebrow: 'YOUR CARE PLAN', treatmentTitle: 'Treatment plans',
+    treatmentSubtitle: 'Follow your treatment stages and progress.',
+    treatmentsEmptyTitle: 'Your treatment plan, made clear', treatmentsEmptyCopy: 'Treatment plans shared with you by the clinic will appear here once available.',
+    sectionRecordsEyebrow: 'YOUR HEALTH FILE', recordsTitle: 'Dental records',
+    recordsSubtitle: 'A private home for your eligible dental history and files.',
+    recordsEmptyTitle: 'Your dental history belongs here', recordsEmptyCopy: 'Doctor-approved records, documents and dental images will be shown here when available to you.',
+    privacyNote: 'Only information authorized for the patient account will be displayed.',
+    sectionBillingEyebrow: 'YOUR FINANCES', billingTitle: 'Payments & invoices',
+    billingSubtitle: 'Understand paid amounts and any upcoming payments.',
+    billingEmptyTitle: 'Clear, simple billing', billingEmptyCopy: 'Your invoices, deposits and payment history will appear when the billing system is connected.',
+    sectionProfileEyebrow: 'YOUR ACCOUNT', profileTitle: 'Personal information',
+    profileSubtitle: 'Update account details and manage your contact information.',
+    badgeSoon: 'Ready for integration', backHome: 'Back to website',
+  },
+  fa: {
+    portal: 'پرتال بیماران', workspace: 'فضای اختصاصی شما', general: 'بخش‌های اصلی', account: 'حساب کاربری',
+    overview: 'نمای کلی', appointments: 'نوبت‌های من', treatments: 'طرح‌های درمان',
+    records: 'پرونده دندان‌پزشکی', billing: 'پرداخت‌ها و فاکتورها', profile: 'پروفایل من',
+    menu: 'باز کردن منو', close: 'بستن منو', language: 'زبان',
+    logout: 'خروج از حساب', loggingOut: 'در حال خروج…', support: 'سوالی دارید؟',
+    supportText: 'تیم کلینیک آماده پاسخ‌گویی به شماست.', contact: 'تماس با کلینیک',
+    greeting: 'به فضای شخصی خود خوش آمدید', subtitle: 'همه چیز درباره مراقبت از دندان‌هایتان، در یک محیط آرام و ساده.',
+    healthTag: 'مراقبت آسان‌تر از همیشه', yourNextVisit: 'نوبت بعدی شما',
+    noNextVisit: 'هنوز نوبت آینده‌ای ثبت نشده', nextVisitHint: 'پس از رزرو نوبت، جزئیات آن در این بخش نمایش داده می‌شود.',
+    exploreServices: 'مشاهده خدمات', viewAppointments: 'مشاهده نوبت‌ها',
+    overviewLabel: 'در یک نگاه', overviewHeading: 'خلاصه وضعیت شما',
+    upcoming: 'نوبت‌های آینده', activePlans: 'درمان‌های فعال', balance: 'مانده قابل پرداخت',
+    dataPending: 'در انتظار اتصال', currency: '—',
+    quickActions: 'دسترسی سریع', quickActionsCopy: 'کارهای مهم با چند کلیک ساده.',
+    actionServices: 'مشاهده خدمات', actionServicesCopy: 'با خدمات دندان‌پزشکی آشنا شوید.',
+    actionProfile: 'ویرایش پروفایل', actionProfileCopy: 'اطلاعات تماس خود را به‌روز نگه دارید.',
+    actionHelp: 'ارتباط با ما', actionHelpCopy: 'سوال خود را از تیم کلینیک بپرسید.',
+    journey: 'مسیر درمان', journeyCopy: 'سوابق مراجعه و مراحل درمان اینجا نمایش داده می‌شوند.',
+    gentleReminder: 'اطمینان خاطر شما', gentleReminderCopy: 'سوابق درمان شما در حساب کاربری نگهداری می‌شود و فقط اطلاعات مجاز و در دسترس نمایش داده خواهد شد.',
+    sectionOverviewEyebrow: 'خانه بیمار',
+    sectionAppointmentsEyebrow: 'برنامه نوبت‌ها', appointmentTitle: 'نوبت‌های من',
+    appointmentSubtitle: 'نوبت‌های آینده و مراجعات قبلی را یکجا ببینید.',
+    appointmentsEmptyTitle: 'برنامه نوبت‌های شما از اینجا شروع می‌شود', appointmentsEmptyCopy: 'در حال حاضر اطلاعاتی برای نمایش وجود ندارد. پس از اتصال سیستم نوبت‌دهی، نوبت‌ها اینجا نمایش داده می‌شوند.',
+    sectionTreatmentsEyebrow: 'برنامه درمان شما', treatmentTitle: 'طرح‌های درمان',
+    treatmentSubtitle: 'مراحل و پیشرفت درمان خود را دنبال کنید.',
+    treatmentsEmptyTitle: 'برنامه درمانی روشن و منظم', treatmentsEmptyCopy: 'طرح‌های درمانی که کلینیک با شما به اشتراک می‌گذارد، در این بخش نمایش داده خواهد شد.',
+    sectionRecordsEyebrow: 'پرونده سلامت شما', recordsTitle: 'پرونده دندان‌پزشکی',
+    recordsSubtitle: 'محیطی خصوصی برای سوابق و فایل‌های پزشکی مجاز شما.',
+    recordsEmptyTitle: 'سوابق دندان‌پزشکی شما اینجا قرار می‌گیرد', recordsEmptyCopy: 'سوابق، مدارک و تصاویر دندان‌پزشکی که پزشک اجازه دسترسی داده باشد، در این قسمت نمایش داده می‌شوند.',
+    privacyNote: 'فقط اطلاعاتی نمایش داده می‌شود که دسترسی آن برای حساب بیمار مجاز باشد.',
+    sectionBillingEyebrow: 'امور مالی شما', billingTitle: 'پرداخت‌ها و فاکتورها',
+    billingSubtitle: 'وضعیت پرداخت‌ها و مبلغ‌های باقی‌مانده را بررسی کنید.',
+    billingEmptyTitle: 'صورت‌حساب شفاف و ساده', billingEmptyCopy: 'فاکتورها، بیعانه‌ها و سوابق پرداخت پس از اتصال سیستم مالی در این بخش نمایش داده می‌شوند.',
+    sectionProfileEyebrow: 'حساب شما', profileTitle: 'اطلاعات شخصی',
+    profileSubtitle: 'مشخصات حساب و اطلاعات تماس خود را مدیریت کنید.',
+    badgeSoon: 'آماده اتصال', backHome: 'بازگشت به سایت',
+  },
+};
 
-// ============================================
-// DASHBOARD NAVIGATION
-// ============================================
-
-function getNavigation() {
-  return [
-    ['overview', 'Overview', 'activity'],
-    ['appointments', 'Appointments', 'calendar'],
-    ['treatments', 'Treatment plans', 'tooth'],
-    ['billing', 'Billing & payments', 'credit'],
-    ['profile', t('profile.title'), 'user'],
-  ];
+const LANG = () => getLanguage() === 'fa' ? 'fa' : 'en';
+const html = value => String(value ?? '').replace(/[&<>"']/g, s => ({
+  '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;',
+})[s]);
+function tr(key) {
+  const phrase = t(`dashboard.${key}`);
+  return phrase === `dashboard.${key}` ? fallback[LANG()][key] ?? key : phrase;
 }
+const tx = key => html(tr(key));
 
-function navItem([id, label, icon], index) {
-  const active = index === 0;
+const paths = {
+  grid:'<rect x="3" y="3" width="7" height="7" rx="1.4"/><rect x="14" y="3" width="7" height="7" rx="1.4"/><rect x="3" y="14" width="7" height="7" rx="1.4"/><rect x="14" y="14" width="7" height="7" rx="1.4"/>',
+  calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18"/>',
+  tooth:'<path d="M12 4c2.4 0 3.2-1.3 5.7-1.3C22.5 2.7 24 6.6 22.5 11c-1.3 4-2.4 10-5.6 10-2 0-2.2-7-4.9-7S9.1 21 7.1 21c-3.2 0-4.3-6-5.6-10C0 6.6 1.5 2.7 6.3 2.7 8.8 2.7 9.6 4 12 4Z"/>',
+  file:'<path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M13 2v7h7M8 13h8M8 17h5"/>',
+  card:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20m-15 5h4"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>',
+  arrow:'<path d="M5 12h14m-6-6 6 6-6 6"/>',
+  chevron:'<path d="m9 18 6-6-6-6"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  menu:'<path d="M4 6h16M4 12h16M4 18h16"/>',
+  close:'<path d="M18 6 6 18M6 6l12 12"/>',
+  logout:'<path d="M10 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5m4-4 4-4-4-4m4 4H9"/>',
+  heart:'<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  shield:'<path d="m12 2 8 4v6c0 5.1-3.5 8.3-8 10-4.5-1.7-8-4.9-8-10V6l8-4Z"/><path d="m9 12 2 2 4-4"/>',
+  help:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 4.3 1.7c-1.1 1-1.8 1.4-1.8 3.1M12 17h.01"/>',
+  spark:'<path d="m12 2 2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2L12 2Z"/>',
+};
+const icon = (key, className='') => `<svg class="dn-icon ${className}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[key] || paths.grid}</svg>`;
 
-  return `
-    <button
-      type="button"
-      class="dp-dash-nav-item${active ? ' is-active' : ''}"
-      data-dashboard-tab="${id}"
-      role="tab"
-      id="dp-tab-${id}"
-      aria-selected="${active}"
-      aria-controls="dp-panel-${id}"
-      tabindex="${active ? '0' : '-1'}"
-    >
-      ${dpIcon(icon)}
-      <span>${label}</span>
-      ${active ? '<i aria-hidden="true"></i>' : ''}
-    </button>
-  `;
+const nav = [
+  ['overview','overview','grid'],
+  ['appointments','appointments','calendar'],
+  ['treatments','treatments','tooth'],
+  ['records','records','file'],
+  ['billing','billing','card'],
+  ['profile','profile','user'],
+];
+const validSections = new Set(nav.map(([id])=>id));
+const primaryMobile = new Set(['overview','appointments','records','profile']);
+
+function navButton(id, key, symbol, variant = '') {
+  const active = id === 'overview';
+  return `<button type="button" class="dn-nav-button${active ? ' is-active' : ''}" data-dashboard-tab="${id}" aria-current="${active ? 'page' : 'false'}" ${variant ? `data-nav-placement="${variant}"` : ''}>
+    <span class="dn-nav-icon">${icon(symbol)}</span><span class="dn-nav-label">${tx(key)}</span>
+    ${variant === 'sidebar' ? `<span class="dn-nav-trailing">${icon('chevron')}</span>` : ''}
+  </button>`;
 }
-
-// ============================================
-// DEMO APPOINTMENT
-// ============================================
-
-function appointment() {
-  return `
-    <article class="dp-appointment-card">
-
-      <div class="dp-appointment-date">
-        <strong>25</strong>
-        <span>OCT<br>2026</span>
-      </div>
-
-      <div class="dp-appointment-main">
-        <span class="dp-chip dp-chip-green">
-          Example · Upcoming
-        </span>
-
-        <h3>Dental consultation</h3>
-
-        <p>
-          ${dpIcon('user')}
-          Sample provider
-
-          <span class="dp-separator">•</span>
-
-          ${dpIcon('clock')}
-          10:30 AM
-        </p>
-      </div>
-
-      <a
-        class="dp-btn dp-btn-outline dp-btn-small"
-        href="/checkout"
-      >
-        View demo checkout
-        ${dpIcon('arrow')}
-      </a>
-
-    </article>
-  `;
+function sectionTitle(eyebrow, heading, subtitle) {
+  return `<div class="dn-page-heading"><div class="dn-eyebrow">${tx(eyebrow)}</div><h1>${tx(heading)}</h1><p>${tx(subtitle)}</p></div>`;
 }
-
-// ============================================
-// DEMO TIMELINE
-// ============================================
-
-function timeline() {
-  return `
-    <div class="dp-timeline">
-
-      <div class="dp-timeline-item">
-        <span class="dp-dot"></span>
-
-        <div>
-          <strong>Dental consultation</strong>
-          <p>Example appointment · Oct 25, 2026</p>
-        </div>
-
-        <span class="dp-chip dp-chip-green">
-          Upcoming
-        </span>
-      </div>
-
-      <div class="dp-timeline-item">
-        <span class="dp-dot dp-dot-muted"></span>
-
-        <div>
-          <strong>Routine examination</strong>
-          <p>Example previous visit · Sep 12, 2026</p>
-        </div>
-
-        <span class="dp-chip">
-          Completed
-        </span>
-      </div>
-
-      <div class="dp-timeline-item">
-        <span class="dp-dot dp-dot-muted"></span>
-
-        <div>
-          <strong>Cleaning & prevention</strong>
-          <p>Example previous visit · Jul 07, 2026</p>
-        </div>
-
-        <span class="dp-chip">
-          Completed
-        </span>
-      </div>
-
-    </div>
-  `;
+function stat(iconName, title) {
+  return `<article class="dn-stat"><span class="dn-stat-symbol">${icon(iconName)}</span><span class="dn-stat-label">${tx(title)}</span><strong data-dashboard-stat="${title}" aria-label="${tx('dataPending')}">—</strong><small>${tx('dataPending')}</small></article>`;
 }
-
-// ============================================
-// DEMO TREATMENT RECORDS
-// ============================================
-
-function demoRecords() {
-  return `
-    <div class="dp-list-row">
-      <span class="dp-record-icon">
-        ${dpIcon('tooth')}
-      </span>
-
-      <div>
-        <strong>Routine dental assessment</strong>
-        <p>Example plan · Created Sep 12, 2026</p>
-      </div>
-
-      <span class="dp-chip dp-chip-green">
-        Illustrative
-      </span>
-    </div>
-
-    <div class="dp-list-row">
-      <span class="dp-record-icon">
-        ${dpIcon('shield')}
-      </span>
-
-      <div>
-        <strong>Preventive care guidance</strong>
-        <p>Example educational record</p>
-      </div>
-
-      <span class="dp-chip">
-        Sample
-      </span>
-    </div>
-  `;
+function emptyView(iconName, title, body, action=false) {
+  return `<div class="dn-empty-state" data-dashboard-empty>
+    <div class="dn-empty-visual" aria-hidden="true"><span>${icon(iconName)}</span><i></i><i></i></div>
+    <h2>${tx(title)}</h2><p>${tx(body)}</p>
+    ${action ? `<a class="dn-button dn-button-primary" href="/service">${icon('plus')}${tx('exploreServices')}${icon('arrow','dn-button-arrow')}</a>` : ''}
+  </div>`;
 }
-
-// ============================================
-// MAIN DASHBOARD
-// ============================================
+function actionCard(key, description, symbol, type, href) {
+  const element = type === 'tab' ? `button type="button" data-dashboard-action="profile"` : `a href="${href}"`;
+  const closing = type === 'tab' ? 'button' : 'a';
+  return `<${element} class="dn-action-card"><span class="dn-action-icon">${icon(symbol)}</span><span class="dn-action-copy"><strong>${tx(key)}</strong><small>${tx(description)}</small></span><span class="dn-action-arrow">${icon('arrow')}</span></${closing}>`;
+}
 
 export function Dashboard() {
-  const navigation = getNavigation();
-
-  return `
-    <main
-      class="dentistry-portal dp-dashboard-page"
-      data-portal-page="dashboard"
-    >
-      <div class="dp-dashboard-layout">
-
-        <!-- =====================================
-             SIDEBAR
-        ====================================== -->
-
-        <aside class="dp-dash-sidebar">
-
-          <a class="dp-dash-brand" href="/">
-            ${dpIcon('tooth')}
-
-            <span>
-              DR. ZEINOLABEDIN
-              <small>PATIENT PORTAL</small>
-            </span>
-          </a>
-
-          <div class="dp-sidebar-kicker">
-            WORKSPACE
-          </div>
-
-          <nav
-            class="dp-dash-nav"
-            role="tablist"
-            aria-label="Patient dashboard sections"
-          >
-            ${navigation.map(navItem).join('')}
+  return `<main class="dentistry-portal dn-dashboard" data-portal-page="dashboard" data-no-translate dir="${LANG()==='fa' ? 'rtl' : 'ltr'}">
+    <div class="dn-dashboard-shell">
+      <div class="dn-sidebar-scrim" data-sidebar-scrim hidden></div>
+      <aside class="dn-sidebar" id="dn-dashboard-sidebar" aria-label="${tx('portal')}">
+        <a href="/" class="dn-brand" aria-label="${tx('backHome')}"><img src="/asset/img/logo.png" alt="Dentistry" loading="eager"/><span>${tx('portal')}</span></a>
+        <div class="dn-sidebar-scroll">
+          <div class="dn-nav-caption">${tx('workspace')}</div>
+          <nav class="dn-nav" aria-label="${tx('general')}">
+            ${nav.map(([id,key,symbol])=>navButton(id,key,symbol,'sidebar')).join('')}
           </nav>
-
-          <!-- SIDEBAR BOTTOM -->
-
-          <div class="dp-sidebar-bottom">
-
-            <div class="dp-support-box">
-
-              ${dpIcon('phone')}
-
-              <strong>
-                Need assistance?
-              </strong>
-
-              <p>
-                Reach out to the clinic for
-                appointment or billing questions.
-              </p>
-
-              <a href="/contact-us">
-                Contact us
-                ${dpIcon('arrow')}
-              </a>
-
-            </div>
-
-            <!-- REAL LOGOUT -->
-
-            <button
-              type="button"
-              class="dp-sidebar-back"
-              data-dashboard-logout
-            >
-              ${dpIcon('back')}
-              <span>${t('profile.logout')}</span>
-            </button>
-
-          </div>
-
-        </aside>
-
-        <!-- =====================================
-             MAIN CONTENT
-        ====================================== -->
-
-        <div class="dp-dash-content">
-
-          <!-- TOPBAR -->
-
-          <div class="dp-dash-topbar">
-
-            <button
-              class="dp-dash-mobile-menu"
-              id="dp-dash-menu"
-              type="button"
-              aria-expanded="false"
-              aria-controls="dp-dash-mobile-tabs"
-              aria-label="Toggle dashboard navigation"
-            >
-              ${dpIcon('menu')}
-            </button>
-
-            <div class="dp-topbar-breadcrumb">
-              Patient portal
-              <span>/</span>
-
-              <strong data-current-section>
-                Overview
-              </strong>
-            </div>
-
-            <div class="dp-topbar-right">
-
-              ${languageSwitch('dentistry-dashboard-lang')}
-
-              <!-- REAL PATIENT AVATAR -->
-
-              <span
-                class="dp-avatar"
-                data-patient-avatar
-                aria-label="${t('profile.title')}"
-              >
-                —
-              </span>
-
-            </div>
-
-          </div>
-
-          <!-- MOBILE NAVIGATION -->
-
-          <div
-            class="dp-dash-mobile-tabs"
-            id="dp-dash-mobile-tabs"
-            hidden
-          ></div>
-
-          <!-- =====================================
-               DASHBOARD PAGE BODY
-          ====================================== -->
-
-          <div class="dp-dash-pagebody">
-
-            ${demoNote(
-              'Appointments, treatments and billing are currently demo examples. Patient profile information is loaded from your account.'
-            )}
-
-            <!-- ==================================
-                 OVERVIEW
-            =================================== -->
-
-            <section
-              id="dp-panel-overview"
-              role="tabpanel"
-              aria-labelledby="dp-tab-overview"
-              data-dashboard-panel="overview"
-            >
-
-              <!-- GREETING -->
-
-              <div class="dp-page-head dp-dash-greeting">
-
-                <div class="dp-eyebrow">
-                  YOUR PATIENT EXPERIENCE
-                </div>
-
-                <h1>
-                  Good to see you,
-
-                  <em data-dashboard-name>
-                    —
-                  </em>
-
-                  <span>✦</span>
-                </h1>
-
-                <p>
-                  Here’s a quick overview of your
-                  dental care journey.
-                </p>
-
-              </div>
-
-              <!-- HERO -->
-
-              <div class="dp-dash-hero">
-
-                <div>
-
-                  <span class="dp-pill">
-                    PERSONALIZED DENTAL CARE
-                  </span>
-
-                  <h2>
-                    Healthy smile.
-                    <br>
-                    Happier you.
-                  </h2>
-
-                  <p>
-                    See your appointments and stay
-                    on top of your treatment plans,
-                    all in one place.
-                  </p>
-
-                  <a
-                    class="dp-btn dp-btn-white"
-                    href="/checkout"
-                  >
-                    Explore appointment checkout
-                    ${dpIcon('arrow')}
-                  </a>
-
-                </div>
-
-                <div
-                  class="dp-dash-hero-icon"
-                  aria-hidden="true"
-                >
-                  ${dpIcon('tooth')}
-                </div>
-
-              </div>
-
-              <!-- STATS -->
-
-              <div class="dp-stats-grid">
-
-                <div class="dp-stat-card">
-
-                  <span class="dp-stat-icon">
-                    ${dpIcon('calendar')}
-                  </span>
-
-                  <span>Sample appointments</span>
-                  <strong>01</strong>
-                  <small>1 upcoming (demo)</small>
-
-                </div>
-
-                <div class="dp-stat-card">
-
-                  <span class="dp-stat-icon">
-                    ${dpIcon('tooth')}
-                  </span>
-
-                  <span>Example treatment plans</span>
-                  <strong>02</strong>
-                  <small>Illustrative only</small>
-
-                </div>
-
-                <div class="dp-stat-card">
-
-                  <span class="dp-stat-icon">
-                    ${dpIcon('credit')}
-                  </span>
-
-                  <span>Example deposit</span>
-                  <strong>150K</strong>
-                  <small>Toman · not payable here</small>
-
-                </div>
-
-              </div>
-
-              <!-- TWO COLUMN -->
-
-              <div class="dp-dash-two-col">
-
-                <!-- UPCOMING APPOINTMENT -->
-
-                <section class="dp-white-card">
-
-                  <div class="dp-card-head">
-
-                    <div>
-                      <span class="dp-eyebrow">
-                        YOUR SCHEDULE
-                      </span>
-
-                      <h2>
-                        Upcoming appointment
-                      </h2>
-                    </div>
-
-                    <button
-                      type="button"
-                      class="dp-text-button"
-                      data-show-section="appointments"
-                    >
-                      View all
-                      ${dpIcon('arrow')}
-                    </button>
-
-                  </div>
-
-                  ${appointment()}
-
-                </section>
-
-                <!-- CHECKLIST -->
-
-                <section class="dp-white-card">
-
-                  <div class="dp-card-head">
-                    <div>
-                      <span class="dp-eyebrow">
-                        CARE JOURNEY
-                      </span>
-
-                      <h2>
-                        Patient checklist
-                      </h2>
-                    </div>
-                  </div>
-
-                  <ul class="dp-care-list">
-
-                    <li>
-                      <span>${dpIcon('check')}</span>
-                      Keep your contact details up to date
-                    </li>
-
-                    <li>
-                      <span>${dpIcon('check')}</span>
-                      Review your next appointment
-                    </li>
-
-                    <li>
-                      <span>${dpIcon('clock')}</span>
-                      Treatment updates will appear here
-                    </li>
-
-                  </ul>
-
-                </section>
-
-              </div>
-
-            </section>
-
-            <!-- ==================================
-                 APPOINTMENTS
-            =================================== -->
-
-            <section
-              id="dp-panel-appointments"
-              role="tabpanel"
-              aria-labelledby="dp-tab-appointments"
-              data-dashboard-panel="appointments"
-              hidden
-            >
-
-              ${portalHeading(
-                'PATIENT DASHBOARD',
-                'My appointments',
-                'Your schedule at a glance. The entries shown here are examples, not actual reservations.'
-              )}
-
-              <div class="dp-white-card">
-
-                <div class="dp-card-head">
-
-                  <h2>
-                    Appointment history
-                  </h2>
-
-                  <a
-                    class="dp-btn dp-btn-primary dp-btn-small"
-                    href="/checkout"
-                  >
-                    Checkout preview
-                    ${dpIcon('arrow')}
-                  </a>
-
-                </div>
-
-                ${timeline()}
-
-              </div>
-
-            </section>
-
-            <!-- ==================================
-                 TREATMENTS
-            =================================== -->
-
-            <section
-              id="dp-panel-treatments"
-              role="tabpanel"
-              aria-labelledby="dp-tab-treatments"
-              data-dashboard-panel="treatments"
-              hidden
-            >
-
-              ${portalHeading(
-                'PATIENT DASHBOARD',
-                'Treatment plans',
-                'Illustrative care records. Your real treatments will appear after API integration.'
-              )}
-
-              <div class="dp-white-card">
-
-                <div class="dp-card-head">
-
-                  <h2>
-                    Care records
-                  </h2>
-
-                  <span class="dp-chip">
-                    2 sample items
-                  </span>
-
-                </div>
-
-                ${demoRecords()}
-
-              </div>
-
-            </section>
-
-            <!-- ==================================
-                 BILLING
-            =================================== -->
-
-            <section
-              id="dp-panel-billing"
-              role="tabpanel"
-              aria-labelledby="dp-tab-billing"
-              data-dashboard-panel="billing"
-              hidden
-            >
-
-              ${portalHeading(
-                'PATIENT DASHBOARD',
-                'Billing & payments',
-                'Review example invoices and payments. No real balances or transactions are shown.'
-              )}
-
-              <div class="dp-white-card">
-
-                <div class="dp-card-head">
-
-                  <h2>
-                    Sample invoice summary
-                  </h2>
-
-                  <span class="dp-chip">
-                    PREVIEW
-                  </span>
-
-                </div>
-
-                <div class="dp-billing-line">
-                  <span>
-                    Consultation (example)
-                  </span>
-
-                  <strong>
-                    ${money(650000)}
-                  </strong>
-                </div>
-
-                <div class="dp-billing-line">
-                  <span>
-                    Illustrative deposit
-                  </span>
-
-                  <strong>
-                    ${money(150000)}
-                  </strong>
-                </div>
-
-                <div class="dp-billing-line dp-billing-total">
-                  <span>
-                    Example remaining balance
-                  </span>
-
-                  <strong>
-                    ${money(500000)}
-                  </strong>
-                </div>
-
-                <p class="dp-tiny-muted">
-                  Amounts are placeholders,
-                  not the clinic’s actual price list.
-                </p>
-
-                <a
-                  class="dp-btn dp-btn-primary"
-                  href="/checkout"
-                >
-                  Open checkout preview
-                  ${dpIcon('arrow')}
-                </a>
-
-              </div>
-
-            </section>
-
-            <!-- ==================================
-                 PROFILE — REAL API
-            =================================== -->
-
-            <section
-              id="dp-panel-profile"
-              role="tabpanel"
-              aria-labelledby="dp-tab-profile"
-              data-dashboard-panel="profile"
-              hidden
-            >
-
-              ${portalHeading(
-                t('profile.dashboard'),
-                t('profile.title'),
-                t('profile.subtitle')
-              )}
-
-              ${PatientProfile()}
-
-            </section>
-
-          </div>
-
         </div>
-
+        <div class="dn-sidebar-footer">
+          <div class="dn-support-panel"><div class="dn-support-symbol">${icon('help')}</div><strong>${tx('support')}</strong><p>${tx('supportText')}</p><a href="/contact-us">${tx('contact')}${icon('arrow')}</a></div>
+          <button type="button" class="dn-logout" data-dashboard-logout>${icon('logout')}<span data-logout-label>${tx('logout')}</span></button>
+        </div>
+      </aside>
+      <div class="dn-main">
+        <header class="dn-topbar">
+          <div class="dn-topbar-left"><button type="button" class="dn-menu-button" data-sidebar-toggle aria-label="${tx('menu')}" aria-expanded="false" aria-controls="dn-dashboard-sidebar">${icon('menu')}</button><div class="dn-breadcrumb"><span>${tx('portal')}</span><span class="dn-breadcrumb-separator">/</span><strong data-current-section>${tx('overview')}</strong></div></div>
+          <div class="dn-topbar-right"><a class="dn-topbar-site-link" href="/">${tx('backHome')}</a><div class="dn-topbar-lang">${languageSwitch('dn-language-switch')}</div><button type="button" class="dn-topbar-avatar" data-dashboard-action="profile" aria-label="${tx('profile')}">${icon('user')}</button></div>
+        </header>
+        <div class="dn-content" id="dn-dashboard-content">
+          <section class="dn-panel" data-dashboard-panel="overview" aria-label="${tx('overview')}">
+            <div class="dn-overview-heading"><div><span class="dn-eyebrow">${tx('sectionOverviewEyebrow')}</span><h1>${tx('greeting')}<span class="dn-heading-spark">${icon('spark')}</span></h1><p>${tx('subtitle')}</p></div><a href="/service" class="dn-button dn-button-primary dn-overview-cta">${icon('plus')}${tx('exploreServices')}${icon('arrow','dn-button-arrow')}</a></div>
+            <div class="dn-welcome-card">
+              <div class="dn-welcome-content"><span class="dn-welcome-kicker">${icon('heart')}${tx('healthTag')}</span><div class="dn-welcome-meta"><span class="dn-welcome-label">${tx('yourNextVisit')}</span><h2 data-dashboard-next-title>${tx('noNextVisit')}</h2><p data-dashboard-next-description>${tx('nextVisitHint')}</p></div><div class="dn-welcome-actions"><button type="button" data-dashboard-action="appointments" class="dn-button dn-button-white">${tx('viewAppointments')}${icon('arrow')}</button></div></div>
+              <div class="dn-welcome-art" aria-hidden="true"><span class="dn-orbit dn-orbit-one"></span><span class="dn-orbit dn-orbit-two"></span><span class="dn-tooth-illustration">${icon('tooth')}</span><span class="dn-floating-mark dn-floating-mark-a">${icon('spark')}</span><span class="dn-floating-mark dn-floating-mark-b">${icon('plus')}</span></div>
+            </div>
+            <div class="dn-section-heading"><div><span class="dn-eyebrow">${tx('overviewLabel')}</span><h2>${tx('overviewHeading')}</h2></div></div>
+            <div class="dn-stat-grid">${stat('calendar','upcoming')}${stat('tooth','activePlans')}${stat('card','balance')}</div>
+            <div class="dn-overview-columns"><section class="dn-surface-card dn-actions-area"><div class="dn-card-title"><h2>${tx('quickActions')}</h2><p>${tx('quickActionsCopy')}</p></div><div class="dn-action-list">
+              ${actionCard('actionServices','actionServicesCopy','calendar','link','/service')}
+              ${actionCard('actionProfile','actionProfileCopy','user','tab','')}
+              ${actionCard('actionHelp','actionHelpCopy','help','link','/contact-us')}
+            </div></section>
+            <section class="dn-surface-card dn-journey-area"><div class="dn-card-title"><h2>${tx('journey')}</h2><p>${tx('journeyCopy')}</p></div><div class="dn-journey-placeholder"><div class="dn-journey-track"><span>${icon('calendar')}</span><i></i><span>${icon('tooth')}</span><i></i><span>${icon('shield')}</span></div><div class="dn-journey-note">${icon('shield')}<span>${tx('gentleReminderCopy')}</span></div></div></section></div>
+          </section>
+          <section class="dn-panel" data-dashboard-panel="appointments" aria-label="${tx('appointments')}" hidden>${sectionTitle('sectionAppointmentsEyebrow','appointmentTitle','appointmentSubtitle')}${emptyView('calendar','appointmentsEmptyTitle','appointmentsEmptyCopy',true)}</section>
+          <section class="dn-panel" data-dashboard-panel="treatments" aria-label="${tx('treatments')}" hidden>${sectionTitle('sectionTreatmentsEyebrow','treatmentTitle','treatmentSubtitle')}${emptyView('tooth','treatmentsEmptyTitle','treatmentsEmptyCopy')}</section>
+          <section class="dn-panel" data-dashboard-panel="records" aria-label="${tx('records')}" hidden>${sectionTitle('sectionRecordsEyebrow','recordsTitle','recordsSubtitle')}${emptyView('file','recordsEmptyTitle','recordsEmptyCopy')}<p class="dn-private-note">${icon('shield')}${tx('privacyNote')}</p></section>
+          <section class="dn-panel" data-dashboard-panel="billing" aria-label="${tx('billing')}" hidden>${sectionTitle('sectionBillingEyebrow','billingTitle','billingSubtitle')}${emptyView('card','billingEmptyTitle','billingEmptyCopy')}</section>
+          <section class="dn-panel" data-dashboard-panel="profile" aria-label="${tx('profile')}" hidden>${sectionTitle('sectionProfileEyebrow','profileTitle','profileSubtitle')}<div class="dn-profile-surface">${PatientProfile()}</div></section>
+          <div class="dn-content-footer"><span>© ${new Date().getFullYear()} Dentistry</span><a href="/contact-us">${tx('contact')}</a></div>
+        </div>
       </div>
-
-    </main>
-  `;
+      <nav class="dn-mobile-bar" aria-label="${tx('general')}">${nav.filter(([id])=>primaryMobile.has(id)).map(([id,key,symbol])=>navButton(id,key,symbol,'mobile')).join('')}</nav>
+    </div>
+  </main>`;
 }
 
-// ============================================
-// INITIALIZE DASHBOARD
-// ============================================
-
+// Dashboard no longer simulates medical/financial data. Use the existing
+// profile component only after the patient explicitly opens their profile.
 export function initDashboard() {
-  const root = document.querySelector(
-    '[data-portal-page="dashboard"]'
-  );
-
-  if (!root) {
-    return () => {};
-  }
-
+  const root = document.querySelector('[data-portal-page="dashboard"]');
+  if (!root) return () => {};
   const controller = new AbortController();
   const { signal } = controller;
-
-  // ============================================
-  // AUTHENTICATION CHECK
-  // ============================================
-
   if (!getAuthToken()) {
     window.location.replace('/login');
-
     return () => controller.abort();
   }
-
-  // ============================================
-  // ELEMENTS
-  // ============================================
-
-  const tabs = [
-    ...root.querySelectorAll('[data-dashboard-tab]'),
-  ];
-
-  const panels = [
-    ...root.querySelectorAll('[data-dashboard-panel]'),
-  ];
-
-  const mobile = root.querySelector(
-    '#dp-dash-mobile-tabs'
-  );
-
-  const menu = root.querySelector(
-    '#dp-dash-menu'
-  );
-
-  const currentSection = root.querySelector(
-    '[data-current-section]'
-  );
-
-  // ============================================
-  // NAVIGATION
-  // ============================================
-
-  function changeSection(name) {
-    const target = tabs.find(
-      tab => tab.dataset.dashboardTab === name
-    );
-
-    if (!target) return;
-
-    // Update desktop tabs
-    tabs.forEach(tab => {
-      const active = tab === target;
-
-      tab.classList.toggle('is-active', active);
-
-      tab.setAttribute(
-        'aria-selected',
-        String(active)
-      );
-
-      tab.tabIndex = active ? 0 : -1;
-    });
-
-    // Update panels
-    panels.forEach(panel => {
-      panel.hidden =
-        panel.dataset.dashboardPanel !== name;
-    });
-
-    // Update breadcrumb
-    const label = target.querySelector('span');
-
-    if (currentSection && label) {
-      currentSection.textContent = label.textContent;
-    }
-
-    // Close mobile navigation
-    if (menu) {
-      menu.setAttribute('aria-expanded', 'false');
-    }
-
-    if (mobile) {
-      mobile.hidden = true;
-    }
-
-    // Scroll to content
-    root
-      .querySelector('.dp-dash-pagebody')
-      ?.scrollIntoView({
-        behavior: 'auto',
-        block: 'start',
-      });
-  }
-
-  // ============================================
-  // DESKTOP NAV EVENTS
-  // ============================================
-
-  tabs.forEach(tab => {
-    tab.addEventListener(
-      'click',
-      () => {
-        changeSection(tab.dataset.dashboardTab);
-      },
-      { signal }
-    );
-  });
-
-  // ============================================
-  // SECTION SHORTCUTS
-  // ============================================
-
-  root.querySelectorAll('[data-show-section]')
-    .forEach(button => {
-      button.addEventListener(
-        'click',
-        () => {
-          changeSection(button.dataset.showSection);
-        },
-        { signal }
-      );
-    });
-
-  // ============================================
-  // MOBILE MENU
-  // ============================================
-
-  menu?.addEventListener(
-    'click',
-    () => {
-      const isOpen =
-        menu.getAttribute('aria-expanded') === 'true';
-
-      const next = !isOpen;
-
-      menu.setAttribute(
-        'aria-expanded',
-        String(next)
-      );
-
-      mobile.hidden = !next;
-
-      if (next) {
-        mobile.innerHTML = getNavigation()
-          .map(([id, label]) => `
-            <button
-              type="button"
-              data-mobile-tab="${id}"
-            >
-              ${label}
-            </button>
-          `)
-          .join('');
-      }
-    },
-    { signal }
-  );
-
-  mobile?.addEventListener(
-    'click',
-    event => {
-      const button = event.target.closest(
-        '[data-mobile-tab]'
-      );
-
-      if (!button) return;
-
-      changeSection(button.dataset.mobileTab);
-    },
-    { signal }
-  );
-
-  // ============================================
-  // PATIENT PROFILE — REAL API
-  // ============================================
-
-  const clearProfile = initPatientProfile(root);
-
-  // ============================================
-  // LOGOUT
-  // ============================================
-
-  const logoutButton = root.querySelector(
-    '[data-dashboard-logout]'
-  );
-
+  const $ = selector => root.querySelector(selector);
+  const buttons = [...root.querySelectorAll('[data-dashboard-tab]')];
+  const panels = [...root.querySelectorAll('[data-dashboard-panel]')];
+  const sidebar = $('#dn-dashboard-sidebar');
+  const scrim = $('[data-sidebar-scrim]');
+  const menuButton = $('[data-sidebar-toggle]');
+  let profileCleanup = null;
   let loggingOut = false;
+  let wasScrolled = false;
 
-  logoutButton?.addEventListener(
-    'click',
-    async () => {
-      if (loggingOut) return;
-
-      loggingOut = true;
-      logoutButton.disabled = true;
-
-      try {
-        // Attempt to invalidate JWT on Laravel.
-        await profileApi.logout(signal);
-      } catch (error) {
-        // Server logout may fail if the token has expired
-        // or the network is unavailable.
-        // The browser session is still cleared below.
-      } finally {
-        // Remove local JWT and patient cache.
-        clearAuthToken();
-
-        window.location.replace('/login');
+  function closeMenu(restoreFocus=false) {
+    sidebar.classList.remove('is-open');
+    scrim.hidden = true;
+    menuButton.setAttribute('aria-expanded','false');
+    document.body.style.overflow = '';
+    if (restoreFocus && wasScrolled) menuButton.focus();
+    wasScrolled = false;
+  }
+  function openMenu() {
+    sidebar.classList.add('is-open');
+    scrim.hidden = false;
+    menuButton.setAttribute('aria-expanded','true');
+    document.body.style.overflow = 'hidden';
+    wasScrolled = true;
+    sidebar.querySelector('.dn-nav-button')?.focus();
+  }
+  function showSection(section, changeUrl = true, scroll = true) {
+    if (!validSections.has(section)) section = 'overview';
+    buttons.forEach(button => {
+      const active = button.dataset.dashboardTab === section;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-current',active ? 'page' : 'false');
+    });
+    panels.forEach(panel => { panel.hidden = panel.dataset.dashboardPanel !== section; });
+    const label = nav.find(([id]) => id === section)?.[1];
+    $('[data-current-section]').textContent = label ? tr(label) : tr('overview');
+    if (changeUrl) {
+      const url = new URL(window.location.href);
+      if (section === 'overview') url.searchParams.delete('section');
+      else url.searchParams.set('section', section);
+      window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+    }
+    closeMenu();
+    if (section === 'profile' && !profileCleanup) {
+      try { profileCleanup = initPatientProfile(root) || (() => {}); }
+      catch (error) { console.error('Patient profile initialization:', error); }
+    }
+    const content = $('#dn-dashboard-content');
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (scroll) content?.scrollIntoView({behavior:reduced ? 'auto' : 'smooth',block:'start'});
+  }
+  root.addEventListener('click', event => {
+    const tab = event.target.closest('[data-dashboard-tab]');
+    if (tab && root.contains(tab)) showSection(tab.dataset.dashboardTab);
+    const action = event.target.closest('[data-dashboard-action]');
+    if (action && root.contains(action)) showSection(action.dataset.dashboardAction);
+  }, {signal});
+  menuButton.addEventListener('click', () => sidebar.classList.contains('is-open') ? closeMenu(true) : openMenu(), {signal});
+  scrim.addEventListener('click', () => closeMenu(true), {signal});
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && sidebar.classList.contains('is-open')) closeMenu(true);
+  }, {signal});
+  root.querySelectorAll('[data-set-language]').forEach(button => {
+    button.addEventListener('click', event => {
+      event.stopPropagation();
+      const next = button.dataset.setLanguage;
+      if (next !== LANG()) {
+        setLanguage(next, () => window.dispatchEvent(new PopStateEvent('popstate')));
       }
-    },
-    { signal }
-  );
-
-  // ============================================
-  // CLEANUP
-  // ============================================
-
+    }, {signal});
+  });
+  const requested = new URLSearchParams(window.location.search).get('section');
+  showSection(validSections.has(requested) ? requested : 'overview', false, false);
+  const logout = $('[data-dashboard-logout]');
+  logout.addEventListener('click', async () => {
+    if (loggingOut) return;
+    loggingOut = true;
+    logout.disabled = true;
+    $('[data-logout-label]').textContent = tr('loggingOut');
+    try { await profileApi.logout(signal); }
+    catch (error) { console.warn('Server logout unavailable; clearing local session.', error); }
+    finally {
+      clearAuthToken();
+      window.location.replace('/login');
+    }
+  }, {signal});
   return () => {
     controller.abort();
-
-    if (typeof clearProfile === 'function') {
-      clearProfile();
-    }
+    document.body.style.overflow = '';
+    if (typeof profileCleanup === 'function') profileCleanup();
   };
 }

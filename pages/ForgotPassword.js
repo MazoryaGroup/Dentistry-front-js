@@ -1,25 +1,25 @@
 
-import {
-  authShell,
-  dpIcon,
-  dpInput,
-  initPasswordToggles,
-  setFeedback,
-} from '../components/PortalUI.js';
+/**
+ * Dentistry — Minimal Password Recovery
+ * FA / EN
+ */
 
-import { t } from '../code/i18n.js';
+import { t, getLanguage } from '../code/i18n.js';
 import { forgotPasswordApi } from '../code/api.js';
 import { storeLoginResponse } from '../code/auth.js';
+import { startPatientSession } from '../code/session.js';
+
+import '../asset/css/login-minimal.css';
+import '../asset/css/auth-minimal.css';
 
 // ============================================
-// SETTINGS
+// SETTINGS AND STATE
 // ============================================
 
 const RESEND_COOLDOWN_MS = 60 * 1000;
 
-// Only temporary in-memory recovery information.
-// No passwords are stored here.
-const recoveryState = {
+// Sensitive information stays in JS memory only.
+const recovery = {
   step: 'phone',
   phone: '',
   code: '',
@@ -28,28 +28,40 @@ const recoveryState = {
   resendAfter: 0,
 };
 
+const language = () =>
+  getLanguage() === 'fa' ? 'fa' : 'en';
+
+const esc = value =>
+  String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[ch]);
+
+const tr = key => esc(t(`auth.forgot.${key}`));
+
 // ============================================
-// HELPERS
+// NORMALIZE INPUT
 // ============================================
 
 function normalizeDigits(value) {
   return String(value ?? '')
-    .replace(/[۰-۹]/g, digit =>
-      String(digit.charCodeAt(0) - 0x06F0)
+    .replace(
+      /[۰-۹]/g,
+      digit => String(digit.charCodeAt(0) - 0x06F0)
     )
-    .replace(/[٠-٩]/g, digit =>
-      String(digit.charCodeAt(0) - 0x0660)
+    .replace(
+      /[٠-٩]/g,
+      digit => String(digit.charCodeAt(0) - 0x0660)
     );
 }
 
 function normalizePhone(value) {
-  let phone = normalizeDigits(value)
-    .replace(/[\s()-]/g, '');
-
-  phone = phone.replace(
-    /^(?:\+98|0098|98)/,
-    '0'
-  );
+  const phone = normalizeDigits(value)
+    .replace(/[\s()-]/g, '')
+    .replace(/^(?:\+98|0098|98)/, '0');
 
   return /^09\d{9}$/.test(phone)
     ? phone
@@ -62,21 +74,24 @@ function normalizeCode(value) {
     .slice(0, 6);
 }
 
-function resetRecoveryData() {
-  recoveryState.step = 'phone';
-  recoveryState.phone = '';
-  recoveryState.code = '';
-  recoveryState.resetToken = '';
-  recoveryState.resetExpiresAt = 0;
-  recoveryState.resendAfter = 0;
+function clearRecovery() {
+  recovery.step = 'phone';
+  recovery.phone = '';
+  recovery.code = '';
+  recovery.resetToken = '';
+  recovery.resetExpiresAt = 0;
+  recovery.resendAfter = 0;
 }
 
 // ============================================
-// API ERROR HANDLER
+// API ERRORS
 // ============================================
 
 function getApiError(error, action) {
-  const status = Number(error?.status ?? 0);
+  const status = Number(
+    error?.status ?? 0
+  );
+
   const errors = error?.errors ?? {};
 
   if (status === 429) {
@@ -97,7 +112,10 @@ function getApiError(error, action) {
 
   if (
     status === 410 ||
-    (action === 'reset' && errors.reset_token)
+    (
+      action === 'reset' &&
+      errors.reset_token
+    )
   ) {
     return t('auth.forgot.resetTokenExpired');
   }
@@ -126,196 +144,350 @@ function getApiError(error, action) {
 }
 
 // ============================================
-// PAGE HTML
+// PASSWORD INPUT COMPONENT
 // ============================================
 
-export function ForgotPassword() {
-  return authShell({
-    section: 'forgot-password',
+function passwordField(
+  id,
+  labelKey,
+  placeholderKey
+) {
+  return `
+    <div class="dn-login-field">
 
-    title: t('auth.forgot.title'),
-    subtitle: t('auth.forgot.subtitle'),
+      <label for="${id}">
+        ${tr(labelKey)}
+      </label>
 
-    sideTitle: t('auth.forgot.sideTitle'),
-    sideCopy: t('auth.forgot.sideCopy'),
+      <div class="dn-login-password-wrap">
 
-    content: `
-      <div class="dp-recovery-icon">
-        ${dpIcon('lock')}
+        <input
+          id="${id}"
+          name="${id}"
+          type="password"
+          minlength="8"
+          autocomplete="new-password"
+          placeholder="${tr(placeholderKey)}"
+          required
+        />
+
+        <button
+          type="button"
+          class="dn-login-password-toggle"
+          data-auth-password-toggle="${id}"
+          aria-label="${tr(labelKey)}"
+          aria-pressed="false"
+        >
+
+          <svg
+            width="19"
+            height="19"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path
+              d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"
+            />
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+
+        </button>
+
       </div>
 
-      <!-- STEP 1: SEND CODE -->
-
-      <form
-        id="dp-forgot-phone-form"
-        class="dp-form"
-        data-forgot-step="phone"
-        novalidate
-      >
-        ${dpInput({
-          id: 'forgot-phone',
-          label: t('auth.forgot.phone'),
-          type: 'tel',
-          placeholder: '09123456789',
-          auto: 'tel',
-          attrs: 'inputmode="tel" maxlength="20" dir="ltr"'
-        })}
-
-        <button
-          type="submit"
-          class="dp-btn dp-btn-primary dp-btn-block"
-          data-forgot-send
-        >
-          ${t('auth.forgot.sendCode')}
-          ${dpIcon('arrow')}
-        </button>
-      </form>
-
-      <!-- STEP 2: VERIFY CODE -->
-
-      <form
-        id="dp-forgot-otp-form"
-        class="dp-form"
-        data-forgot-step="otp"
-        hidden
-        novalidate
-      >
-        <p class="dp-otp-instruction">
-          ${t('auth.forgot.codeSentTo')}
-          <strong
-            data-forgot-phone-label
-            dir="ltr"
-          ></strong>
-        </p>
-
-        ${dpInput({
-          id: 'forgot-code',
-          label: t('auth.forgot.code'),
-          type: 'text',
-          placeholder: t('auth.forgot.codePlaceholder'),
-          auto: 'one-time-code',
-          attrs: 'inputmode="numeric" maxlength="6" dir="ltr"'
-        })}
-
-        <button
-          type="submit"
-          class="dp-btn dp-btn-primary dp-btn-block"
-          data-forgot-verify
-        >
-          ${t('auth.forgot.verify')}
-          ${dpIcon('arrow')}
-        </button>
-
-        <div class="dp-form-extras">
-          <button
-            type="button"
-            class="dp-text-button"
-            data-forgot-edit
-          >
-            ${t('auth.forgot.changePhone')}
-          </button>
-
-          <button
-            type="button"
-            class="dp-text-button"
-            data-forgot-resend
-            disabled
-          >
-            ${t('auth.forgot.resend')}
-            <span data-forgot-countdown></span>
-          </button>
-        </div>
-      </form>
-
-      <!-- STEP 3: NEW PASSWORD -->
-
-      <form
-        id="dp-forgot-reset-form"
-        class="dp-form"
-        data-forgot-step="reset"
-        hidden
-        novalidate
-      >
-        <p class="dp-otp-instruction">
-          ${t('auth.forgot.verifiedPhone')}
-          <strong
-            data-forgot-phone-label
-            dir="ltr"
-          ></strong>
-        </p>
-
-        ${dpInput({
-          id: 'forgot-password',
-          label: t('auth.forgot.newPassword'),
-          type: 'password',
-          placeholder: t('auth.forgot.newPasswordPlaceholder'),
-          auto: 'new-password',
-          attrs: 'minlength="8"'
-        })}
-
-        ${dpInput({
-          id: 'forgot-confirm',
-          label: t('auth.forgot.confirmPassword'),
-          type: 'password',
-          placeholder: t('auth.forgot.confirmPlaceholder'),
-          auto: 'new-password',
-          attrs: 'minlength="8"'
-        })}
-
-        <button
-          type="submit"
-          class="dp-btn dp-btn-primary dp-btn-block"
-          data-forgot-reset
-        >
-          ${t('auth.forgot.resetPassword')}
-          ${dpIcon('arrow')}
-        </button>
-      </form>
-
-      <!-- STEP 4: SUCCESS -->
-
-      <div
-        id="dp-forgot-complete"
-        data-forgot-step="done"
-        hidden
-      >
-        <div class="dp-form-feedback" role="status">
-          ${t('auth.forgot.success')}
-        </div>
-
-        <a
-          href="/login"
-          class="dp-btn dp-btn-primary dp-btn-block"
-          style="margin-top:20px"
-        >
-          ${t('auth.forgot.backToLogin')}
-          ${dpIcon('arrow')}
-        </a>
-      </div>
-
-      <!-- API FEEDBACK -->
-
-      <p
-        class="dp-form-feedback"
-        data-form-feedback
-        role="status"
-        aria-live="polite"
-        hidden
-      ></p>
-
-      <!-- BACK TO LOGIN -->
-
-      <p class="dp-form-switch">
-        <a href="/login">
-          ${t('auth.forgot.backToLogin')}
-        </a>
-      </p>
-    `,
-  });
+    </div>
+  `;
 }
 
 // ============================================
-// INITIALIZE PAGE
+// PAGE
+// ============================================
+
+export function ForgotPassword() {
+  return `
+    <main
+      class="dn-login-page dn-auth-page"
+      data-portal-page="forgot-password"
+      data-no-translate
+      dir="${language() === 'fa' ? 'rtl' : 'ltr'}"
+    >
+
+      <div class="dn-login-container">
+
+        <!-- LOGO -->
+
+        <a
+          href="/"
+          class="dn-login-brand"
+          aria-label="Dentistry"
+        >
+          <img
+            src="/asset/img/logo.png"
+            loading="eager"
+            alt="Dentistry Logo"
+            class="dn-login-logo"
+          />
+        </a>
+
+        <!-- CARD -->
+
+        <section
+          class="dn-login-card"
+          aria-labelledby="dn-forgot-title"
+        >
+
+          <div class="dn-login-heading">
+
+            <h1 id="dn-forgot-title">
+              ${tr('title')}
+            </h1>
+
+            <p>
+              ${tr('subtitle')}
+            </p>
+
+          </div>
+
+          <!-- STEP 1: PHONE -->
+
+          <form
+            id="dp-forgot-phone-form"
+            class="dn-login-form"
+            data-forgot-step="phone"
+            novalidate
+          >
+
+            <div class="dn-login-field">
+
+              <label for="forgot-phone">
+                ${tr('phone')}
+              </label>
+
+              <input
+                id="forgot-phone"
+                name="phone"
+                type="tel"
+                inputmode="tel"
+                dir="ltr"
+                autocomplete="tel"
+                maxlength="20"
+                placeholder="09123456789"
+                required
+              />
+
+            </div>
+
+            <button
+              class="dn-login-submit"
+              type="submit"
+              data-forgot-send
+            >
+
+              <span>
+                ${tr('sendCode')}
+              </span>
+
+              <span aria-hidden="true">→</span>
+
+            </button>
+
+          </form>
+
+          <!-- STEP 2: VERIFY OTP -->
+
+          <form
+            id="dp-forgot-otp-form"
+            class="dn-login-form"
+            data-forgot-step="otp"
+            hidden
+            novalidate
+          >
+
+            <p class="dn-login-instruction">
+
+              ${tr('codeSentTo')}
+
+              <strong
+                data-forgot-phone-label
+                dir="ltr"
+              ></strong>
+
+            </p>
+
+            <div class="dn-login-field">
+
+              <label for="forgot-code">
+                ${tr('code')}
+              </label>
+
+              <input
+                id="forgot-code"
+                name="code"
+                type="text"
+                dir="ltr"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                maxlength="6"
+                placeholder="${tr('codePlaceholder')}"
+                required
+              />
+
+            </div>
+
+            <button
+              class="dn-login-submit"
+              type="submit"
+              data-forgot-verify
+            >
+
+              <span>
+                ${tr('verify')}
+              </span>
+
+              <span aria-hidden="true">→</span>
+
+            </button>
+
+            <div class="dn-login-otp-actions">
+
+              <button
+                class="dn-login-text-button"
+                type="button"
+                data-forgot-edit
+              >
+                ${tr('changePhone')}
+              </button>
+
+              <button
+                class="dn-login-text-button"
+                type="button"
+                data-forgot-resend
+                disabled
+              >
+
+                ${tr('resend')}
+
+                <span
+                  data-forgot-countdown
+                  dir="ltr"
+                ></span>
+
+              </button>
+
+            </div>
+
+          </form>
+
+          <!-- STEP 3: NEW PASSWORD -->
+
+          <form
+            id="dp-forgot-reset-form"
+            class="dn-login-form"
+            data-forgot-step="reset"
+            hidden
+            novalidate
+          >
+
+            <p class="dn-login-instruction">
+
+              ${tr('verifiedPhone')}
+
+              <strong
+                data-forgot-phone-label
+                dir="ltr"
+              ></strong>
+
+            </p>
+
+            ${passwordField(
+              'forgot-password',
+              'newPassword',
+              'newPasswordPlaceholder'
+            )}
+
+            ${passwordField(
+              'forgot-confirm',
+              'confirmPassword',
+              'confirmPlaceholder'
+            )}
+
+            <button
+              class="dn-login-submit"
+              type="submit"
+              data-forgot-reset
+            >
+
+              <span>
+                ${tr('resetPassword')}
+              </span>
+
+              <span aria-hidden="true">→</span>
+
+            </button>
+
+          </form>
+
+          <!-- STEP 4: SUCCESS -->
+
+          <div
+            data-forgot-step="done"
+            class="dn-auth-complete"
+            hidden
+          >
+
+            <p
+              class="dn-login-feedback dn-auth-success"
+              role="status"
+            >
+              ${tr('success')}
+            </p>
+
+            <a
+              class="dn-login-submit dn-auth-button-link"
+              href="/login"
+            >
+              ${tr('backToLogin')}
+
+              <span aria-hidden="true">→</span>
+            </a>
+
+          </div>
+
+          <!-- FEEDBACK -->
+
+          <p
+            class="dn-login-feedback"
+            data-form-feedback
+            role="status"
+            aria-live="polite"
+            hidden
+          ></p>
+
+          <!-- FOOTER -->
+
+          <div class="dn-login-footer">
+
+            <a href="/login">
+              ${tr('backToLogin')}
+            </a>
+
+          </div>
+
+        </section>
+
+      </div>
+
+    </main>
+  `;
+}
+
+// ============================================
+// INITIALIZATION
 // ============================================
 
 export function initForgotPassword() {
@@ -330,94 +502,54 @@ export function initForgotPassword() {
   const controller = new AbortController();
   const { signal } = controller;
 
-  const clearPasswordToggles = initPasswordToggles(root);
+  const $ = selector =>
+    root.querySelector(selector);
 
-  // Forms
-  const phoneForm = root.querySelector(
-    '#dp-forgot-phone-form'
-  );
-  const otpForm = root.querySelector(
-    '#dp-forgot-otp-form'
-  );
-  const resetForm = root.querySelector(
-    '#dp-forgot-reset-form'
-  );
+  const phoneForm = $('#dp-forgot-phone-form');
+  const otpForm = $('#dp-forgot-otp-form');
+  const resetForm = $('#dp-forgot-reset-form');
 
-  // Inputs
-  const phoneInput = root.querySelector('#forgot-phone');
-  const codeInput = root.querySelector('#forgot-code');
-  const passwordInput = root.querySelector(
-    '#forgot-password'
-  );
-  const confirmInput = root.querySelector(
-    '#forgot-confirm'
-  );
+  const phoneInput = $('#forgot-phone');
+  const codeInput = $('#forgot-code');
+  const passwordInput = $('#forgot-password');
+  const confirmInput = $('#forgot-confirm');
 
-  // Buttons
-  const resendButton = root.querySelector(
-    '[data-forgot-resend]'
-  );
-  const countdown = root.querySelector(
-    '[data-forgot-countdown]'
-  );
-
-  const feedbackElement = root.querySelector(
-    '[data-form-feedback]'
-  );
+  const resendButton = $('[data-forgot-resend]');
+  const countdown = $('[data-forgot-countdown]');
+  const feedbackEl = $('[data-form-feedback]');
 
   let busy = false;
   let timer = null;
 
-  // ============================================
+  // ==========================================
   // FEEDBACK
-  // ============================================
+  // ==========================================
 
-  function feedback(key, type = 'note') {
-    setFeedback(root, t(key), type);
+  function feedback(message, type = 'note') {
+    feedbackEl.hidden = false;
+    feedbackEl.textContent = message;
+    feedbackEl.dataset.type = type;
   }
 
   function clearFeedback() {
-    if (!feedbackElement) return;
+    feedbackEl.hidden = true;
+    feedbackEl.textContent = '';
 
-    feedbackElement.hidden = true;
-    feedbackElement.textContent = '';
-
-    delete feedbackElement.dataset.state;
+    delete feedbackEl.dataset.type;
   }
 
-  // ============================================
-  // STEPS
-  // ============================================
+  // ==========================================
+  // COUNTDOWN
+  // ==========================================
 
-  function showStep(step) {
-    recoveryState.step = step;
-
-    root.querySelectorAll('[data-forgot-step]')
-      .forEach(element => {
-        element.hidden =
-          element.dataset.forgotStep !== step;
-      });
-
-    root.querySelectorAll('[data-forgot-phone-label]')
-      .forEach(element => {
-        element.textContent = recoveryState.phone;
-      });
-
-    updateButtons();
-  }
-
-  // ============================================
-  // BUTTON STATE
-  // ============================================
+  const remaining = () => Math.max(
+    0,
+    Math.ceil(
+      (recovery.resendAfter - Date.now()) / 1000
+    )
+  );
 
   function updateButtons() {
-    const seconds = Math.max(
-      0,
-      Math.ceil(
-        (recoveryState.resendAfter - Date.now()) / 1000
-      )
-    );
-
     const selectors = [
       '[data-forgot-send]',
       '[data-forgot-verify]',
@@ -426,56 +558,91 @@ export function initForgotPassword() {
     ];
 
     selectors.forEach(selector => {
-      const button = root.querySelector(selector);
-
-      if (button) {
-        button.disabled = busy;
-      }
+      $(selector).disabled = busy;
     });
 
-    resendButton.disabled = busy || seconds > 0;
+    resendButton.disabled =
+      busy || remaining() > 0;
 
-    countdown.textContent = seconds > 0
-      ? `(${seconds}s)`
-      : '';
+    countdown.textContent =
+      remaining() > 0
+        ? `(${remaining()}s)`
+        : '';
   }
 
   function setBusy(value) {
     busy = value;
+
+    root.setAttribute(
+      'aria-busy',
+      String(value)
+    );
+
     updateButtons();
   }
 
-  // ============================================
-  // RESEND TIMER
-  // ============================================
+  // ==========================================
+  // STEP MANAGEMENT
+  // ==========================================
+
+  function showStep(step) {
+    recovery.step = step;
+
+    root
+      .querySelectorAll('[data-forgot-step]')
+      .forEach(element => {
+        element.hidden =
+          element.dataset.forgotStep !== step;
+      });
+
+    root
+      .querySelectorAll('[data-forgot-phone-label]')
+      .forEach(element => {
+        element.textContent = recovery.phone;
+      });
+
+    updateButtons();
+  }
+
+  // ==========================================
+  // TIMER
+  // ==========================================
 
   function stopTimer() {
     if (timer !== null) {
       clearInterval(timer);
-      timer = null;
     }
+
+    timer = null;
   }
 
   function startTimer() {
     stopTimer();
     updateButtons();
 
-    timer = setInterval(() => {
-      updateButtons();
+    if (remaining() === 0) {
+      return;
+    }
 
-      if (Date.now() >= recoveryState.resendAfter) {
+    timer = setInterval(() => {
+      if (
+        signal.aborted ||
+        remaining() === 0
+      ) {
         stopTimer();
       }
+
+      updateButtons();
     }, 1000);
   }
 
-  // ============================================
-  // RESET RECOVERY FLOW
-  // ============================================
+  // ==========================================
+  // RESET FLOW
+  // ==========================================
 
   function restartRecovery() {
     stopTimer();
-    resetRecoveryData();
+    clearRecovery();
 
     phoneInput.value = '';
     codeInput.value = '';
@@ -485,52 +652,60 @@ export function initForgotPassword() {
     showStep('phone');
   }
 
-  // ============================================
-  // STEP 1: SEND OTP
-  // ============================================
+  // ==========================================
+  // STEP 1: SEND CODE
+  // ==========================================
 
   async function sendCode(isResend = false) {
-    if (busy) return;
-
-    const phone = normalizePhone(
-      isResend
-        ? recoveryState.phone
-        : phoneInput.value
-    );
-
-    if (!phone) {
-      feedback('auth.forgot.invalidPhone', 'error');
+    if (busy || signal.aborted) {
       return;
     }
 
     if (
       isResend &&
-      Date.now() < recoveryState.resendAfter
+      remaining() > 0
     ) {
       return;
+    }
+
+    const phone = normalizePhone(
+      isResend
+        ? recovery.phone
+        : phoneInput.value
+    );
+
+    if (!phone) {
+      return feedback(
+        t('auth.forgot.invalidPhone'),
+        'error'
+      );
     }
 
     setBusy(true);
     clearFeedback();
 
     try {
-      const response = await forgotPasswordApi.sendCode(
-        phone,
-        signal
-      );
+      const response =
+        await forgotPasswordApi.sendCode(
+          phone,
+          signal
+        );
 
       if (signal.aborted) return;
 
-      if (response?.success !== true) {
+      if (
+        response?.success === false ||
+        response?.status === false
+      ) {
         throw new Error('SEND_CODE_FAILED');
       }
 
-      recoveryState.phone = phone;
-      recoveryState.code = '';
-      recoveryState.resetToken = '';
-      recoveryState.resetExpiresAt = 0;
+      recovery.phone = phone;
+      recovery.code = '';
+      recovery.resetToken = '';
+      recovery.resetExpiresAt = 0;
 
-      recoveryState.resendAfter =
+      recovery.resendAfter =
         Date.now() + RESEND_COOLDOWN_MS;
 
       codeInput.value = '';
@@ -539,21 +714,23 @@ export function initForgotPassword() {
       startTimer();
 
       feedback(
-        isResend
-          ? 'auth.forgot.resent'
-          : 'auth.forgot.sent'
+        t(
+          isResend
+            ? 'auth.forgot.resent'
+            : 'auth.forgot.sent'
+        )
       );
 
       codeInput.focus();
 
     } catch (error) {
       if (!signal.aborted) {
-        setFeedback(
-          root,
+        feedback(
           getApiError(error, 'send'),
           'error'
         );
       }
+
     } finally {
       if (!signal.aborted) {
         setBusy(false);
@@ -570,35 +747,35 @@ export function initForgotPassword() {
     { signal }
   );
 
-  // ============================================
+  // ==========================================
   // STEP 2: VERIFY OTP
-  // ============================================
+  // ==========================================
 
   otpForm.addEventListener(
     'submit',
     async event => {
       event.preventDefault();
 
-      if (busy) return;
+      if (busy || signal.aborted) return;
 
-      const code = normalizeCode(codeInput.value);
+      const code = normalizeCode(
+        codeInput.value
+      );
 
       if (code.length !== 6) {
-        feedback(
-          'auth.forgot.invalidCodeFormat',
+        return feedback(
+          t('auth.forgot.invalidCodeFormat'),
           'error'
         );
-        return;
       }
 
-      if (!recoveryState.phone) {
+      if (!recovery.phone) {
         restartRecovery();
 
-        feedback(
-          'auth.forgot.sessionExpired',
+        return feedback(
+          t('auth.forgot.sessionExpired'),
           'error'
         );
-        return;
       }
 
       setBusy(true);
@@ -607,60 +784,69 @@ export function initForgotPassword() {
       try {
         const response =
           await forgotPasswordApi.verifyCode(
-            recoveryState.phone,
+            recovery.phone,
             code,
             signal
           );
 
         if (signal.aborted) return;
 
-        const data = response?.data;
+        const data = response?.data ?? {};
+
+        const expiresIn = Number(
+          data.expires_in
+        );
 
         if (
-          response?.success !== true ||
-          data?.verified !== true ||
-          typeof data?.reset_token !== 'string' ||
+          response?.success === false ||
+          response?.status === false ||
+          data.verified === false ||
+          typeof data.reset_token !== 'string' ||
           !data.reset_token.trim() ||
-          !Number.isFinite(Number(data.expires_in)) ||
-          Number(data.expires_in) <= 0
+          !Number.isFinite(expiresIn) ||
+          expiresIn <= 0 ||
+          (
+            data.phone &&
+            normalizePhone(data.phone) !==
+              recovery.phone
+          )
         ) {
-          throw new Error('INVALID_VERIFY_RESPONSE');
+          throw new Error(
+            'INVALID_VERIFY_RESPONSE'
+          );
         }
 
-        // Make sure backend verified the same phone
-        const verifiedPhone = normalizePhone(data.phone);
+        recovery.code = code;
+        recovery.resetToken = data.reset_token;
 
-        if (verifiedPhone !== recoveryState.phone) {
-          throw new Error('INVALID_VERIFY_RESPONSE');
-        }
+        recovery.resetExpiresAt =
+          Date.now() + expiresIn * 1000;
 
-        // Save OTP and reset token in memory
-        recoveryState.code = code;
-        recoveryState.resetToken = data.reset_token;
-
-        recoveryState.resetExpiresAt =
-          Date.now() + Number(data.expires_in) * 1000;
-
-        // Clear visible OTP input
         codeInput.value = '';
 
         stopTimer();
         showStep('reset');
 
-        feedback('auth.forgot.verified');
+        feedback(
+          t('auth.forgot.verified')
+        );
 
         passwordInput.focus();
 
       } catch (error) {
         if (!signal.aborted) {
-          setFeedback(
-            root,
-            error?.message === 'INVALID_VERIFY_RESPONSE'
+          feedback(
+            error?.message ===
+              'INVALID_VERIFY_RESPONSE'
               ? t('auth.forgot.requestFailed')
-              : getApiError(error, 'verify'),
+              : getApiError(
+                  error,
+                  'verify'
+                ),
             'error'
           );
         }
+
       } finally {
         if (!signal.aborted) {
           setBusy(false);
@@ -670,77 +856,67 @@ export function initForgotPassword() {
     { signal }
   );
 
-  // ============================================
+  // ==========================================
   // STEP 3: RESET PASSWORD
-  // ============================================
+  // ==========================================
 
   resetForm.addEventListener(
     'submit',
     async event => {
       event.preventDefault();
 
-      if (busy) return;
+      if (busy || signal.aborted) return;
 
       const password = passwordInput.value;
       const confirmation = confirmInput.value;
 
-      // Validate password
       if (password.length < 8) {
-        feedback(
-          'auth.forgot.shortPassword',
+        return feedback(
+          t('auth.forgot.shortPassword'),
           'error'
         );
-        return;
       }
 
-      // Validate password confirmation
       if (password !== confirmation) {
-        feedback(
-          'auth.forgot.passwordMismatch',
+        return feedback(
+          t('auth.forgot.passwordMismatch'),
           'error'
         );
-        return;
       }
 
-      // Make sure verification exists
       if (
-        !recoveryState.phone ||
-        !recoveryState.code ||
-        !recoveryState.resetToken
+        !recovery.phone ||
+        !recovery.code ||
+        !recovery.resetToken
       ) {
         restartRecovery();
 
-        feedback(
-          'auth.forgot.sessionExpired',
+        return feedback(
+          t('auth.forgot.sessionExpired'),
           'error'
         );
-        return;
       }
 
-      // Check reset token expiry
       if (
-        Date.now() >= recoveryState.resetExpiresAt
+        Date.now() >= recovery.resetExpiresAt
       ) {
         restartRecovery();
 
-        feedback(
-          'auth.forgot.resetTokenExpired',
+        return feedback(
+          t('auth.forgot.resetTokenExpired'),
           'error'
         );
-        return;
       }
 
       setBusy(true);
       clearFeedback();
 
       try {
-        // IMPORTANT:
-        // Include reset_token from verify API.
         const response =
           await forgotPasswordApi.resetPassword(
-            recoveryState.phone,
-            recoveryState.code,
-            recoveryState.resetToken,
+            recovery.phone,
+            recovery.code,
+            recovery.resetToken,
             password,
             confirmation,
             signal
@@ -748,48 +924,55 @@ export function initForgotPassword() {
 
         if (signal.aborted) return;
 
-        if (response?.success !== true) {
-          throw new Error('RESET_PASSWORD_FAILED');
+        if (
+          response?.success === false ||
+          response?.status === false
+        ) {
+          throw new Error(
+            'RESET_PASSWORD_FAILED'
+          );
         }
 
-        // Backend returns JWT after password reset.
-        const hasSession =
-          typeof response?.data?.token === 'string' &&
-          Boolean(response.data.token.trim()) &&
-          Boolean(response?.data?.client);
+        // Auto-login if Laravel returns a JWT.
+        const hasSession = Boolean(
+          response?.data?.token &&
+          response?.data?.client
+        );
 
         let authenticated = false;
 
         if (hasSession) {
           try {
             storeLoginResponse(response);
+            startPatientSession();
             authenticated = true;
+
           } catch {
             authenticated = false;
           }
         }
 
-        // Clear sensitive recovery data
-        resetRecoveryData();
+        // Clear OTP, reset token and passwords.
+        clearRecovery();
 
         codeInput.value = '';
         passwordInput.value = '';
         confirmInput.value = '';
 
-        // Auto login after successful password reset
         if (authenticated) {
-          window.location.assign('/dashboard');
+          window.location.assign(
+            `/dashboard?lang=${language()}`
+          );
+
           return;
         }
 
-        // Fallback if JWT was not returned
+        // Successful reset without auto-login.
         showStep('done');
         clearFeedback();
 
       } catch (error) {
         if (!signal.aborted) {
-          // If backend rejects reset token,
-          // start recovery again.
           if (
             error?.status === 410 ||
             error?.errors?.reset_token
@@ -797,17 +980,18 @@ export function initForgotPassword() {
             restartRecovery();
 
             feedback(
-              'auth.forgot.resetTokenExpired',
+              t('auth.forgot.resetTokenExpired'),
               'error'
             );
+
           } else {
-            setFeedback(
-              root,
+            feedback(
               getApiError(error, 'reset'),
               'error'
             );
           }
         }
+
       } finally {
         if (!signal.aborted) {
           setBusy(false);
@@ -817,30 +1001,30 @@ export function initForgotPassword() {
     { signal }
   );
 
-  // ============================================
-  // CHANGE PHONE
-  // ============================================
+  // ==========================================
+  // EDIT PHONE
+  // ==========================================
 
-  root.querySelector('[data-forgot-edit]')
-    .addEventListener(
-      'click',
-      () => {
-        if (busy) return;
+  $('[data-forgot-edit]').addEventListener(
+    'click',
+    () => {
+      if (busy) return;
 
-        const previousPhone = recoveryState.phone;
+      const oldPhone = recovery.phone;
 
-        restartRecovery();
+      restartRecovery();
 
-        phoneInput.value = previousPhone;
-        clearFeedback();
-        phoneInput.focus();
-      },
-      { signal }
-    );
+      phoneInput.value = oldPhone;
 
-  // ============================================
+      clearFeedback();
+      phoneInput.focus();
+    },
+    { signal }
+  );
+
+  // ==========================================
   // RESEND OTP
-  // ============================================
+  // ==========================================
 
   resendButton.addEventListener(
     'click',
@@ -855,50 +1039,83 @@ export function initForgotPassword() {
     { signal }
   );
 
-  // ============================================
-  // OTP INPUT NORMALIZATION
-  // ============================================
+  // ==========================================
+  // OTP INPUT
+  // ==========================================
 
   codeInput.addEventListener(
     'input',
     () => {
-      codeInput.value = normalizeCode(
-        codeInput.value
-      );
+      codeInput.value =
+        normalizeCode(codeInput.value);
     },
     { signal }
   );
 
-  // ============================================
-  // LANGUAGE SWITCH / RESTORE STATE
-  // ============================================
+  // ==========================================
+  // PASSWORD VISIBILITY
+  // ==========================================
 
-  // Language changes in SPA can recreate the page.
-  // Keep recovery state in memory across rerenders.
-  // A full browser reload starts a new recovery flow.
+  root
+    .querySelectorAll(
+      '[data-auth-password-toggle]'
+    )
+    .forEach(button => {
+      button.addEventListener(
+        'click',
+        () => {
+          const input = document.getElementById(
+            button.dataset.authPasswordToggle
+          );
+
+          if (!input) return;
+
+          const visible =
+            input.type === 'password';
+
+          input.type = visible
+            ? 'text'
+            : 'password';
+
+          button.setAttribute(
+            'aria-pressed',
+            String(visible)
+          );
+
+          input.focus();
+        },
+        { signal }
+      );
+    });
+
+  // ==========================================
+  // RESTORE AFTER LANGUAGE SWITCH
+  // ==========================================
 
   if (
-    recoveryState.step === 'reset' &&
-    Date.now() >= recoveryState.resetExpiresAt
+    recovery.step === 'reset' &&
+    Date.now() >= recovery.resetExpiresAt
   ) {
-    resetRecoveryData();
+    clearRecovery();
   }
 
-  phoneInput.value = recoveryState.phone;
+  phoneInput.value = recovery.phone;
 
-  showStep(recoveryState.step);
+  showStep(recovery.step);
 
-  if (recoveryState.step === 'otp') {
+  if (recovery.step === 'otp') {
     startTimer();
   }
 
-  // ============================================
+  // ==========================================
   // CLEANUP
-  // ============================================
+  // ==========================================
 
   return () => {
     controller.abort();
     stopTimer();
-    clearPasswordToggles();
+
+    passwordInput.value = '';
+    confirmInput.value = '';
   };
 }

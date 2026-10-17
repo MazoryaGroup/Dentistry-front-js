@@ -1,41 +1,67 @@
 
-import {
-  authShell,
-  dpIcon,
-  dpInput,
-  setFeedback,
-} from '../components/PortalUI.js';
+/**
+ * Dentistry — Minimal Patient Registration
+ * FA / EN — Phone OTP
+ */
 
-import { t } from '../code/i18n.js';
+import { t, getLanguage } from '../code/i18n.js';
 import { registerApi } from '../code/api.js';
 import { storeLoginResponse } from '../code/auth.js';
+import { startPatientSession } from '../code/session.js';
 
-// Keeps the current registration step when the language
-// changes without a full browser reload.
-const registrationDraft = {
+import '../asset/css/login-minimal.css';
+import '../asset/css/auth-minimal.css';
+
+// ============================================
+// STATE
+// ============================================
+
+const draft = {
   name: '',
   phone: '',
   referralCode: '',
+  step: 'details',
   expiresAt: 0,
 };
 
+const language = () =>
+  getLanguage() === 'fa' ? 'fa' : 'en';
+
+const esc = value =>
+  String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[ch]);
+
+const tr = key => esc(t(`auth.register.${key}`));
+
+// ============================================
+// NORMALIZATION
+// ============================================
+
 function normalizeDigits(value) {
   return String(value ?? '')
-    .replace(/[۰-۹]/g, digit =>
-      String(digit.charCodeAt(0) - 0x06F0)
+    .replace(
+      /[۰-۹]/g,
+      digit => String(digit.charCodeAt(0) - 0x06F0)
     )
-    .replace(/[٠-٩]/g, digit =>
-      String(digit.charCodeAt(0) - 0x0660)
+    .replace(
+      /[٠-٩]/g,
+      digit => String(digit.charCodeAt(0) - 0x0660)
     );
 }
 
 function normalizePhone(value) {
-  let phone = normalizeDigits(value)
-    .replace(/[\s()-]/g, '');
+  const phone = normalizeDigits(value)
+    .replace(/[\s()-]/g, '')
+    .replace(/^(?:\+98|0098|98)/, '0');
 
-  phone = phone.replace(/^(?:\+98|0098|98)/, '0');
-
-  return /^09\d{9}$/.test(phone) ? phone : null;
+  return /^09\d{9}$/.test(phone)
+    ? phone
+    : null;
 }
 
 function normalizeCode(value) {
@@ -44,8 +70,12 @@ function normalizeCode(value) {
     .slice(0, 6);
 }
 
+// ============================================
+// API ERROR HANDLING
+// ============================================
+
 function getErrorMessage(error, action) {
-  const status = Number(error?.status || 0);
+  const status = Number(error?.status ?? 0);
 
   if (status === 429) {
     return t('auth.register.tooMany');
@@ -81,291 +111,460 @@ function getErrorMessage(error, action) {
   return t('auth.register.requestFailed');
 }
 
+function clearDraft() {
+  draft.name = '';
+  draft.phone = '';
+  draft.referralCode = '';
+  draft.step = 'details';
+  draft.expiresAt = 0;
+}
+
+// ============================================
+// REGISTER PAGE
+// ============================================
+
 export function Register() {
-  return authShell({
-    section: 'register',
+  return `
+    <main
+      class="dn-login-page dn-auth-page"
+      data-portal-page="register"
+      data-no-translate
+      dir="${language() === 'fa' ? 'rtl' : 'ltr'}"
+    >
+      <div class="dn-login-container">
 
-    title: t('auth.register.title'),
-    subtitle: t('auth.register.subtitle'),
-
-    sideTitle: t('auth.register.sideTitle'),
-    sideCopy: t('auth.register.sideCopy'),
-
-    content: `
-      <!-- STEP 1: Registration details -->
-      <form
-        id="dp-register-form"
-        class="dp-form"
-        data-register-step="details"
-        novalidate
-      >
-        ${dpInput({
-          id: 'register-name',
-          label: t('auth.register.name'),
-          placeholder: t('auth.register.namePlaceholder'),
-          auto: 'name',
-          attrs: 'minlength="2" maxlength="100"'
-        })}
-
-        ${dpInput({
-          id: 'register-phone',
-          label: t('auth.register.phone'),
-          type: 'tel',
-          placeholder: '09123456789',
-          auto: 'tel',
-          attrs: 'inputmode="tel" maxlength="20" dir="ltr"'
-        })}
-
-        ${dpInput({
-          id: 'register-referral',
-          label: t('auth.register.referral'),
-          type: 'text',
-          placeholder: t('auth.register.referralPlaceholder'),
-          attrs: 'maxlength="64"'
-        })}
-
-        <button
-          type="submit"
-          class="dp-btn dp-btn-primary dp-btn-block"
-          data-register-send
-        >
-          ${t('auth.register.sendCode')}
-          ${dpIcon('arrow')}
-        </button>
-      </form>
-
-      <!-- STEP 2: Verify OTP -->
-      <form
-        id="dp-register-verify-form"
-        class="dp-form"
-        data-register-step="verify"
-        hidden
-        novalidate
-      >
-        <div class="dp-demo-note">
-          <span>
-            ${t('auth.register.codeSentTo')}
-            <strong data-register-phone-label dir="ltr"></strong>
-          </span>
-        </div>
-
-        ${dpInput({
-          id: 'register-code',
-          label: t('auth.register.code'),
-          type: 'text',
-          placeholder: t('auth.register.codePlaceholder'),
-          auto: 'one-time-code',
-          attrs: 'inputmode="numeric" maxlength="6" dir="ltr"'
-        })}
-
-        <p class="dp-otp-hint">
-          ${t('auth.register.codeValidity')}
-        </p>
-
-        <button
-          type="submit"
-          class="dp-btn dp-btn-primary dp-btn-block"
-          data-register-verify
-        >
-          ${t('auth.register.verify')}
-          ${dpIcon('arrow')}
-        </button>
-
-        <div class="dp-form-extras">
-          <button
-            type="button"
-            class="dp-text-button"
-            data-register-edit
-          >
-            ${t('auth.register.editPhone')}
-          </button>
-
-          <button
-            type="button"
-            class="dp-text-button"
-            data-register-resend
-            disabled
-          >
-            ${t('auth.register.resend')}
-            <span data-register-countdown></span>
-          </button>
-        </div>
-      </form>
-
-      <!-- STEP 3: Registration complete -->
-      <div
-        id="dp-register-complete"
-        data-register-step="complete"
-        hidden
-      >
-        <div class="dp-form-feedback" role="status">
-          ${t('auth.register.success')}
-        </div>
+        <!-- LOGO -->
 
         <a
-          href="/login"
-          class="dp-btn dp-btn-primary dp-btn-block"
-          style="margin-top:20px"
+          href="/"
+          class="dn-login-brand"
+          aria-label="Dentistry"
         >
-          ${t('auth.register.goToLogin')}
-          ${dpIcon('arrow')}
+          <img
+            src="/asset/img/logo.png"
+            loading="eager"
+            alt="Dentistry Logo"
+            class="dn-login-logo"
+          />
         </a>
+
+        <!-- CARD -->
+
+        <section
+          class="dn-login-card"
+          aria-labelledby="dn-register-title"
+        >
+
+          <div class="dn-login-heading">
+
+            <h1 id="dn-register-title">
+              ${tr('title')}
+            </h1>
+
+            <p>
+              ${tr('subtitle')}
+            </p>
+
+          </div>
+
+          <!-- STEP 1: REGISTRATION -->
+
+          <form
+            id="dp-register-form"
+            class="dn-login-form"
+            data-register-step="details"
+            novalidate
+          >
+
+            <div class="dn-login-field">
+
+              <label for="register-name">
+                ${tr('name')}
+              </label>
+
+              <input
+                id="register-name"
+                name="name"
+                type="text"
+                autocomplete="name"
+                minlength="2"
+                maxlength="100"
+                placeholder="${tr('namePlaceholder')}"
+                required
+              />
+
+            </div>
+
+            <div class="dn-login-field">
+
+              <label for="register-phone">
+                ${tr('phone')}
+              </label>
+
+              <input
+                id="register-phone"
+                name="phone"
+                type="tel"
+                autocomplete="tel"
+                inputmode="tel"
+                dir="ltr"
+                maxlength="20"
+                placeholder="09123456789"
+                required
+              />
+
+            </div>
+
+            <div class="dn-login-field">
+
+              <label for="register-referral">
+                ${tr('referral')}
+              </label>
+
+              <input
+                id="register-referral"
+                name="referral_code"
+                type="text"
+                maxlength="64"
+                placeholder="${tr('referralPlaceholder')}"
+              />
+
+            </div>
+
+            <button
+              class="dn-login-submit"
+              type="submit"
+              data-register-send
+            >
+              <span>
+                ${tr('sendCode')}
+              </span>
+
+              <span aria-hidden="true">→</span>
+            </button>
+
+          </form>
+
+          <!-- STEP 2: OTP VERIFICATION -->
+
+          <form
+            id="dp-register-verify-form"
+            class="dn-login-form"
+            data-register-step="verify"
+            hidden
+            novalidate
+          >
+
+            <p class="dn-login-instruction">
+
+              ${tr('codeSentTo')}
+
+              <strong
+                data-register-phone-label
+                dir="ltr"
+              ></strong>
+
+            </p>
+
+            <div class="dn-login-field">
+
+              <label for="register-code">
+                ${tr('code')}
+              </label>
+
+              <input
+                id="register-code"
+                name="code"
+                type="text"
+                dir="ltr"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                maxlength="6"
+                placeholder="${tr('codePlaceholder')}"
+                required
+              />
+
+              <small>
+                ${tr('codeValidity')}
+              </small>
+
+            </div>
+
+            <button
+              class="dn-login-submit"
+              type="submit"
+              data-register-verify
+            >
+              <span>
+                ${tr('verify')}
+              </span>
+
+              <span aria-hidden="true">→</span>
+            </button>
+
+            <div class="dn-login-otp-actions">
+
+              <button
+                class="dn-login-text-button"
+                type="button"
+                data-register-edit
+              >
+                ${tr('editPhone')}
+              </button>
+
+              <button
+                class="dn-login-text-button"
+                type="button"
+                data-register-resend
+                disabled
+              >
+                ${tr('resend')}
+
+                <span
+                  data-register-countdown
+                  dir="ltr"
+                ></span>
+              </button>
+
+            </div>
+
+          </form>
+
+          <!-- COMPLETE -->
+
+          <div
+            data-register-step="complete"
+            class="dn-auth-complete"
+            hidden
+          >
+
+            <p
+              class="dn-login-feedback dn-auth-success"
+              role="status"
+            >
+              ${tr('success')}
+            </p>
+
+            <a
+              href="/login"
+              class="dn-login-submit dn-auth-button-link"
+            >
+              ${tr('goToLogin')}
+              <span aria-hidden="true">→</span>
+            </a>
+
+          </div>
+
+          <!-- FEEDBACK -->
+
+          <p
+            class="dn-login-feedback"
+            data-form-feedback
+            role="status"
+            aria-live="polite"
+            hidden
+          ></p>
+
+          <!-- FOOTER -->
+
+          <div class="dn-login-footer">
+
+            <span>
+              ${tr('haveAccount')}
+            </span>
+
+            <a href="/login">
+              ${tr('signIn')}
+            </a>
+
+          </div>
+
+        </section>
+
       </div>
-
-      <p
-        class="dp-form-feedback"
-        data-form-feedback
-        role="status"
-        aria-live="polite"
-        hidden
-      ></p>
-
-      <p class="dp-form-switch">
-        ${t('auth.register.haveAccount')}
-        <a href="/login">
-          ${t('auth.register.signIn')}
-        </a>
-      </p>
-    `,
-  });
+    </main>
+  `;
 }
+
+// ============================================
+// REGISTER INITIALIZATION
+// ============================================
 
 export function initRegister() {
   const root = document.querySelector(
     '[data-portal-page="register"]'
   );
 
-  if (!root) return () => {};
+  if (!root) {
+    return () => {};
+  }
 
   const controller = new AbortController();
   const { signal } = controller;
 
-  const detailsForm = root.querySelector('#dp-register-form');
-  const verifyForm = root.querySelector(
-    '#dp-register-verify-form'
-  );
+  const $ = selector =>
+    root.querySelector(selector);
 
-  const nameInput = root.querySelector('#register-name');
-  const phoneInput = root.querySelector('#register-phone');
-  const referralInput = root.querySelector('#register-referral');
-  const codeInput = root.querySelector('#register-code');
+  const detailsForm = $('#dp-register-form');
+  const verifyForm = $('#dp-register-verify-form');
 
-  const resendButton = root.querySelector(
-    '[data-register-resend]'
-  );
-  const countdown = root.querySelector(
-    '[data-register-countdown]'
-  );
-  const feedbackElement = root.querySelector(
-    '[data-form-feedback]'
-  );
+  const nameInput = $('#register-name');
+  const phoneInput = $('#register-phone');
+  const referralInput = $('#register-referral');
+  const codeInput = $('#register-code');
+
+  const resendButton = $('[data-register-resend]');
+  const countdown = $('[data-register-countdown]');
+  const feedbackEl = $('[data-form-feedback]');
 
   let busy = false;
   let timer = null;
-  let step = 'details';
+
+  // ==========================================
+  // FEEDBACK
+  // ==========================================
 
   function feedback(message, type = 'note') {
-    setFeedback(root, message, type);
+    feedbackEl.hidden = false;
+    feedbackEl.textContent = message;
+    feedbackEl.dataset.type = type;
   }
 
   function clearFeedback() {
-    if (!feedbackElement) return;
-    feedbackElement.hidden = true;
-    feedbackElement.textContent = '';
+    feedbackEl.hidden = true;
+    feedbackEl.textContent = '';
+    delete feedbackEl.dataset.type;
   }
 
-  function showStep(nextStep) {
-    step = nextStep;
+  // ==========================================
+  // BUTTONS AND COUNTDOWN
+  // ==========================================
 
-    root.querySelectorAll('[data-register-step]')
-      .forEach(element => {
-        element.hidden =
-          element.dataset.registerStep !== nextStep;
-      });
+  function secondsLeft() {
+    return Math.max(
+      0,
+      Math.ceil(
+        (draft.expiresAt - Date.now()) / 1000
+      )
+    );
   }
 
   function updateButtons() {
-    const sendButton = root.querySelector(
-      '[data-register-send]'
-    );
-    const verifyButton = root.querySelector(
-      '[data-register-verify]'
-    );
-    const editButton = root.querySelector(
-      '[data-register-edit]'
-    );
+    $('[data-register-send]').disabled = busy;
+    $('[data-register-verify]').disabled = busy;
+    $('[data-register-edit]').disabled = busy;
 
-    sendButton.disabled = busy;
-    verifyButton.disabled = busy;
-    editButton.disabled = busy;
-
-    const seconds = Math.max(
-      0,
-      Math.ceil(
-        (registrationDraft.expiresAt - Date.now()) / 1000
-      )
-    );
-
-    resendButton.disabled = busy || seconds > 0;
+    resendButton.disabled =
+      busy || secondsLeft() > 0;
 
     countdown.textContent =
-      seconds > 0 ? `(${seconds}s)` : '';
+      secondsLeft() > 0
+        ? `(${secondsLeft()}s)`
+        : '';
   }
 
   function setBusy(value) {
     busy = value;
+
+    root.setAttribute(
+      'aria-busy',
+      String(value)
+    );
+
     updateButtons();
   }
+
+  // ==========================================
+  // STEPS
+  // ==========================================
+
+  function showStep(step) {
+    draft.step = step;
+
+    root
+      .querySelectorAll('[data-register-step]')
+      .forEach(element => {
+        element.hidden =
+          element.dataset.registerStep !== step;
+      });
+
+    $('[data-register-phone-label]').textContent =
+      draft.phone;
+
+    updateButtons();
+  }
+
+  // ==========================================
+  // TIMER
+  // ==========================================
 
   function stopTimer() {
     if (timer !== null) {
       clearInterval(timer);
-      timer = null;
     }
+
+    timer = null;
   }
 
   function startTimer() {
     stopTimer();
     updateButtons();
 
-    timer = setInterval(() => {
-      updateButtons();
-
-      if (Date.now() >= registrationDraft.expiresAt) {
-        stopTimer();
-      }
-    }, 1000);
-  }
-
-  function showVerification() {
-    root.querySelector(
-      '[data-register-phone-label]'
-    ).textContent = registrationDraft.phone;
-
-    showStep('verify');
-    updateButtons();
-    codeInput.focus();
-  }
-
-  // ============================================
-  // Step 1: Send registration OTP
-  // ============================================
-
-  async function sendCode(isResend = false) {
-    if (busy) return;
-
-    const name = nameInput.value.trim();
-    const phone = normalizePhone(phoneInput.value);
-    const referralCode = referralInput.value.trim();
-
-    if (name.length < 2) {
-      feedback(t('auth.register.invalidName'), 'error');
+    if (secondsLeft() === 0) {
       return;
     }
 
-    if (!phone) {
-      feedback(t('auth.register.invalidPhone'), 'error');
+    timer = setInterval(() => {
+      if (
+        signal.aborted ||
+        secondsLeft() === 0
+      ) {
+        stopTimer();
+      }
+
+      updateButtons();
+    }, 1000);
+  }
+
+  // ==========================================
+  // SEND REGISTRATION OTP
+  // ==========================================
+
+  async function sendCode(isResend = false) {
+    if (busy || signal.aborted) {
       return;
+    }
+
+    if (isResend && secondsLeft() > 0) {
+      return;
+    }
+
+    const name = isResend
+      ? draft.name
+      : nameInput.value.trim();
+
+    const phone = normalizePhone(
+      isResend
+        ? draft.phone
+        : phoneInput.value
+    );
+
+    const referralCode = isResend
+      ? draft.referralCode
+      : referralInput.value.trim();
+
+    if (name.length < 2) {
+      return feedback(
+        t('auth.register.invalidName'),
+        'error'
+      );
+    }
+
+    if (!phone) {
+      return feedback(
+        t('auth.register.invalidPhone'),
+        'error'
+      );
     }
 
     setBusy(true);
@@ -379,23 +578,27 @@ export function initRegister() {
         signal
       );
 
-      if (signal.aborted) return;
+      if (signal.aborted) {
+        return;
+      }
 
-      if (response?.success !== true) {
+      if (
+        response?.success === false ||
+        response?.status === false
+      ) {
         throw new Error('REGISTER_SEND_FAILED');
       }
 
-      registrationDraft.name = name;
-      registrationDraft.phone = phone;
-      registrationDraft.referralCode = referralCode;
+      draft.name = name;
+      draft.phone = phone;
+      draft.referralCode = referralCode;
 
-      // The backend controls the actual OTP expiry.
-      registrationDraft.expiresAt =
+      draft.expiresAt =
         Date.now() + 2 * 60 * 1000;
 
       codeInput.value = '';
 
-      showVerification();
+      showStep('verify');
       startTimer();
 
       feedback(
@@ -405,6 +608,9 @@ export function initRegister() {
             : 'auth.register.sent'
         )
       );
+
+      codeInput.focus();
+
     } catch (error) {
       if (!signal.aborted) {
         feedback(
@@ -412,10 +618,17 @@ export function initRegister() {
           'error'
         );
       }
+
     } finally {
-      if (!signal.aborted) setBusy(false);
+      if (!signal.aborted) {
+        setBusy(false);
+      }
     }
   }
+
+  // ==========================================
+  // DETAILS FORM
+  // ==========================================
 
   detailsForm.addEventListener(
     'submit',
@@ -426,145 +639,185 @@ export function initRegister() {
     { signal }
   );
 
-  // ============================================
-  // Step 2: Verify registration OTP
-  // ============================================
+  // ==========================================
+  // VERIFY OTP
+  // ==========================================
 
   verifyForm.addEventListener(
     'submit',
     async event => {
       event.preventDefault();
 
-      if (busy) return;
-
-      const code = normalizeCode(codeInput.value);
-
-      if (code.length !== 6) {
-        feedback(
-          t('auth.register.invalidCodeFormat'),
-          'error'
-        );
+      if (busy || signal.aborted) {
         return;
       }
 
-      if (!registrationDraft.phone) {
+      const code = normalizeCode(
+        codeInput.value
+      );
+
+      if (code.length !== 6) {
+        return feedback(
+          t('auth.register.invalidCodeFormat'),
+          'error'
+        );
+      }
+
+      if (!draft.phone) {
         showStep('details');
-        feedback(
+
+        return feedback(
           t('auth.register.sessionExpired'),
           'error'
         );
-        return;
       }
 
       setBusy(true);
       clearFeedback();
 
       try {
-        const response = await registerApi.verifyCode(
-          registrationDraft.phone,
-          code,
-          registrationDraft.name,
-          registrationDraft.referralCode,
-          signal
-        );
+        const response =
+          await registerApi.verifyCode(
+            draft.phone,
+            code,
+            draft.name,
+            draft.referralCode,
+            signal
+          );
 
-        if (signal.aborted) return;
+        if (signal.aborted) {
+          return;
+        }
 
-        if (response?.success !== true) {
+        if (
+          response?.success === false ||
+          response?.status === false
+        ) {
           throw new Error('REGISTER_VERIFY_FAILED');
         }
 
-        // Registration and authentication successful
-if (
-  response?.success !== true ||
-  !response?.data?.token ||
-  !response?.data?.client
-) {
-  throw new Error('INVALID_REGISTER_RESPONSE');
-}
+        if (
+          !response?.data?.token ||
+          !response?.data?.client
+        ) {
+          throw new Error(
+            'INVALID_REGISTER_RESPONSE'
+          );
+        }
 
-// Save JWT and patient information
-const client = storeLoginResponse(response);
+        // Store JWT and patient information.
+        storeLoginResponse(response);
 
-// Clear registration data
-resetDraft();
+        // Start the patient session.
+        startPatientSession();
 
-// Redirect to patient dashboard
-window.location.assign('/dashboard');
-return;
+        clearDraft();
+        stopTimer();
+
+        // Redirect to dashboard.
+        window.location.assign(
+          `/dashboard?lang=${language()}`
+        );
+
       } catch (error) {
         if (!signal.aborted) {
           feedback(
-            getErrorMessage(error, 'verify'),
+            error?.message ===
+              'INVALID_REGISTER_RESPONSE'
+              ? t('auth.register.requestFailed')
+              : getErrorMessage(
+                  error,
+                  'verify'
+                ),
             'error'
           );
         }
+
       } finally {
-        if (!signal.aborted) setBusy(false);
+        if (!signal.aborted) {
+          setBusy(false);
+        }
       }
     },
     { signal }
   );
 
-  // ============================================
-  // Change mobile number
-  // ============================================
+  // ==========================================
+  // EDIT PHONE
+  // ==========================================
 
-  function resetDraft() {
-    registrationDraft.name = '';
-    registrationDraft.phone = '';
-    registrationDraft.referralCode = '';
-    registrationDraft.expiresAt = 0;
-    codeInput.value = '';
-
-    stopTimer();
-  }
-
-  root.querySelector('[data-register-edit]')
-    .addEventListener('click', () => {
+  $('[data-register-edit]').addEventListener(
+    'click',
+    () => {
       if (busy) return;
 
-      resetDraft();
+      stopTimer();
+
+      draft.expiresAt = 0;
+      draft.step = 'details';
+
+      codeInput.value = '';
+
       clearFeedback();
       showStep('details');
-      updateButtons();
+
       phoneInput.focus();
-    }, { signal });
+    },
+    { signal }
+  );
 
-  // ============================================
-  // Resend OTP
-  // ============================================
+  // ==========================================
+  // RESEND CODE
+  // ==========================================
 
-  resendButton.addEventListener('click', () => {
-    if (busy || resendButton.disabled) return;
+  resendButton.addEventListener(
+    'click',
+    () => {
+      if (
+        !busy &&
+        !resendButton.disabled
+      ) {
+        void sendCode(true);
+      }
+    },
+    { signal }
+  );
 
-    void sendCode(true);
-  }, { signal });
+  // ==========================================
+  // OTP INPUT
+  // ==========================================
 
-  // Only allow six numeric digits
-  codeInput.addEventListener('input', () => {
-    codeInput.value = normalizeCode(codeInput.value);
-  }, { signal });
+  codeInput.addEventListener(
+    'input',
+    () => {
+      codeInput.value =
+        normalizeCode(codeInput.value);
+    },
+    { signal }
+  );
 
-  // ============================================
-  // Restore after FA / EN switch
-  // ============================================
+  // ==========================================
+  // RESTORE AFTER LANGUAGE SWITCH
+  // ==========================================
+
+  nameInput.value = draft.name;
+  phoneInput.value = draft.phone;
+  referralInput.value = draft.referralCode;
 
   if (
-    registrationDraft.phone &&
-    registrationDraft.expiresAt > Date.now()
+    draft.step === 'verify' &&
+    draft.phone
   ) {
-    nameInput.value = registrationDraft.name;
-    phoneInput.value = registrationDraft.phone;
-    referralInput.value = registrationDraft.referralCode;
-
-    showVerification();
+    showStep('verify');
     startTimer();
+
   } else {
-    resetDraft();
     showStep('details');
-    updateButtons();
   }
+
+  // ==========================================
+  // CLEANUP
+  // ==========================================
 
   return () => {
     controller.abort();

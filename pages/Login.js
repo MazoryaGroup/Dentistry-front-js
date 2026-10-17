@@ -1,40 +1,19 @@
 
 /**
- * Dentistry — Patient Login
- *
- * Login methods:
- * 1. Phone + OTP
- * 2. Email + Password
- *
- * Features:
- * - FA / EN translations
- * - Iranian phone normalization
- * - OTP resend countdown
- * - 15-minute inactivity session
- * - Session-expired notification
- * - Redirect to Dashboard
+ * Dentistry — Minimal Patient Login
+ * Phone OTP + Email / Password
+ * Languages: FA / EN
  */
 
-import {
-  authShell,
-  dpIcon,
-  dpInput,
-  initPasswordToggles,
-  setFeedback,
-} from '../components/PortalUI.js';
-
 import { t, getLanguage } from '../code/i18n.js';
-
 import { loginApi } from '../code/api.js';
-
 import { storeLoginResponse } from '../code/auth.js';
-
 import { startPatientSession } from '../code/session.js';
 
-import '../asset/css/portal.css';
+import '../asset/css/login-minimal.css';
 
 // ============================================
-// PENDING OTP STATE
+// STATE & HELPERS
 // ============================================
 
 const pendingLogin = {
@@ -42,9 +21,20 @@ const pendingLogin = {
   expiresAt: 0,
 };
 
-// ============================================
-// HELPERS
-// ============================================
+const lang = () =>
+  getLanguage() === 'fa' ? 'fa' : 'en';
+
+const esc = value =>
+  String(value ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[c]);
+
+const text = key =>
+  esc(t(`auth.login.${key}`));
 
 function normalizeDigits(value) {
   return String(value ?? '')
@@ -58,19 +48,9 @@ function normalizeDigits(value) {
     );
 }
 
-// ============================================
-// NORMALIZE IRAN PHONE
-// ============================================
-
 export function normalizeIranPhone(value) {
   let phone = normalizeDigits(value)
     .replace(/[\s()-]/g, '');
-
-  // Supported examples:
-  // 09123456789
-  // +989123456789
-  // 00989123456789
-  // 989123456789
 
   phone = phone.replace(
     /^(?:\+98|0098|98)/,
@@ -82,35 +62,20 @@ export function normalizeIranPhone(value) {
     : null;
 }
 
-// ============================================
-// NORMALIZE OTP
-// ============================================
-
-function normalizeCode(value) {
-  return normalizeDigits(value)
+const normalizeCode = value =>
+  normalizeDigits(value)
     .replace(/\D/g, '')
     .slice(0, 6);
-}
+
+const apiSucceeded = response =>
+  response?.success === true ||
+  response?.status === true;
 
 // ============================================
-// CHECK API SUCCESS
+// API ERRORS
 // ============================================
 
-function isApiSuccess(response) {
-  return (
-    response?.success === true ||
-    response?.status === true
-  );
-}
-
-// ============================================
-// API ERROR MESSAGES
-// ============================================
-
-function apiErrorMessage(
-  error,
-  method = 'phone'
-) {
+function apiErrorMessage(error, method = 'phone') {
   const status = Number(
     error?.statusCode ??
     error?.status ??
@@ -137,17 +102,11 @@ function apiErrorMessage(
     return t('auth.login.invalidCredentials');
   }
 
-  if (
-    method === 'send' &&
-    status === 404
-  ) {
+  if (method === 'send' && status === 404) {
     return t('auth.login.noAccount');
   }
 
-  if (
-    method === 'send' &&
-    status === 422
-  ) {
+  if (method === 'send' && status === 422) {
     return t('auth.login.invalidPhone');
   }
 
@@ -162,16 +121,18 @@ function apiErrorMessage(
 }
 
 // ============================================
-// DASHBOARD REDIRECT
+// SUCCESSFUL LOGIN
 // ============================================
 
-function redirectToDashboard() {
-  const lang = getLanguage() === 'fa'
-    ? 'fa'
-    : 'en';
+function finishLogin(response) {
+  storeLoginResponse(response);
+  startPatientSession();
+
+  pendingLogin.phone = null;
+  pendingLogin.expiresAt = 0;
 
   window.location.assign(
-    `/dashboard?lang=${lang}`
+    `/dashboard?lang=${lang()}`
   );
 }
 
@@ -180,231 +141,328 @@ function redirectToDashboard() {
 // ============================================
 
 export function Login() {
-  return authShell({
-    section: 'login',
+  return `
+    <main
+      class="dn-login-page"
+      data-portal-page="login"
+      data-no-translate
+      dir="${lang() === 'fa' ? 'rtl' : 'ltr'}"
+    >
 
-    title: t('auth.login.title'),
+      <div class="dn-login-container">
 
-    subtitle: t('auth.login.subtitle'),
+        <!-- BRAND -->
 
-    sideTitle: t('auth.login.sideTitle'),
+        <a
+  href="/"
+  class="dn-login-brand"
+  aria-label="Dentistry"
+>
+  <img
+    src="/asset/img/logo.png"
+    loading="eager"
+    alt="Dentistry Logo"
+    class="dn-login-logo"
+  />
+</a>
 
-    sideCopy: t('auth.login.sideCopy'),
+        <!-- LOGIN CARD -->
 
-    content: `
-
-      <!-- LOGIN METHODS -->
-
-      <div class="dp-login-methods">
-
-        <button
-          type="button"
-          class="dp-btn dp-btn-primary"
-          data-login-method="phone"
-          aria-pressed="true"
+        <section
+          class="dn-login-card"
+          aria-labelledby="dn-login-title"
         >
-          ${dpIcon('phone')}
-          ${t('auth.login.methodPhone')}
-        </button>
 
-        <button
-          type="button"
-          class="dp-btn dp-btn-outline"
-          data-login-method="email"
-          aria-pressed="false"
-        >
-          ${dpIcon('mail')}
-          ${t('auth.login.methodEmail')}
-        </button>
+          <div class="dn-login-heading">
 
-      </div>
+            <h1 id="dn-login-title">
+              ${text('title')}
+            </h1>
 
+            <p>
+              ${text('subtitle')}
+            </p>
 
-      <!-- PHONE LOGIN FORM -->
+          </div>
 
-      <form
-        id="dp-login-phone-form"
-        class="dp-form"
-        novalidate
-      >
+          <!-- LOGIN METHOD SWITCH -->
 
-        ${dpInput({
-          id: 'login-phone',
-          label: t('auth.login.phone'),
-          type: 'tel',
-          placeholder: t('auth.login.phonePlaceholder'),
-          auto: 'tel',
-          attrs: 'inputmode="tel" dir="ltr" maxlength="20"',
-        })}
-
-        <button
-          class="dp-btn dp-btn-primary dp-btn-block"
-          type="submit"
-          data-login-send
-        >
-          ${t('auth.login.sendCode')}
-          ${dpIcon('arrow')}
-        </button>
-
-      </form>
-
-
-      <!-- OTP VERIFICATION FORM -->
-
-      <form
-        id="dp-login-otp-form"
-        class="dp-form dp-login-otp-form"
-        hidden
-        novalidate
-      >
-
-        <p class="dp-otp-instruction">
-
-          ${t('auth.login.codeSentTo')}
-
-          <b
-            data-login-phone-label
-            dir="ltr"
-          ></b>
-
-        </p>
-
-        ${dpInput({
-          id: 'login-code',
-          label: t('auth.login.code'),
-          type: 'text',
-          placeholder: t('auth.login.codePlaceholder'),
-          auto: 'one-time-code',
-          attrs: 'inputmode="numeric" maxlength="6" dir="ltr"',
-        })}
-
-        <p class="dp-otp-hint">
-          ${t('auth.login.codeValidity')}
-        </p>
-
-        <button
-          type="submit"
-          class="dp-btn dp-btn-primary dp-btn-block"
-          data-login-verify
-        >
-          ${t('auth.login.verify')}
-          ${dpIcon('arrow')}
-        </button>
-
-        <div class="dp-login-actions">
-
-          <button
-            type="button"
-            class="dp-login-text-button"
-            data-login-edit
+          <div
+            class="dn-login-methods"
+            aria-label="${text('title')}"
           >
-            ${t('auth.login.editPhone')}
-          </button>
 
-          <button
-            type="button"
-            class="dp-login-text-button"
-            data-login-resend
-            disabled
+            <button
+              type="button"
+              class="dn-login-method is-active"
+              data-login-method="phone"
+              aria-pressed="true"
+            >
+              ${text('methodPhone')}
+            </button>
+
+            <button
+              type="button"
+              class="dn-login-method"
+              data-login-method="email"
+              aria-pressed="false"
+            >
+              ${text('methodEmail')}
+            </button>
+
+          </div>
+
+          <!-- PHONE LOGIN -->
+
+          <form
+            id="dp-login-phone-form"
+            class="dn-login-form"
+            novalidate
           >
-            ${t('auth.login.resend')}
 
-            <span data-login-countdown></span>
-          </button>
+            <div class="dn-login-field">
 
-        </div>
+              <label for="login-phone">
+                ${text('phone')}
+              </label>
 
-      </form>
+              <input
+                id="login-phone"
+                name="phone"
+                type="tel"
+                dir="ltr"
+                inputmode="tel"
+                autocomplete="tel"
+                maxlength="20"
+                placeholder="${text('phonePlaceholder')}"
+                required
+              />
 
+            </div>
 
-      <!-- EMAIL / PASSWORD LOGIN -->
+            <button
+              class="dn-login-submit"
+              type="submit"
+              data-login-send
+            >
+              <span>${text('sendCode')}</span>
+              <span aria-hidden="true">→</span>
+            </button>
 
-      <form
-        id="dp-login-email-form"
-        class="dp-form"
-        hidden
-        novalidate
-      >
+          </form>
 
-        ${dpInput({
-          id: 'login-email',
-          label: t('auth.login.email'),
-          type: 'email',
-          placeholder: t('auth.login.emailPlaceholder'),
-          auto: 'email',
-        })}
+          <!-- OTP VERIFICATION -->
 
-        ${dpInput({
-          id: 'login-password',
-          label: t('auth.login.password'),
-          type: 'password',
-          placeholder: t('auth.login.passwordPlaceholder'),
-          auto: 'current-password',
-        })}
+          <form
+            id="dp-login-otp-form"
+            class="dn-login-form"
+            novalidate
+            hidden
+          >
 
-        <div class="dp-form-extras">
+            <p class="dn-login-instruction">
 
-          <a href="/forgot-password">
-            ${t('auth.login.forgotPassword')}
+              ${text('codeSentTo')}
+
+              <strong
+                data-login-phone-label
+                dir="ltr"
+              ></strong>
+
+            </p>
+
+            <div class="dn-login-field">
+
+              <label for="login-code">
+                ${text('code')}
+              </label>
+
+              <input
+                id="login-code"
+                name="code"
+                type="text"
+                dir="ltr"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                maxlength="6"
+                placeholder="${text('codePlaceholder')}"
+                required
+              />
+
+              <small>
+                ${text('codeValidity')}
+              </small>
+
+            </div>
+
+            <button
+              class="dn-login-submit"
+              type="submit"
+              data-login-verify
+            >
+              <span>${text('verify')}</span>
+              <span aria-hidden="true">→</span>
+            </button>
+
+            <div class="dn-login-otp-actions">
+
+              <button
+                type="button"
+                class="dn-login-text-button"
+                data-login-edit
+              >
+                ${text('editPhone')}
+              </button>
+
+              <button
+                type="button"
+                class="dn-login-text-button"
+                data-login-resend
+                disabled
+              >
+                ${text('resend')}
+
+                <span
+                  data-login-countdown
+                  dir="ltr"
+                ></span>
+
+              </button>
+
+            </div>
+
+          </form>
+
+          <!-- EMAIL LOGIN -->
+
+          <form
+            id="dp-login-email-form"
+            class="dn-login-form"
+            novalidate
+            hidden
+          >
+
+            <div class="dn-login-field">
+
+              <label for="login-email">
+                ${text('email')}
+              </label>
+
+              <input
+                id="login-email"
+                name="email"
+                type="email"
+                dir="ltr"
+                autocomplete="email"
+                placeholder="${text('emailPlaceholder')}"
+                required
+              />
+
+            </div>
+
+            <div class="dn-login-field">
+
+              <label for="login-password">
+                ${text('password')}
+              </label>
+
+              <div class="dn-login-password-wrap">
+
+                <input
+                  id="login-password"
+                  name="password"
+                  type="password"
+                  dir="ltr"
+                  autocomplete="current-password"
+                  placeholder="${text('passwordPlaceholder')}"
+                  required
+                />
+
+                <button
+                  type="button"
+                  class="dn-login-password-toggle"
+                  data-password-toggle
+                  aria-label="${text('password')}"
+                  aria-pressed="false"
+                >
+
+                  <svg
+                    width="19"
+                    height="19"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"
+                    />
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+
+                </button>
+
+              </div>
+
+            </div>
+
+            <button
+              class="dn-login-submit"
+              type="submit"
+              data-login-email-submit
+            >
+              <span>${text('signIn')}</span>
+              <span aria-hidden="true">→</span>
+            </button>
+
+          </form>
+
+          <!-- FEEDBACK -->
+
+          <p
+            class="dn-login-feedback"
+            data-form-feedback
+            role="status"
+            aria-live="polite"
+            hidden
+          ></p>
+
+          <!-- REGISTER -->
+
+          <div class="dn-login-footer">
+
+            <span>
+              ${text('newPatient')}
+            </span>
+
+            <a href="/register">
+              ${text('createAccount')}
+            </a>
+
+          </div>
+
+          <!-- FORGOT PASSWORD -->
+
+          <a
+            class="dn-login-forgot-mobile"
+            href="/forgot-password"
+          >
+            ${text('forgotPassword')}
           </a>
 
-        </div>
-
-        <button
-          type="submit"
-          class="dp-btn dp-btn-primary dp-btn-block"
-          data-login-email-submit
-        >
-          ${t('auth.login.signIn')}
-          ${dpIcon('arrow')}
-        </button>
-
-      </form>
-
-
-      <!-- FORGOT PASSWORD -->
-
-      <div class="dp-login-forgot">
-
-        <a href="/forgot-password">
-          ${t('auth.login.forgotPassword')}
-        </a>
+        </section>
 
       </div>
 
-
-      <!-- FEEDBACK -->
-
-      <p
-        class="dp-form-feedback"
-        data-form-feedback
-        role="status"
-        aria-live="polite"
-        hidden
-      ></p>
-
-
-      <!-- REGISTER LINK -->
-
-      <div class="dp-divider-text">
-        <span>
-          ${t('auth.login.newPatient')}
-        </span>
-      </div>
-
-      <a
-        href="/register"
-        class="dp-btn dp-btn-outline dp-btn-block"
-      >
-        ${t('auth.login.createAccount')}
-      </a>
-
-    `,
-  });
+    </main>
+  `;
 }
 
 // ============================================
-// INITIALIZE LOGIN
+// LOGIN INITIALIZATION
 // ============================================
 
 export function initLogin() {
@@ -417,133 +475,69 @@ export function initLogin() {
   }
 
   const controller = new AbortController();
-
   const { signal } = controller;
 
-  const clearPasswords = initPasswordToggles(root);
+  const $ = selector =>
+    root.querySelector(selector);
 
-  // ============================================
-  // ELEMENTS
-  // ============================================
+  const phoneForm = $('#dp-login-phone-form');
+  const otpForm = $('#dp-login-otp-form');
+  const emailForm = $('#dp-login-email-form');
 
-  const phoneForm = root.querySelector(
-    '#dp-login-phone-form'
-  );
+  const phoneInput = $('#login-phone');
+  const codeInput = $('#login-code');
+  const emailInput = $('#login-email');
+  const passwordInput = $('#login-password');
 
-  const otpForm = root.querySelector(
-    '#dp-login-otp-form'
-  );
-
-  const emailForm = root.querySelector(
-    '#dp-login-email-form'
-  );
-
-  const phoneInput = root.querySelector(
-    '#login-phone'
-  );
-
-  const codeInput = root.querySelector(
-    '#login-code'
-  );
-
-  const emailInput = root.querySelector(
-    '#login-email'
-  );
-
-  const passwordInput = root.querySelector(
-    '#login-password'
-  );
-
-  const resendButton = root.querySelector(
-    '[data-login-resend]'
-  );
-
-  const countdown = root.querySelector(
-    '[data-login-countdown]'
-  );
-
-  const feedbackElement = root.querySelector(
-    '[data-form-feedback]'
-  );
-
-  // ============================================
-  // STATE
-  // ============================================
+  const resendButton = $('[data-login-resend]');
+  const countdown = $('[data-login-countdown]');
+  const feedbackBox = $('[data-form-feedback]');
 
   let method = 'phone';
-
   let phone = null;
-
   let otpVisible = false;
-
   let busy = false;
-
   let timer = null;
 
-  // ============================================
+  // ==========================================
   // FEEDBACK
-  // ============================================
+  // ==========================================
 
-  const feedback = (
-    message,
-    type = 'note'
-  ) => {
-    setFeedback(root, message, type);
-  };
+  function feedback(message, type = 'note') {
+    feedbackBox.hidden = false;
+    feedbackBox.textContent = message;
+    feedbackBox.dataset.type = type;
+  }
 
   function clearFeedback() {
-    feedbackElement.hidden = true;
-    feedbackElement.textContent = '';
+    feedbackBox.hidden = true;
+    feedbackBox.textContent = '';
+    delete feedbackBox.dataset.type;
   }
 
-  // ============================================
-  // SESSION EXPIRED MESSAGE
-  // ============================================
+  // ==========================================
+  // COUNTDOWN
+  // ==========================================
 
-  const searchParams = new URLSearchParams(
-    window.location.search
-  );
-
-  if (searchParams.get('expired') === '1') {
-    feedback(
-      t('auth.sessionExpired'),
-      'error'
-    );
-  }
-
-  // ============================================
-  // UPDATE BUTTONS
-  // ============================================
-
-  function updateButtons() {
-    root.querySelector(
-      '[data-login-send]'
-    ).disabled = busy;
-
-    root.querySelector(
-      '[data-login-verify]'
-    ).disabled = busy;
-
-    root.querySelector(
-      '[data-login-email-submit]'
-    ).disabled = busy;
-
-    const seconds = Math.max(
+  const remainingSeconds = () =>
+    Math.max(
       0,
       Math.ceil(
-        (
-          pendingLogin.expiresAt -
-          Date.now()
-        ) / 1000
+        (pendingLogin.expiresAt - Date.now()) / 1000
       )
     );
 
+  function updateButtons() {
+    $('[data-login-send]').disabled = busy;
+    $('[data-login-verify]').disabled = busy;
+    $('[data-login-email-submit]').disabled = busy;
+
     resendButton.disabled =
-      busy || seconds > 0;
+      busy || remainingSeconds() > 0;
 
     countdown.textContent =
-      seconds > 0
-        ? `(${seconds}s)`
+      remainingSeconds() > 0
+        ? `(${remainingSeconds()}s)`
         : '';
 
     root.querySelectorAll(
@@ -553,19 +547,20 @@ export function initLogin() {
     });
   }
 
-  // ============================================
-  // BUSY STATE
-  // ============================================
-
   function setBusy(value) {
     busy = value;
+
+    root.setAttribute(
+      'aria-busy',
+      String(value)
+    );
 
     updateButtons();
   }
 
-  // ============================================
-  // UPDATE FORM VIEW
-  // ============================================
+  // ==========================================
+  // SWITCH LOGIN METHOD
+  // ==========================================
 
   function updateView() {
     phoneForm.hidden =
@@ -584,13 +579,8 @@ export function initLogin() {
         button.dataset.loginMethod === method;
 
       button.classList.toggle(
-        'dp-btn-primary',
+        'is-active',
         active
-      );
-
-      button.classList.toggle(
-        'dp-btn-outline',
-        !active
       );
 
       button.setAttribute(
@@ -602,12 +592,12 @@ export function initLogin() {
     updateButtons();
   }
 
-  // ============================================
-  // OTP COUNTDOWN TIMER
-  // ============================================
+  // ==========================================
+  // TIMER
+  // ==========================================
 
   function stopTimer() {
-    if (timer) {
+    if (timer !== null) {
       clearInterval(timer);
     }
 
@@ -616,37 +606,35 @@ export function initLogin() {
 
   function startTimer() {
     stopTimer();
-
     updateButtons();
 
+    if (remainingSeconds() === 0) {
+      return;
+    }
+
     timer = setInterval(() => {
-      if (signal.aborted) {
-        stopTimer();
-        return;
-      }
-
-      updateButtons();
-
       if (
-        Date.now() >= pendingLogin.expiresAt
+        signal.aborted ||
+        remainingSeconds() === 0
       ) {
         stopTimer();
       }
+
+      updateButtons();
     }, 1000);
   }
 
-  // ============================================
-  // DISPLAY OTP FORM
-  // ============================================
+  // ==========================================
+  // SHOW OTP FORM
+  // ==========================================
 
   function showOtpForm() {
     otpVisible = true;
 
     codeInput.value = '';
 
-    root.querySelector(
-      '[data-login-phone-label]'
-    ).textContent = phone;
+    $('[data-login-phone-label]').textContent =
+      phone;
 
     updateView();
 
@@ -655,30 +643,31 @@ export function initLogin() {
     }
   }
 
-  // ============================================
+  // ==========================================
   // SEND OTP
-  // ============================================
+  // ==========================================
 
-  async function sendCode(
-    isResend = false
-  ) {
-    if (busy) return;
+  async function sendCode(isResend = false) {
+    if (busy || signal.aborted) {
+      return;
+    }
 
-    const normalized = normalizeIranPhone(
-      phoneInput.value
-    );
+    const normalized = isResend
+      ? phone
+      : normalizeIranPhone(phoneInput.value);
 
     if (!normalized) {
-      return feedback(
+      feedback(
         t('auth.login.invalidPhone'),
         'error'
       );
+
+      return;
     }
 
     phone = normalized;
 
     setBusy(true);
-
     clearFeedback();
 
     try {
@@ -689,20 +678,16 @@ export function initLogin() {
 
       if (signal.aborted) return;
 
-      if (!isApiSuccess(response)) {
-        throw new Error(
-          'SEND_CODE_FAILED'
-        );
+      if (!apiSucceeded(response)) {
+        throw new Error('SEND_CODE_FAILED');
       }
 
       pendingLogin.phone = phone;
 
-      // OTP expires after 2 minutes.
       pendingLogin.expiresAt =
         Date.now() + 120000;
 
       showOtpForm();
-
       startTimer();
 
       feedback(
@@ -716,10 +701,7 @@ export function initLogin() {
     } catch (error) {
       if (!signal.aborted) {
         feedback(
-          apiErrorMessage(
-            error,
-            'send'
-          ),
+          apiErrorMessage(error, 'send'),
           'error'
         );
       }
@@ -731,9 +713,9 @@ export function initLogin() {
     }
   }
 
-  // ============================================
-  // SELECT LOGIN METHOD
-  // ============================================
+  // ==========================================
+  // SELECT METHOD
+  // ==========================================
 
   root.querySelectorAll(
     '[data-login-method]'
@@ -746,58 +728,57 @@ export function initLogin() {
         method = button.dataset.loginMethod;
 
         clearFeedback();
-
         updateView();
       },
       { signal }
     );
   });
 
-  // ============================================
-  // PHONE LOGIN SUBMIT
-  // ============================================
+  // ==========================================
+  // PHONE FORM
+  // ==========================================
 
   phoneForm.addEventListener(
     'submit',
     event => {
       event.preventDefault();
-
       void sendCode();
     },
     { signal }
   );
 
-  // ============================================
+  // ==========================================
   // VERIFY OTP
-  // ============================================
+  // ==========================================
 
   otpForm.addEventListener(
     'submit',
     async event => {
       event.preventDefault();
 
-      if (busy) return;
+      if (busy || signal.aborted) return;
 
       const code = normalizeCode(
         codeInput.value
       );
 
       if (code.length !== 6) {
-        return feedback(
+        feedback(
           t('auth.login.invalidCodeFormat'),
           'error'
         );
+        return;
       }
 
       if (!phone) {
-        return feedback(
+        feedback(
           t('auth.login.invalidPhone'),
           'error'
         );
+        return;
       }
 
       setBusy(true);
-
       clearFeedback();
 
       try {
@@ -809,49 +790,19 @@ export function initLogin() {
 
         if (signal.aborted) return;
 
-        if (!isApiSuccess(response)) {
-          throw new Error(
-            'VERIFY_FAILED'
-          );
+        if (!apiSucceeded(response)) {
+          throw new Error('VERIFY_FAILED');
         }
 
-        // ======================================
-        // STORE JWT
-        // ======================================
-
-        storeLoginResponse(response);
-
-        // ======================================
-        // START 15-MINUTE SESSION
-        // ======================================
-
-        startPatientSession();
-
-        // ======================================
-        // CLEAR OTP STATE
-        // ======================================
-
-        pendingLogin.phone = null;
-
-        pendingLogin.expiresAt = 0;
-
         stopTimer();
-
-        // ======================================
-        // REDIRECT
-        // ======================================
-
-        redirectToDashboard();
+        finishLogin(response);
 
       } catch (error) {
         if (!signal.aborted) {
           feedback(
             error?.message === 'AUTH_TOKEN_MISSING'
               ? t('auth.login.invalidApiToken')
-              : apiErrorMessage(
-                  error,
-                  'verify'
-                ),
+              : apiErrorMessage(error, 'verify'),
             'error'
           );
         }
@@ -865,84 +816,65 @@ export function initLogin() {
     { signal }
   );
 
-  // ============================================
+  // ==========================================
   // EMAIL / PASSWORD LOGIN
-  // ============================================
+  // ==========================================
 
   emailForm.addEventListener(
     'submit',
     async event => {
       event.preventDefault();
 
-      if (busy) return;
+      if (busy || signal.aborted) return;
 
       const email = emailInput.value.trim();
-
       const password = passwordInput.value;
 
       if (
-        !emailInput.checkValidity() ||
-        !email
+        !email ||
+        !emailInput.checkValidity()
       ) {
-        return feedback(
+        feedback(
           t('auth.login.invalidEmail'),
           'error'
         );
+        return;
       }
 
       if (!password) {
-        return feedback(
+        feedback(
           t('auth.login.enterPassword'),
           'error'
         );
+        return;
       }
 
       setBusy(true);
-
       clearFeedback();
 
       try {
-        const response = await loginApi.loginWithEmail(
-          email,
-          password,
-          signal
-        );
+        const response =
+          await loginApi.loginWithEmail(
+            email,
+            password,
+            signal
+          );
 
         if (signal.aborted) return;
 
-        if (!isApiSuccess(response)) {
-          throw new Error(
-            'LOGIN_FAILED'
-          );
+        if (!apiSucceeded(response)) {
+          throw new Error('LOGIN_FAILED');
         }
 
-        // ======================================
-        // STORE JWT
-        // ======================================
-
-        storeLoginResponse(response);
-
-        // ======================================
-        // START 15-MINUTE SESSION
-        // ======================================
-
-        startPatientSession();
-
-        // ======================================
-        // REDIRECT TO DASHBOARD
-        // ======================================
-
-        redirectToDashboard();
+        stopTimer();
+        finishLogin(response);
 
       } catch (error) {
         if (!signal.aborted) {
           feedback(
             error?.message === 'AUTH_TOKEN_MISSING'
               ? t('auth.login.invalidApiToken')
-              : apiErrorMessage(
-                  error,
-                  'email'
-                ),
+              : apiErrorMessage(error, 'email'),
             'error'
           );
         }
@@ -956,9 +888,9 @@ export function initLogin() {
     { signal }
   );
 
-  // ============================================
-  // OTP INPUT — DIGITS ONLY
-  // ============================================
+  // ==========================================
+  // OTP INPUT
+  // ==========================================
 
   codeInput.addEventListener(
     'input',
@@ -970,13 +902,11 @@ export function initLogin() {
     { signal }
   );
 
-  // ============================================
-  // CHANGE PHONE NUMBER
-  // ============================================
+  // ==========================================
+  // EDIT PHONE
+  // ==========================================
 
-  root.querySelector(
-    '[data-login-edit]'
-  ).addEventListener(
+  $('[data-login-edit]').addEventListener(
     'click',
     () => {
       if (busy) return;
@@ -984,13 +914,10 @@ export function initLogin() {
       otpVisible = false;
 
       pendingLogin.phone = null;
-
       pendingLogin.expiresAt = 0;
 
       stopTimer();
-
       clearFeedback();
-
       updateView();
 
       phoneInput.focus();
@@ -998,9 +925,9 @@ export function initLogin() {
     { signal }
   );
 
-  // ============================================
+  // ==========================================
   // RESEND OTP
-  // ============================================
+  // ==========================================
 
   resendButton.addEventListener(
     'click',
@@ -1015,43 +942,72 @@ export function initLogin() {
     { signal }
   );
 
-  // ============================================
-  // RESTORE OTP AFTER LANGUAGE SWITCH
-  // ============================================
+  // ==========================================
+  // PASSWORD VISIBILITY
+  // ==========================================
+
+  $('[data-password-toggle]').addEventListener(
+    'click',
+    event => {
+      const visible =
+        passwordInput.type === 'password';
+
+      passwordInput.type = visible
+        ? 'text'
+        : 'password';
+
+      event.currentTarget.setAttribute(
+        'aria-pressed',
+        String(visible)
+      );
+
+      passwordInput.focus();
+    },
+    { signal }
+  );
+
+  // ==========================================
+  // SESSION EXPIRED MESSAGE
+  // ==========================================
+
+  const searchParams = new URLSearchParams(
+    window.location.search
+  );
+
+  if (searchParams.get('expired') === '1') {
+    feedback(
+      t('auth.sessionExpired'),
+      'error'
+    );
+  }
+
+  // ==========================================
+  // RESTORE OTP AFTER LANGUAGE CHANGE
+  // ==========================================
 
   if (
     pendingLogin.phone &&
     pendingLogin.expiresAt > Date.now()
   ) {
     phone = pendingLogin.phone;
-
     phoneInput.value = phone;
 
     showOtpForm();
-
     startTimer();
 
   } else {
     pendingLogin.phone = null;
-
     pendingLogin.expiresAt = 0;
 
     updateView();
   }
 
-  // ============================================
+  // ==========================================
   // CLEANUP
-  // ============================================
+  // ==========================================
 
   return () => {
     controller.abort();
-
     stopTimer();
-
-    if (
-      typeof clearPasswords === 'function'
-    ) {
-      clearPasswords();
-    }
   };
 }

@@ -1,0 +1,127 @@
+
+/* ============================================
+   DENTISTRY — MINIMAL AUTH PAGES
+
+   Pages:
+   - Register
+   - Forgot Password
+
+   Main Color: #74ADDA
+============================================ */
+
+.dn-auth-page .dn-login-container {
+  width: 100%;
+  max-width: 440px;
+}
+
+/* LOGO */
+
+.dn-auth-page .dn-login-logo {
+  display: block;
+  width: 180px;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.dn-auth-page .dn-login-brand {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: max-content;
+  max-width: 100%;
+  margin: 0 auto 28px;
+}
+
+/* HIDDEN STEPS */
+
+.dn-auth-page [hidden] {
+  display: none !important;
+}
+
+/* FORM */
+
+.dn-auth-page .dn-login-form {
+  display: grid;
+  gap: 17px;
+  min-width: 0;
+}
+
+.dn-auth-page .dn-login-field,
+.dn-auth-page .dn-login-field input {
+  min-width: 0;
+}
+
+.dn-auth-page .dn-login-field input[dir="ltr"] {
+  text-align: left;
+}
+
+/* OTP ACTIONS */
+
+.dn-auth-page .dn-login-otp-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* SUCCESS STEP */
+
+.dn-auth-page .dn-auth-complete {
+  display: grid;
+  gap: 16px;
+}
+
+.dn-auth-page .dn-auth-success {
+  margin: 0;
+  background: #edf9f1;
+  color: #216940;
+}
+
+.dn-auth-page .dn-auth-button-link {
+  text-decoration: none;
+  text-align: center;
+  margin: 0;
+}
+
+/* ERRORS */
+
+.dn-auth-page
+.dn-login-feedback[data-type="error"] {
+  background: #fff0f0;
+  color: #b43d3d;
+}
+
+/* ACCESSIBILITY */
+
+.dn-auth-page
+:is(a, button, input):focus-visible {
+  outline: 3px solid rgba(116, 173, 218, 0.45);
+  outline-offset: 3px;
+}
+
+/* BUTTONS */
+
+.dn-auth-page .dn-login-submit {
+  background: #74ADDA;
+  border-color: #74ADDA;
+  color: #102e45;
+}
+
+.dn-auth-page
+.dn-login-submit:hover:not(:disabled) {
+  background: #89bce3;
+}
+
+/* MOBILE */
+
+@media (max-width: 480px) {
+  .dn-auth-page .dn-login-logo {
+    width: 150px;
+  }
+
+  .dn-auth-page .dn-login-brand {
+    margin-bottom: 18px;
+  }
+}
