@@ -1,0 +1,211 @@
+
+/* Dentistry — Billing Dashboard */
+
+.dn-dashboard .dn-finance {
+  margin-top: 22px;
+  color: #243c4f;
+}
+
+.dn-dashboard .dn-finance-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.dn-dashboard .dn-finance-toolbar h2,
+.dn-dashboard .dn-finance-surface h2 {
+  font-size: 17px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.dn-dashboard .dn-finance-toolbar button,
+.dn-dashboard .dn-finance-actions button {
+  padding: 9px 13px;
+  border: 1px solid #dbe9f3;
+  border-radius: 10px;
+  background: #f3f9fd;
+  color: #377ba8;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.dn-dashboard .dn-finance-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 15px;
+  margin-bottom: 22px;
+}
+
+.dn-dashboard .dn-finance-stats article,
+.dn-dashboard .dn-finance-surface {
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid #e5edf3;
+  border-radius: 17px;
+  background: #fff;
+}
+
+.dn-dashboard .dn-finance-stats article {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dn-dashboard .dn-finance-stats span {
+  font-size: 12px;
+  color: #7b90a0;
+}
+
+.dn-dashboard .dn-finance-stats strong {
+  font-size: 23px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.dn-dashboard .dn-finance-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.dn-dashboard .dn-finance-surface h2 {
+  margin-bottom: 17px;
+}
+
+.dn-dashboard .dn-finance-muted {
+  color: #8293a0;
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.dn-dashboard .dn-finance-entry {
+  padding: 18px 0;
+  border-bottom: 1px solid #edf1f5;
+}
+
+.dn-dashboard .dn-finance-entry-main,
+.dn-dashboard .dn-finance-amount {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.dn-dashboard .dn-finance-entry-main strong {
+  font-size: 14px;
+}
+
+.dn-dashboard .dn-finance-entry small {
+  font-size: 11px;
+  color: #8094a3;
+}
+
+.dn-dashboard .dn-finance-status {
+  padding: 5px 10px;
+  border-radius: 30px;
+  background: #eaf5fc;
+  color: #3179a8;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.dn-dashboard .dn-finance-amount {
+  margin: 12px 0;
+}
+
+.dn-dashboard .dn-finance-amount strong {
+  font-size: 16px;
+}
+
+.dn-dashboard .dn-finance-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dn-dashboard .dn-finance-actions .dn-finance-pay {
+  background: #74ADDA;
+  color: #112d40;
+  border-color: #74ADDA;
+}
+
+.dn-dashboard .dn-finance-details {
+  margin-top: 18px;
+}
+
+.dn-dashboard .dn-finance-details[hidden],
+.dn-dashboard .dn-finance-feedback[hidden] {
+  display: none !important;
+}
+
+.dn-dashboard .dn-finance-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.dn-dashboard .dn-finance-detail-grid dt {
+  font-size: 11px;
+  color: #8195a3;
+  margin-bottom: 5px;
+}
+
+.dn-dashboard .dn-finance-detail-grid dd {
+  margin: 0;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.dn-dashboard .dn-finance-item-list {
+  list-style: none;
+  padding: 0;
+}
+
+.dn-dashboard .dn-finance-item-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #edf1f5;
+  font-size: 12px;
+}
+
+.dn-dashboard .dn-finance-feedback {
+  margin-top: 18px;
+  padding: 14px;
+  border-radius: 10px;
+  background: #edf7fd;
+  color: #2f759d;
+  font-size: 12px;
+}
+
+.dn-dashboard .dn-finance-feedback[data-error="true"] {
+  background: #fff1f1;
+  color: #b44747;
+}
+
+.dn-dashboard .dn-finance button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 850px) {
+  .dn-dashboard .dn-finance-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .dn-dashboard .dn-finance-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .dn-dashboard .dn-finance-surface,
+  .dn-dashboard .dn-finance-stats article {
+    padding: 17px;
+  }
+}

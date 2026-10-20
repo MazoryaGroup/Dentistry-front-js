@@ -239,3 +239,34 @@ html[dir="rtl"] .dp-home-page .service-link, html[dir="rtl"] .dp-home-page .blog
   .dp-home-page .dp-home-service-card { transition: none; }
   .dp-home-page .dp-home-service-card:hover { transform: none; }
 }
+
+/* HOME — Service cards: single-line description */
+
+.dp-home-page .dp-home-service-card .service-description {
+  display: block !important;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  line-height: 1.8;
+}
+
+.dp-home-page .dp-home-service-card .service-link {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.dp-home-page .dp-home-service-card {
+  min-width: 0;
+}
+
+
+
+
+.dp-home-page [hidden] {
+  display: none !important;
+}
+

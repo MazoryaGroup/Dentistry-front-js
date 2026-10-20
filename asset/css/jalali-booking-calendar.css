@@ -1,0 +1,184 @@
+
+/* ============================================
+   DENTISTRY — JALALI BOOKING CALENDAR
+============================================ */
+
+.dn-dashboard .dn-jalali-field {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dn-dashboard .dn-jalali-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  width: 100%;
+  min-height: 46px;
+  padding: 11px 15px;
+
+  border: 1px solid #dce7ef;
+  border-radius: 12px;
+
+  background: #fff;
+  color: #243c4c;
+
+  font: inherit;
+  font-size: 13px;
+
+  text-align: start;
+  cursor: pointer;
+}
+
+.dn-dashboard .dn-jalali-trigger::after {
+  content: "▾";
+  color: #74ADDA;
+  font-size: 15px;
+}
+
+.dn-dashboard .dn-jalali-trigger:hover,
+.dn-dashboard .dn-jalali-trigger:focus-visible {
+  border-color: #74ADDA;
+  outline-color: #74ADDA;
+}
+
+/* CALENDAR POPUP */
+
+.dn-dashboard .dn-jalali-popup {
+  position: absolute;
+  top: calc(100% + 8px);
+  inset-inline-start: 0;
+
+  z-index: 100;
+
+  width: 310px;
+  max-width: 90vw;
+  padding: 16px;
+
+  border: 1px solid #e3ecf3;
+  border-radius: 16px;
+
+  background: #fff;
+
+  box-shadow:
+    0 14px 40px rgba(20, 58, 84, .14);
+
+  direction: rtl;
+}
+
+.dn-dashboard .dn-jalali-popup[hidden] {
+  display: none !important;
+}
+
+/* HEADER */
+
+.dn-dashboard .dn-jalali-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.dn-dashboard .dn-jalali-head strong {
+  font-size: 15px;
+  font-weight: 800;
+  color: #243d4f;
+}
+
+.dn-dashboard .dn-jalali-head button {
+  width: 33px;
+  height: 33px;
+
+  display: grid;
+  place-items: center;
+
+  border: 1px solid #e5edf3;
+  border-radius: 9px;
+
+  background: #f5f9fc;
+  color: #387daa;
+
+  font-size: 23px;
+  cursor: pointer;
+}
+
+/* DAYS */
+
+.dn-dashboard .dn-jalali-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.dn-dashboard .dn-jalali-weekdays {
+  margin-bottom: 10px;
+}
+
+.dn-dashboard .dn-jalali-weekdays span {
+  padding: 6px 0;
+  text-align: center;
+
+  color: #8a9baa;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.dn-dashboard .dn-jalali-day {
+  display: grid;
+  place-items: center;
+
+  min-height: 35px;
+
+  border: 0;
+  border-radius: 9px;
+
+  background: transparent;
+  color: #263e4f;
+
+  font: inherit;
+  font-size: 12px;
+
+  cursor: pointer;
+}
+
+.dn-dashboard .dn-jalali-day:hover:not(:disabled) {
+  background: #edf7fd;
+  color: #347caa;
+}
+
+.dn-dashboard .dn-jalali-day.is-selected {
+  background: #74ADDA;
+  color: #102d40;
+  font-weight: 800;
+}
+
+.dn-dashboard .dn-jalali-day:disabled {
+  opacity: .28;
+  cursor: not-allowed;
+}
+
+.dn-dashboard .dn-jalali-error {
+  margin: 8px 0;
+  color: #c44343;
+  font-size: 12px;
+}
+
+@media (max-width: 520px) {
+  .dn-dashboard .dn-jalali-popup {
+    width: min(300px, 85vw);
+    padding: 12px;
+  }
+
+  .dn-dashboard .dn-jalali-grid {
+    gap: 3px;
+  }
+
+  .dn-dashboard .dn-jalali-day {
+    min-height: 33px;
+  }
+}

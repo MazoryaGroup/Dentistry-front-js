@@ -1,0 +1,419 @@
+
+/* ===========================================
+   DENTISTRY — DENTAL RECORDS
+=========================================== */
+
+.dn-dashboard .dn-records {
+  margin-top: 22px;
+  color: #1f3444;
+}
+
+.dn-dashboard .dn-records-layout {
+  display: grid;
+  grid-template-columns:
+    minmax(250px, .85fr)
+    minmax(0, 1.5fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.dn-dashboard .dn-records-surface {
+  min-width: 0;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #e6edf3;
+  border-radius: 18px;
+  box-shadow: 0 9px 30px rgba(34, 73, 100, .025);
+}
+
+.dn-dashboard .dn-records-surface h2 {
+  font-size: 17px;
+  font-weight: 800;
+  margin: 0 0 18px;
+}
+
+.dn-dashboard .dn-records-surface h3 {
+  font-size: 15px;
+  font-weight: 800;
+  margin: 0 0 14px;
+}
+
+.dn-dashboard .dn-records-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.dn-dashboard .dn-records-heading button,
+.dn-dashboard .dn-record-pager button,
+.dn-dashboard .dn-record-file-actions button {
+  padding: 8px 12px;
+  border: 1px solid #dce8f1;
+  border-radius: 9px;
+  background: #f3f9fd;
+  color: #3979a6;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.dn-dashboard .dn-record-muted {
+  color: #8495a3;
+  font-size: 12px;
+  line-height: 1.9;
+}
+
+.dn-dashboard .dn-record-list,
+.dn-dashboard .dn-record-sublist {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.dn-dashboard .dn-record-list li +
+li {
+  border-top: 1px solid #edf1f5;
+}
+
+.dn-dashboard .dn-record-card {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  padding: 16px 12px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.dn-dashboard .dn-record-card:hover,
+.dn-dashboard .dn-record-card.is-active {
+  background: #eef7fd;
+}
+
+.dn-dashboard .dn-record-card strong,
+.dn-dashboard .dn-record-sublist strong {
+  font-size: 13px;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.dn-dashboard .dn-record-card small,
+.dn-dashboard .dn-record-sublist small {
+  color: #8294a1;
+  font-size: 11px;
+}
+
+.dn-dashboard .dn-record-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+  margin: 18px 0;
+}
+
+.dn-dashboard .dn-record-pair dt {
+  font-size: 11px;
+  color: #8394a0;
+  margin-bottom: 6px;
+}
+
+.dn-dashboard .dn-record-pair dd {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.dn-dashboard .dn-record-summary {
+  font-size: 13px;
+  line-height: 1.9;
+  color: #546d7f;
+  white-space: pre-wrap;
+}
+
+.dn-dashboard .dn-record-block {
+  padding-top: 23px;
+  margin-top: 23px;
+  border-top: 1px solid #edf1f5;
+}
+
+.dn-dashboard .dn-record-sublist li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 13px 0;
+  border-bottom: 1px solid #f0f3f6;
+}
+
+.dn-dashboard .dn-record-sublist small {
+  display: block;
+}
+
+.dn-dashboard .dn-record-file-actions {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+/* ODONTOGRAM */
+
+.dn-dashboard .dn-record-jaw {
+  margin: 18px 0;
+}
+
+.dn-dashboard .dn-record-jaw > strong {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+
+.dn-dashboard .dn-record-teeth {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 7px;
+  margin-bottom: 10px;
+}
+
+.dn-dashboard .dn-record-tooth {
+  display: grid;
+  place-items: center;
+  min-height: 38px;
+  border: 1px solid #dde6ed;
+  border-radius: 9px;
+  background: #f3f6f8;
+  color: #70808b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dn-dashboard .dn-record-tooth.is-healthy {
+  background: #eaf8f1;
+  border-color: #bbdfcb;
+  color: #27724d;
+}
+
+.dn-dashboard .dn-record-tooth.is-treated {
+  background: #e9f5fd;
+  border-color: #b7dafa;
+  color: #3479a8;
+}
+
+.dn-dashboard .dn-record-tooth.is-attention {
+  background: #fff2e4;
+  border-color: #f6d3a7;
+  color: #a76518;
+}
+
+.dn-dashboard .dn-record-tooth.is-missing {
+  background: #f9ecee;
+  border-color: #edc5cc;
+  color: #a44e5a;
+}
+
+/* PAGINATION */
+
+.dn-dashboard .dn-record-pager {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding-top: 16px;
+  margin-top: 18px;
+  border-top: 1px solid #edf1f5;
+  font-size: 12px;
+}
+
+/* SECURE PREVIEW */
+
+.dn-dashboard .dn-record-preview {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(9, 25, 38, .78);
+}
+
+.dn-dashboard .dn-record-preview[hidden],
+.dn-dashboard .dn-record-pager[hidden] {
+  display: none !important;
+}
+
+.dn-dashboard .dn-record-preview-inner {
+  width: min(900px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  padding: 20px;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.dn-dashboard [data-record-preview-close] {
+  display: block;
+  margin-bottom: 15px;
+  padding: 9px 14px;
+  border: 1px solid #dce6ef;
+  border-radius: 9px;
+  background: #f4f8fb;
+  color: #273e50;
+  cursor: pointer;
+}
+
+.dn-dashboard .dn-records button:focus-visible {
+  outline: 2px solid #74ADDA;
+  outline-offset: 3px;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 900px) {
+  .dn-dashboard .dn-records-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .dn-dashboard .dn-records-surface {
+    padding: 17px;
+    border-radius: 14px;
+  }
+
+  .dn-dashboard .dn-record-teeth {
+    gap: 4px;
+  }
+
+  .dn-dashboard .dn-record-tooth {
+    min-height: 32px;
+    font-size: 10px;
+  }
+}
+
+/* ========================================
+   DENTAL RECORDS — LIST CARDS
+======================================== */
+
+.dn-dashboard .dn-record-card {
+  gap: 12px;
+}
+
+.dn-dashboard .dn-record-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.dn-dashboard .dn-record-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 20px;
+  background: #edf7fd;
+  color: #397ba9;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.dn-dashboard .dn-record-card-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  color: #728a9c;
+  font-size: 11px;
+}
+
+.dn-dashboard .dn-record-complaint {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #243d4f;
+}
+
+.dn-dashboard .dn-record-diagnosis {
+  margin: 0;
+  font-size: 12px;
+  color: #617789;
+}
+
+.dn-dashboard .dn-record-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 3px;
+}
+
+.dn-dashboard .dn-record-counts span {
+  padding: 5px 9px;
+  border: 1px solid #e4edf4;
+  border-radius: 7px;
+  background: #f7fafc;
+  color: #6c8191;
+  font-size: 10px;
+}
+
+.dn-dashboard .dn-record-counts b {
+  color: #3479a8;
+  font-weight: 800;
+}
+
+@media (max-width: 520px) {
+  .dn-dashboard .dn-record-card-top {
+    align-items: flex-start;
+  }
+
+  .dn-dashboard .dn-record-counts {
+    gap: 5px;
+  }
+}
+
+/* ==========================================
+   DENTAL RECORDS — TREATMENT HISTORY
+========================================== */
+
+.dn-dashboard .dn-treatment-history-item {
+  display: block;
+  padding: 18px 0;
+}
+
+.dn-dashboard .dn-treatment-history-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.dn-dashboard .dn-treatment-history-info > strong {
+  font-size: 14px;
+  font-weight: 800;
+  color: #243d4f;
+}
+
+.dn-dashboard .dn-treatment-history-description {
+  margin: 0;
+  color: #617789;
+  font-size: 12px;
+  line-height: 1.9;
+}
+
+.dn-dashboard .dn-treatment-history-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dn-dashboard .dn-treatment-history-meta span {
+  padding: 6px 10px;
+  border: 1px solid #e4edf4;
+  border-radius: 8px;
+  background: #f5f9fc;
+  color: #527083;
+  font-size: 11px;
+}
