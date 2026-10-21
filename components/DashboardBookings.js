@@ -1,11 +1,12 @@
 
+
 /**
  * Dentistry — Patient Appointments
  *
  * GET    /api/v1/bookings
  * GET    /api/v1/bookings/{id}
  * POST   /api/v1/bookings/{id}/cancel
- * POST   /api/v1/bookings/{id}/reschedule
+ * put   /api/v1/bookings/{id}/reschedule
  *
  * Booking Wizard + Deposit Payment
  */
@@ -16,16 +17,16 @@ import {
 } from '../code/i18n.js';
 
 import { bookingApi } from '../code/bookingApi.js';
+import { apiPut } from '../code/api.js';
+import { availabilityApi, AVAILABILITY_INTERVAL_MINUTES } from '../code/staffApi.js';
 
 import {
   bookingWizardHTML,
   initBookingWizard,
+  normalizeAvailabilitySlots,
 } from './DashboardBookingWizard.js';
 
-import {
-  bookingIdFromResponse,
-  depositGatewayUrl,
-} from '../code/depositCheckout.js';
+import { bookingIdFromResponse } from '../code/depositCheckout.js';
 
 // ============================================
 // LANGUAGE
@@ -90,7 +91,11 @@ const phrases = {
     payDeposit: 'Pay deposit',
     openingGateway: 'Connecting to payment gateway…',
     paymentError: 'Your booking exists, but payment could not be started. Retry payment.',
-    missingDate: 'Choose a valid appointment date.',
+    missingDate: 'Choose a valid appointment date and one of the available times.',
+    slotLoading: 'Checking available times…',
+    slotEmpty: 'No available times for this date.',
+    slotMissing: 'Doctor or service information is missing from this booking.',
+    slotMany: 'Rescheduling multi-service bookings is not supported in this form. Contact the clinic.',
   },
 
   fa: {
@@ -148,7 +153,11 @@ const phrases = {
     payDeposit: 'پرداخت بیعانه',
     openingGateway: 'در حال اتصال به درگاه پرداخت…',
     paymentError: 'نوبت شما وجود دارد اما شروع پرداخت ناموفق بود. دوباره برای پرداخت تلاش کنید.',
-    missingDate: 'تاریخ معتبر برای نوبت انتخاب کنید.',
+    missingDate: 'تاریخ و یکی از ساعت‌های آزاد را انتخاب کنید.',
+    slotLoading: 'در حال دریافت ساعت‌های آزاد…',
+    slotEmpty: 'در این تاریخ ساعت آزادی وجود ندارد.',
+    slotMissing: 'اطلاعات پزشک یا خدمت این نوبت برای جابه‌جایی موجود نیست.',
+    slotMany: 'تغییر زمان رزرو چندخدمتی از این فرم پشتیبانی نمی‌شود؛ با کلینیک تماس بگیرید.',
   },
 };
 
@@ -258,24 +267,26 @@ function unwrapDetail(response) {
 // ============================================
 
 function dateValue(value) {
-  const date = String(
-    value ?? ''
-  ).slice(0, 10);
+  const raw = String(value ?? '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}/.test(raw)) return '';
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    return '';
+  let date = raw.slice(0, 10);
+  // A Laravel `date` cast can serialize midnight in Tehran as
+  // the previous day at 20:30 UTC. Never truncate zoned timestamps.
+  if (/T/.test(raw) && /(Z|[+-]\d{2}:?\d{2})$/i.test(raw)) {
+    const instant = new Date(raw);
+    if (Number.isNaN(instant.getTime())) return '';
+    const parts = Object.fromEntries(
+      new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Tehran',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+      }).formatToParts(instant).map(x => [x.type, x.value])
+    );
+    date = `${parts.year}-${parts.month}-${parts.day}`;
   }
-
-  const parsed = new Date(
-    `${date}T12:00:00Z`
-  );
-
-  return (
-    !Number.isNaN(parsed.getTime()) &&
-    parsed.toISOString().slice(0, 10) === date
-  )
-    ? date
-    : '';
+  const parsed = new Date(`${date}T12:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) &&
+    parsed.toISOString().slice(0, 10) === date ? date : '';
 }
 
 function timeValue(value) {
@@ -296,7 +307,7 @@ function formatDate(value) {
   if (!date) return '—';
 
   return new Intl.DateTimeFormat(
-    L() === 'fa' ? 'fa-IR' : 'en-GB',
+    L() === 'fa' ? 'fa-IR-u-ca-persian' : 'en-US-u-ca-persian',
     {
       dateStyle: 'medium',
       timeZone: 'UTC',
@@ -332,6 +343,19 @@ function statusLabel(value) {
 // ============================================
 // BOOKING NORMALIZATION
 // ============================================
+
+function bookingServiceName(item) {
+  const service = item?.service ?? item ?? {};
+  const translations = service.translations;
+  const translated = Array.isArray(translations)
+    ? translations.find(x => [x.lang, x.locale, x.language].includes(L()))
+    : translations?.[L()];
+  return String(
+    translated?.name ?? translated?.title ??
+    service.translation?.name ?? service.translation?.title ??
+    service.name ?? service.title ?? item?.service_name ?? ''
+  ).trim();
+}
 
 function normalized(row) {
   if (
@@ -385,13 +409,15 @@ function normalized(row) {
       services[0]?.doctor?.name ??
       '',
 
+    doctorId: Number(
+      row.staff_id ?? row.doctor_id ?? row.staff?.id ?? row.doctor?.id ??
+      services[0]?.staff_id ?? services[0]?.staff?.id ?? services[0]?.doctor?.id
+    ) || null,
+
     services: services.map(service => ({
-      name:
-        service?.service?.name ??
-        service?.service?.title ??
-        service?.name ??
-        service?.title ??
-        '',
+      id: Number(service?.service_id ?? service?.service?.id ?? service?.id) || null,
+      staffId: Number(service?.staff_id ?? service?.staff?.id ?? service?.doctor?.id) || null,
+      name: bookingServiceName(service),
 
       staff:
         service?.staff?.name ??
@@ -684,12 +710,10 @@ function detailMarkup(booking) {
             <label>
               ${tx('newTime')}
 
-              <input
-                type="time"
-                name="start_time"
-                value="${esc(booking.start)}"
-                required
-              >
+              <select name="start_time" data-reschedule-slot required disabled>
+                <option value="">${tx('newTime')}…</option>
+              </select>
+              <small data-reschedule-slot-feedback>${tx('choose')}</small>
             </label>
 
             <div class="dn-booking-form-buttons">
@@ -938,6 +962,9 @@ export function initDashboardBookings(
 
   let listRun = 0;
   let detailRun = 0;
+  let slotRun = 0;
+  let detailBooking = null;
+  let rescheduleSlots = [];
 
   let busy = false;
   let paying = false;
@@ -981,15 +1008,9 @@ export function initDashboardBookings(
     );
 
     if (pageInfo.partial) {
-      if (count) {
-        count.textContent = '—';
-      }
-
-      if (nextDescription) {
-        nextDescription.textContent =
-          tr('partial');
-      }
-
+      if (count) count.textContent = '—';
+      if (nextTitle) nextTitle.textContent = tr('nextDate');
+      if (nextDescription) nextDescription.textContent = tr('partial');
       return;
     }
 
@@ -1172,6 +1193,9 @@ export function initDashboardBookings(
     }
 
     const request = ++detailRun;
+    ++slotRun;
+    detailBooking = null;
+    rescheduleSlots = [];
 
     currentId = Number(id);
 
@@ -1214,8 +1238,8 @@ export function initDashboardBookings(
         );
       }
 
-      detail.innerHTML =
-        detailMarkup(booking);
+      detailBooking = booking;
+      detail.innerHTML = detailMarkup(booking);
 
     } catch (error) {
       if (
@@ -1242,6 +1266,45 @@ export function initDashboardBookings(
   // SHOW RESCHEDULE / CANCEL FORM
   // ==========================================
 
+  async function loadRescheduleSlots(form) {
+    const request = ++slotRun;
+    rescheduleSlots = [];
+    const select = form.querySelector('[data-reschedule-slot]');
+    const hint = form.querySelector('[data-reschedule-slot-feedback]');
+    if (!select || !hint || !detailBooking) return;
+    select.disabled = true;
+    select.innerHTML = `<option value="">${tx('newTime')}…</option>`;
+    const date = dateValue(form.elements.namedItem('booking_date')?.value);
+    const staffId = detailBooking.services[0]?.staffId ?? detailBooking.doctorId;
+    const serviceId = detailBooking.services[0]?.id;
+    if (!date || date < clinicNow().date || !validId(staffId) || !validId(serviceId)) {
+      hint.textContent = !validId(staffId) || !validId(serviceId)
+        ? tr('slotMissing') : tr('missingDate');
+      return;
+    }
+    if (detailBooking.services.length !== 1) {
+      hint.textContent = tr('slotMany');
+      return;
+    }
+    hint.textContent = tr('slotLoading');
+    try {
+      const result = await availabilityApi.list({
+        staff_id: staffId, service_id: serviceId, date,
+        interval: AVAILABILITY_INTERVAL_MINUTES,
+      }, signal);
+      if (!active() || request !== slotRun || !detail.contains(form)) return;
+      if (result?.success === false) throw new Error(result.message || tr('actionError'));
+      rescheduleSlots = normalizeAvailabilitySlots(result, staffId);
+      select.innerHTML = `<option value="">${tx('newTime')}…</option>` +
+        rescheduleSlots.map(slot => `<option value="${esc(slot.start_time)}">${esc(slot.start_time)} – ${esc(slot.end_time)}</option>`).join('');
+      select.disabled = !rescheduleSlots.length;
+      hint.textContent = rescheduleSlots.length ? '' : tr('slotEmpty');
+    } catch (error) {
+      if (!active() || request !== slotRun || !detail.contains(form)) return;
+      hint.textContent = error?.message || tr('actionError');
+    }
+  }
+
   function toggleForm(which) {
     const target = detail.querySelector(
       which === 'cancel'
@@ -1264,6 +1327,7 @@ export function initDashboardBookings(
 
     if (shouldOpen) {
       target.hidden = false;
+      if (which === 'reschedule') void loadRescheduleSlots(target);
 
       // Jalali calendar is initialized by
       // the shared MutationObserver.
@@ -1310,7 +1374,8 @@ export function initDashboardBookings(
         !date ||
         date !== selectedDate ||
         date < clinicNow().date ||
-        !timeValue(chosenTime)
+        !timeValue(chosenTime) ||
+        !rescheduleSlots.some(slot => slot.start_time === chosenTime)
       ) {
         message(
           tr('missingDate'),
@@ -1365,12 +1430,21 @@ export function initDashboardBookings(
         }
 
       } else {
-        const result = await bookingApi.reschedule(
-          currentId,
-          selectedDate,
-          chosenTime,
-          signal
-        );
+        // Explicit POST using the central JWT API helper.
+        // Works even if the installed bookingApi.js has no reschedule method.
+        
+const result = await apiPut(
+  `/v1/bookings/${currentId}/reschedule`,
+  {
+    booking_date: selectedDate,
+    start_time: chosenTime,
+  },
+  {
+    auth: true,
+    signal,
+  }
+);
+
 
         if (result?.success === false) {
           throw new Error(
@@ -1593,6 +1667,16 @@ function payExistingDeposit(button) {
     { signal }
   );
 
+  // Reschedule's date input is upgraded by JalaliBookingCalendar.
+  // Its change event keeps API slots in sync with selected Gregorian date.
+  root.addEventListener('change', event => {
+    const input = event.target;
+    if (!(input instanceof Element)) return;
+    if (!input.matches('[data-booking-reschedule] [name="booking_date"]')) return;
+    const form = input.closest('[data-booking-reschedule]');
+    if (form && !form.hidden) void loadRescheduleSlots(form);
+  }, { signal });
+
   // ==========================================
   // FORM SUBMIT EVENTS
   // ==========================================
@@ -1659,6 +1743,7 @@ function payExistingDeposit(button) {
   return () => {
     ++listRun;
     ++detailRun;
+    ++slotRun;
 
     if (
       typeof wizardCleanup === 'function'

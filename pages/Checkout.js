@@ -286,20 +286,62 @@ function moneyText(value, currency = '') {
 // JALALI DATE
 // ============================================
 
-function bookingDate(value) {
-  const iso = String(value ?? '').slice(0, 10);
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
-    return '—';
+function bookingDate(value) {
+  if (!value) return '—';
+
+  const raw = String(value).trim();
+
+  const match = raw.match(
+    /^(\d{4})-(\d{2})-(\d{2})/
+  );
+
+  if (!match) return '—';
+
+  let dateString = `${match[1]}-${match[2]}-${match[3]}`;
+
+  // Convert actual UTC/offset timestamps
+  // back into clinic-local Gregorian date.
+  // Pure YYYY-MM-DD dates remain unchanged.
+  const hasTimezone =
+    raw.includes('T') &&
+    /(Z|[+-]\d{2}:?\d{2})$/i.test(raw);
+
+  if (hasTimezone) {
+    const instant = new Date(raw);
+
+    if (Number.isNaN(instant.getTime())) {
+      return '—';
+    }
+
+    const parts = Object.fromEntries(
+      new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Tehran',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      })
+        .formatToParts(instant)
+        .map(part => [
+          part.type,
+          part.value,
+        ])
+    );
+
+    dateString = [
+      parts.year,
+      parts.month,
+      parts.day,
+    ].join('-');
   }
 
   const date = new Date(
-    `${iso}T12:00:00Z`
+    `${dateString}T12:00:00Z`
   );
 
   if (
     Number.isNaN(date.getTime()) ||
-    date.toISOString().slice(0, 10) !== iso
+    date.toISOString().slice(0, 10) !== dateString
   ) {
     return '—';
   }
@@ -1028,10 +1070,11 @@ export function initCheckout() {
     ]);
 
     const finalTotal = firstAmount(b, [
-      'final_amount',
-      'grand_total',
-      'total_after_discount',
-    ]);
+  'total_amount',
+  'final_amount',
+  'grand_total',
+  'total_after_discount',
+]);
 
     const deposit = firstAmount(b, [
       'deposit_amount',

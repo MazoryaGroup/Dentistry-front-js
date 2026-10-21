@@ -1,13 +1,8 @@
 
 /**
  * Dentistry — SPA Router
- *
- * Dynamic routes:
- * /post/:slug
- * /services/:id
- * /team/:slug
- *
- * About Us includes the doctors listing.
+ * Vanilla JS + Vite
+ * FA / EN
  */
 
 import { Header, mountHeader } from '../components/Header.js';
@@ -15,6 +10,7 @@ import { Footer, mountFooter } from '../components/Footer.js';
 
 import {
   applyDocumentLanguage,
+  getLanguage,
   setLanguage,
   translateElement,
   t,
@@ -25,14 +21,14 @@ import {
   initSessionMonitor,
 } from './session.js';
 
+import { financeApi } from './financeApi.js';
+
 // ============================================
 // PAGES
 // ============================================
 
 import { Home, initHome } from '../pages/Home.js';
-
 import { About, initAbout } from '../pages/About.js';
-
 import { Blog, initBlog } from '../pages/Blog.js';
 
 import {
@@ -62,15 +58,8 @@ import {
 
 import { Faq, initFaq } from '../pages/Faq.js';
 
-import {
-  Login,
-  initLogin,
-} from '../pages/Login.js';
-
-import {
-  Register,
-  initRegister,
-} from '../pages/Register.js';
+import { Login, initLogin } from '../pages/Login.js';
+import { Register, initRegister } from '../pages/Register.js';
 
 import {
   ForgotPassword,
@@ -87,12 +76,239 @@ import {
   initCheckout,
 } from '../pages/Checkout.js';
 
+const isFa = () => getLanguage() === 'fa';
+
+// ============================================
+// PAYMENT RESULT PAGE
+// ============================================
+
+function paymentReturnPage() {
+  const fa = isFa();
+
+  return `
+    <main
+      class="dentistry-portal"
+      data-payment-return
+      data-no-translate
+      dir="${fa ? 'rtl' : 'ltr'}"
+      style="
+        min-height:65vh;
+        background:#f5f8fb;
+        padding:80px 20px;
+      "
+    >
+      <section
+        style="
+          max-width:680px;
+          margin:auto;
+          background:#fff;
+          padding:35px;
+          border:1px solid #e3edf4;
+          border-radius:20px;
+          text-align:center;
+        "
+      >
+        <h1
+          style="
+            color:#172c3a;
+            font-size:27px;
+            margin:0 0 16px;
+          "
+        >
+          ${
+            fa
+              ? 'وضعیت پرداخت نوبت'
+              : 'Appointment payment status'
+          }
+        </h1>
+
+        <p
+          data-payment-return-status
+          role="status"
+          aria-live="polite"
+          style="
+            line-height:2;
+            color:#536b7c;
+          "
+        >
+          ${
+            fa
+              ? 'در حال بررسی وضعیت پرداخت از سرور…'
+              : 'Checking the payment status with the clinic…'
+          }
+        </p>
+
+        <a
+          href="/dashboard?section=billing"
+          style="
+            display:inline-block;
+            margin-top:20px;
+            background:#74ADDA;
+            color:#17384c;
+            padding:13px 20px;
+            border-radius:12px;
+            font-weight:700;
+            text-decoration:none;
+          "
+        >
+          ${
+            fa
+              ? 'مشاهده پرداخت‌ها و فاکتورها'
+              : 'View payments and invoices'
+          }
+        </a>
+
+        <a
+          href="/dashboard?section=appointments"
+          style="
+            display:block;
+            margin-top:18px;
+            color:#397eaf;
+            text-decoration:none;
+          "
+        >
+          ${
+            fa
+              ? 'بازگشت به نوبت‌های من'
+              : 'Back to my appointments'
+          }
+        </a>
+      </section>
+    </main>
+  `;
+}
+
+// ============================================
+// VERIFY PAYMENT RETURN
+// ============================================
+
+function initPaymentReturn() {
+  const root = document.querySelector(
+    '[data-payment-return]'
+  );
+
+  if (!root) return () => {};
+
+  const controller = new AbortController();
+
+  const statusElement = root.querySelector(
+    '[data-payment-return-status]'
+  );
+
+  const params = new URLSearchParams(
+    window.location.search
+  );
+
+  const paymentId = Number(
+    params.get('payment_id')
+  );
+
+  const reason = params.get('reason');
+  const fa = isFa();
+
+  const tell = message => {
+    if (
+      !controller.signal.aborted &&
+      root.isConnected
+    ) {
+      statusElement.textContent = message;
+    }
+  };
+
+  if (!isLoggedInAndActive()) {
+    tell(
+      fa
+        ? 'برای مشاهده نتیجه معتبر تراکنش، وارد حساب خود شوید و بخش پرداخت‌ها را بررسی کنید.'
+        : 'Please sign in and check your payment history to verify this transaction.'
+    );
+
+    return () => controller.abort();
+  }
+
+  if (
+    !Number.isSafeInteger(paymentId) ||
+    paymentId <= 0
+  ) {
+    tell(
+      fa
+        ? 'شناسه پرداخت برای بررسی موجود نیست. وضعیت را از بخش پرداخت‌ها بررسی کنید.'
+        : 'No payment ID is available. Please check the status in your payment history.'
+    );
+
+    return () => controller.abort();
+  }
+
+  void (async () => {
+    try {
+      const result = await financeApi.paymentStatus(
+        paymentId,
+        controller.signal
+      );
+
+      if (controller.signal.aborted) return;
+
+      const data = result?.data ?? result;
+
+      const status = String(
+        data?.payment?.status ??
+        data?.data?.status ??
+        data?.status ??
+        ''
+      ).toLowerCase();
+
+      if (status === 'paid') {
+        tell(
+          fa
+            ? 'پرداخت طبق اطلاعات سرور کلینیک با موفقیت ثبت شده است.'
+            : 'The clinic server confirms this payment is paid.'
+        );
+
+      } else if (reason === 'manual_review') {
+        tell(
+          fa
+            ? 'این تراکنش نیازمند بررسی کلینیک است. ممکن است وجه از حساب شما کسر شده باشد؛ پرداخت جدید شروع نکنید.'
+            : 'This transaction needs clinic review. Funds may have been charged; do not start another payment.'
+        );
+
+      } else if (status) {
+        tell(
+          fa
+            ? `وضعیت ثبت‌شده پرداخت: ${status}. برای جزئیات بخش پرداخت‌ها را ببینید.`
+            : `Recorded payment status: ${status}. See your payment history for details.`
+        );
+
+      } else {
+        tell(
+          fa
+            ? 'نتیجه قطعی در پاسخ سرور مشخص نبود؛ وضعیت را در بخش پرداخت‌ها بررسی کنید.'
+            : 'The server did not return a conclusive payment status. Check your payment history.'
+        );
+      }
+
+    } catch (error) {
+      if (controller.signal.aborted) return;
+
+      console.warn(
+        'Payment return status:',
+        error
+      );
+
+      tell(
+        fa
+          ? 'بررسی آنلاین وضعیت پرداخت ممکن نشد. برای جلوگیری از پرداخت تکراری، ابتدا سوابق پرداخت را بررسی کنید.'
+          : 'Could not verify the payment status. Check your payment history before retrying.'
+      );
+    }
+  })();
+
+  return () => controller.abort();
+}
+
 // ============================================
 // STATIC ROUTES
 // ============================================
 
 const routes = {
-
   '/': {
     render: Home,
     init: initHome,
@@ -129,7 +345,7 @@ const routes = {
     title: 'FAQ',
   },
 
-  // AUTH PAGES
+  // Authentication
 
   '/login': {
     render: Login,
@@ -152,7 +368,7 @@ const routes = {
     standalone: true,
   },
 
-  // PATIENT DASHBOARD
+  // Patient Dashboard
 
   '/dashboard': {
     render: Dashboard,
@@ -162,14 +378,28 @@ const routes = {
     requiresAuth: true,
   },
 
-  // APPOINTMENT CHECKOUT
+  // Checkout — authenticated patient
 
   '/checkout': {
     render: Checkout,
     init: initCheckout,
     title: 'Appointment Checkout',
+    requiresAuth: true,
   },
 
+  // Payment gateway return routes
+
+  '/payment/success': {
+    render: paymentReturnPage,
+    init: initPaymentReturn,
+    title: 'Payment Status',
+  },
+
+  '/payment/failed': {
+    render: paymentReturnPage,
+    init: initPaymentReturn,
+    title: 'Payment Status',
+  },
 };
 
 // ============================================
@@ -177,10 +407,8 @@ const routes = {
 // ============================================
 
 const dynamicRoutes = [
-
-  // BLOG DETAILS
   {
-    pattern: /^\/post\/([^/]+)$/,
+    pattern: /^\/post\/([^/]+)$/i,
     route: {
       render: BlogDetails,
       init: initBlogDetails,
@@ -188,9 +416,8 @@ const dynamicRoutes = [
     },
   },
 
-  // SERVICE DETAILS
   {
-    pattern: /^\/services\/([1-9]\d*)$/,
+    pattern: /^\/services\/([1-9]\d*)$/i,
     route: {
       render: ServiceDetails,
       init: initServiceDetails,
@@ -198,7 +425,6 @@ const dynamicRoutes = [
     },
   },
 
-  // DOCTOR DETAILS
   {
     pattern: /^\/team\/([a-z0-9-]+)$/i,
     route: {
@@ -207,24 +433,23 @@ const dynamicRoutes = [
       title: 'Doctor Profile',
     },
   },
-
 ];
 
 // ============================================
-// NORMALIZE URL
+// NORMALIZE PATH
 // ============================================
 
 function normalizePath(path) {
   let value = String(path || '/');
 
   value = value.replace(
-    /\/(?:index\.html?|index\.htm)$/i,
+    /\/index\.html?$/i,
     '/'
   ) || '/';
 
   if (
     value !== '/' &&
-    value.endsWith('.html')
+    /\.html$/i.test(value)
   ) {
     value = value.slice(0, -5);
   }
@@ -237,7 +462,6 @@ function normalizePath(path) {
 // ============================================
 
 function resolveRoute(path) {
-
   if (
     Object.prototype.hasOwnProperty.call(
       routes,
@@ -247,13 +471,9 @@ function resolveRoute(path) {
     return routes[path];
   }
 
-  for (const item of dynamicRoutes) {
-    if (item.pattern.test(path)) {
-      return item.route;
-    }
-  }
-
-  return null;
+  return dynamicRoutes.find(
+    item => item.pattern.test(path)
+  )?.route ?? null;
 }
 
 // ============================================
@@ -261,15 +481,12 @@ function resolveRoute(path) {
 // ============================================
 
 function redirectOldTeamPage() {
-  const path = normalizePath(
-    window.location.pathname
-  );
-
-  if (path !== '/team') {
+  if (
+    normalizePath(window.location.pathname) !==
+    '/team'
+  ) {
     return;
   }
-
-  // Team listing is now part of About Us.
 
   const url = new URL(
     '/about-us',
@@ -277,7 +494,7 @@ function redirectOldTeamPage() {
   );
 
   url.search = window.location.search;
-  url.hash = 'about-doctors';
+  url.hash = '#about-doctors';
 
   window.history.replaceState(
     window.history.state,
@@ -291,39 +508,48 @@ function redirectOldTeamPage() {
 // ============================================
 
 function renderMissing(path) {
+  const fa = isFa();
 
-  let description = 'This page is not available yet.';
-
-  if (path.startsWith('/post/')) {
-    description = 'This blog post could not be found.';
-
-  } else if (path.startsWith('/services/')) {
-    description = 'This service could not be found.';
-
-  } else if (path.startsWith('/team/')) {
-    description = 'This doctor profile could not be found.';
-  }
+  const reason = path.startsWith('/post/')
+    ? (
+        fa
+          ? 'این مطلب پیدا نشد.'
+          : 'This blog post could not be found.'
+      )
+    : path.startsWith('/services/')
+      ? (
+          fa
+            ? 'این خدمت پیدا نشد.'
+            : 'This service could not be found.'
+        )
+      : path.startsWith('/team/')
+        ? (
+            fa
+              ? 'این پزشک پیدا نشد.'
+              : 'This doctor profile could not be found.'
+          )
+        : (
+            fa
+              ? 'این صفحه در دسترس نیست.'
+              : 'This page is not available.'
+          );
 
   return `
     <main
       class="w-container"
-      style="padding:100px 20px;min-height:50vh"
+      style="padding:100px 20px;min-height:50vh;"
     >
-
       <h1>
-        ${t('Page not available yet')}
+        ${fa ? 'صفحه پیدا نشد' : 'Page not found'}
       </h1>
 
-      <p>
-        ${t(description)}
-      </p>
+      <p>${reason}</p>
 
       <p>
         <a href="/">
-          ${t('Back to home')}
+          ${fa ? 'بازگشت به خانه' : 'Back to home'}
         </a>
       </p>
-
     </main>
   `;
 }
@@ -335,11 +561,11 @@ function renderMissing(path) {
 let cleanup = [];
 
 function cleanupCurrentPage() {
-
-  for (const unsubscribe of cleanup) {
+  for (const stop of cleanup.splice(0)) {
     try {
-      unsubscribe?.();
-
+      if (typeof stop === 'function') {
+        stop();
+      }
     } catch (error) {
       console.warn(
         'Page cleanup error:',
@@ -347,8 +573,6 @@ function cleanupCurrentPage() {
       );
     }
   }
-
-  cleanup = [];
 }
 
 // ============================================
@@ -356,7 +580,6 @@ function cleanupCurrentPage() {
 // ============================================
 
 function redirectToLogin(expired = false) {
-
   const url = new URL(
     '/login',
     window.location.origin
@@ -366,11 +589,11 @@ function redirectToLogin(expired = false) {
     window.location.search
   ).get('lang');
 
-  if (
-    currentLang === 'fa' ||
-    currentLang === 'en'
-  ) {
-    url.searchParams.set('lang', currentLang);
+  if (['fa', 'en'].includes(currentLang)) {
+    url.searchParams.set(
+      'lang',
+      currentLang
+    );
   }
 
   if (expired) {
@@ -389,7 +612,6 @@ function redirectToLogin(expired = false) {
 // ============================================
 
 export function renderRoute() {
-
   applyDocumentLanguage();
 
   cleanupCurrentPage();
@@ -402,8 +624,6 @@ export function renderRoute() {
     );
   }
 
-  // Old /team links go to About Us.
-
   redirectOldTeamPage();
 
   let path = normalizePath(
@@ -412,24 +632,19 @@ export function renderRoute() {
 
   let route = resolveRoute(path);
 
-  // ============================================
-  // AUTH GUARD
-  // ============================================
+  // Authentication guard
 
   if (
     route?.requiresAuth &&
     !isLoggedInAndActive()
   ) {
-
     redirectToLogin();
 
     path = '/login';
     route = routes[path];
   }
 
-  // ============================================
-  // SHELL / STANDALONE
-  // ============================================
+  // Layout shell
 
   const withShell = !route?.standalone;
 
@@ -445,72 +660,73 @@ export function renderRoute() {
     ${withShell ? Footer() : ''}
   `;
 
-  // ============================================
-  // PAGE TITLE
-  // ============================================
+  // Document title
 
   document.title = `${
     t(route?.title || 'Page Not Found')
   } | ${t('Dr. Zeinolabedin')}`;
 
-  // ============================================
-  // INITIALIZE COMPONENTS
-  // ============================================
+  // Initialize components
 
   const initializers = [
-
     withShell ? mountHeader : null,
-
     route?.init,
-
     withShell ? mountFooter : null,
-
   ];
 
   for (const init of initializers) {
-
     if (typeof init !== 'function') {
       continue;
     }
 
-    const unsubscribe = init();
+    try {
+      const stop = init();
 
-    if (typeof unsubscribe === 'function') {
-      cleanup.push(unsubscribe);
+      if (typeof stop === 'function') {
+        cleanup.push(stop);
+      }
+
+    } catch (error) {
+      console.error(
+        'Page initialization error:',
+        error
+      );
     }
   }
 
-  // ============================================
-  // TRANSLATE
-  // ============================================
+  // Translate page
 
   translateElement(app);
 
-  // ============================================
-  // SCROLL TO HASH
-  // ============================================
+  // Scroll to hash
 
   if (window.location.hash) {
+    const expectedPath =
+      window.location.pathname;
+
+    const hash = window.location.hash;
 
     requestAnimationFrame(() => {
+      if (
+        window.location.pathname !==
+        expectedPath
+      ) {
+        return;
+      }
 
-      let id = window.location.hash.slice(1);
+      let id = hash.slice(1);
 
       try {
         id = decodeURIComponent(id);
       } catch {
-        // Keep the original fragment.
+        // Keep original hash.
       }
 
-      const element = document.getElementById(id);
-
-      if (element) {
-        element.scrollIntoView({
+      document.getElementById(id)
+        ?.scrollIntoView({
           behavior: 'auto',
           block: 'start',
         });
-      }
-
     });
   }
 }
@@ -520,43 +736,35 @@ export function renderRoute() {
 // ============================================
 
 export function initRouter() {
+  // Monitor protected pages
 
-  // ============================================
-  // SESSION MONITOR
-  // ============================================
+  const stopSessionMonitor =
+    initSessionMonitor(() => {
+      const path = normalizePath(
+        window.location.pathname
+      );
 
-  const stopSessionMonitor = initSessionMonitor(() => {
+      if (routes[path]?.requiresAuth) {
+        redirectToLogin(true);
+        renderRoute();
+      }
+    });
 
-    const path = normalizePath(
-      window.location.pathname
-    );
-
-    if (path === '/dashboard') {
-
-      redirectToLogin(true);
-
-      renderRoute();
-    }
-
-  });
-
-  // ============================================
-  // BROWSER BACK / FORWARD
-  // ============================================
+  // Browser history
 
   const onPopState = () => {
     renderRoute();
   };
 
-  // ============================================
-  // LANGUAGE SWITCH
-  // ============================================
+  // Language switch
 
   const onLanguageClick = event => {
+    if (event.defaultPrevented) return;
 
-    const target = event.target instanceof Element
-      ? event.target
-      : event.target?.parentElement;
+    const target =
+      event.target instanceof Element
+        ? event.target
+        : event.target?.parentElement;
 
     const button = target?.closest(
       '[data-set-language]'
@@ -564,28 +772,28 @@ export function initRouter() {
 
     if (!button) return;
 
-    event.preventDefault();
-
-    const selectedLang = button.getAttribute(
+    const selected = button.getAttribute(
       'data-set-language'
     );
 
     if (
-      selectedLang !== 'fa' &&
-      selectedLang !== 'en'
+      !['fa', 'en'].includes(selected) ||
+      selected === getLanguage()
     ) {
       return;
     }
 
-    setLanguage(selectedLang, renderRoute);
+    event.preventDefault();
+
+    setLanguage(
+      selected,
+      renderRoute
+    );
   };
 
-  // ============================================
-  // SPA LINK NAVIGATION
-  // ============================================
+  // SPA Navigation
 
   const onNavigateClick = event => {
-
     if (
       event.defaultPrevented ||
       event.button !== 0 ||
@@ -597,21 +805,22 @@ export function initRouter() {
       return;
     }
 
-    const target = event.target instanceof Element
-      ? event.target
-      : event.target?.parentElement;
+    const target =
+      event.target instanceof Element
+        ? event.target
+        : event.target?.parentElement;
 
-    const anchor = target?.closest('a[href]');
-
-    if (!anchor) return;
-
-    if (anchor.hasAttribute('download')) {
-      return;
-    }
+    const anchor = target?.closest(
+      'a[href]'
+    );
 
     if (
-      anchor.target &&
-      anchor.target !== '_self'
+      !anchor ||
+      anchor.hasAttribute('download') ||
+      (
+        anchor.target &&
+        anchor.target !== '_self'
+      )
     ) {
       return;
     }
@@ -633,7 +842,9 @@ export function initRouter() {
 
     if (
       url.origin !== window.location.origin ||
-      !['http:', 'https:'].includes(url.protocol)
+      !['http:', 'https:'].includes(
+        url.protocol
+      )
     ) {
       return;
     }
@@ -645,25 +856,29 @@ export function initRouter() {
     // Ignore static assets.
 
     if (
-      /\.(?:pdf|docx?|xlsx?|zip|png|jpg|jpeg|svg|webp|css|js)$/i
+      /\.(?:pdf|docx?|xlsx?|zip|png|jpe?g|gif|svg|webp|avif|ico|css|js|json|txt|xml)$/i
         .test(path)
+    ) {
+      return;
+    }
+
+    // Intercept only supported SPA routes.
+    if (
+      !resolveRoute(path) &&
+      path !== '/team'
     ) {
       return;
     }
 
     event.preventDefault();
 
-    const next = (
-      path +
-      url.search +
-      url.hash
-    );
+    const next =
+      path + url.search + url.hash;
 
-    const current = (
+    const current =
       window.location.pathname +
       window.location.search +
-      window.location.hash
-    );
+      window.location.hash;
 
     if (next === current) {
       return;
@@ -677,21 +892,15 @@ export function initRouter() {
 
     renderRoute();
 
-    // Only scroll to top when no anchor exists.
-
     if (!url.hash) {
-
       window.scrollTo({
         top: 0,
         behavior: 'auto',
       });
-
     }
   };
 
-  // ============================================
-  // REGISTER EVENTS
-  // ============================================
+  // Register events
 
   window.addEventListener(
     'popstate',
@@ -708,18 +917,13 @@ export function initRouter() {
     onNavigateClick
   );
 
-  // ============================================
-  // INITIAL RENDER
-  // ============================================
+  // Initial render
 
   renderRoute();
 
-  // ============================================
-  // ROUTER CLEANUP
-  // ============================================
+  // Router cleanup
 
   return () => {
-
     window.removeEventListener(
       'popstate',
       onPopState

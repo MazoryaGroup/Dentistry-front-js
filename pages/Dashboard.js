@@ -1,4 +1,3 @@
-
 /**
  * Dentistry — Patient Dashboard
  * Vanilla JS + Vite | FA/EN | RTL/LTR
@@ -295,9 +294,22 @@ const paths = {
     <path d="M7 3v4m10-4v4M3 10h18"/>
   `,
 
-  tooth: `
-    <path d="M12 4c2.4 0 3.2-1.3 5.7-1.3C22.5 2.7 24 6.6 22.5 11c-1.3 4-2.4 10-5.6 10-2 4.9-7S9.1 21 7.1 21c-3.2 0-4.3-6-5.6-10C0 6.6 1.5 2.7 6.3 2.7 8.8 2.7 9.6 4 12 4Z"/>
-  `,
+  
+tooth: `
+  <path d="
+    M12 4
+    C10 4 9 2.5 7 2.5
+    C4 2.5 2 5 2 8.5
+    C2 12.5 4 21 7 21
+    C9 21 8.5 13 12 13
+    C15.5 13 15 21 17 21
+    C20 21 22 12.5 22 8.5
+    C22 5 20 2.5 17 2.5
+    C15 2.5 14 4 12 4
+    Z
+  "/>
+`,
+
 
   file: `
     <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
@@ -1015,6 +1027,7 @@ export function initDashboard() {
   let profileCleanup = null;
   let profileInitialized = false;
   let loggingOut = false;
+  let priorBodyOverflow = null;
 
   // ==========================================
   // INITIALIZE BOOKING
@@ -1070,38 +1083,28 @@ export function initDashboard() {
   // ==========================================
 
   function closeMenu(focus = false) {
-    const wasOpen =
-      sidebar.classList.contains('is-open');
+    const wasOpen = sidebar.classList.contains('is-open');
+    if (!wasOpen) return;
 
     sidebar.classList.remove('is-open');
     scrim.hidden = true;
+    menuButton.setAttribute('aria-expanded', 'false');
 
-    menuButton.setAttribute(
-      'aria-expanded',
-      'false'
-    );
-
-    document.body.style.overflow = '';
-
-    if (focus && wasOpen) {
-      menuButton.focus();
+    if (priorBodyOverflow !== null) {
+      document.body.style.overflow = priorBodyOverflow;
+      priorBodyOverflow = null;
     }
+    if (focus) menuButton.focus();
   }
 
   function openMenu() {
+    if (sidebar.classList.contains('is-open')) return;
+    priorBodyOverflow = document.body.style.overflow;
     sidebar.classList.add('is-open');
     scrim.hidden = false;
-
-    menuButton.setAttribute(
-      'aria-expanded',
-      'true'
-    );
-
+    menuButton.setAttribute('aria-expanded', 'true');
     document.body.style.overflow = 'hidden';
-
-    sidebar
-      .querySelector('.dn-nav-button')
-      ?.focus();
+    sidebar.querySelector('.dn-nav-button')?.focus();
   }
 
   // ==========================================
@@ -1178,17 +1181,9 @@ export function initDashboard() {
     // LAZY LOAD REAL API DATA
     // ========================================
 
-    if (section === 'treatments') {
-      treatments.load();
-    }
-
-    if (section === 'records') {
-      records.load();
-    }
-
-    if (section === 'billing') {
-      billing.load();
-    }
+    if (section === 'treatments') treatments?.load?.();
+    if (section === 'records') records?.load?.();
+    if (section === 'billing') billing?.load?.();
 
     // ========================================
     // INITIALIZE PROFILE ONCE
@@ -1396,7 +1391,10 @@ export function initDashboard() {
   return () => {
     controller.abort();
 
-    document.body.style.overflow = '';
+    if (priorBodyOverflow !== null) {
+      document.body.style.overflow = priorBodyOverflow;
+      priorBodyOverflow = null;
+    }
 
     // Jalali calendar
     if (
@@ -1413,13 +1411,13 @@ export function initDashboard() {
     }
 
     // Treatment plans
-    treatments.cleanup();
+    treatments?.cleanup?.();
 
     // Dental records
-    records.cleanup();
+    records?.cleanup?.();
 
     // Billing
-    billing.cleanup();
+    billing?.cleanup?.();
 
     // Patient profile
     if (

@@ -484,3 +484,52 @@
     width: 100%;
   }
 }
+
+/* ==============================================
+   DENTISTRY — RESCHEDULE JALALI CALENDAR FIX
+   ============================================== */
+
+/* Prevent calendar from being clipped */
+.dn-dashboard .dn-main,
+.dn-dashboard .dn-content,
+.dn-dashboard [data-dashboard-panel="appointments"],
+.dn-dashboard .dn-booking-columns,
+.dn-dashboard .dn-booking-detail-card,
+.dn-dashboard .dn-booking-form,
+.dn-dashboard .dn-booking-form label {
+  overflow: visible !important;
+}
+
+/* Keep appointment details above adjacent cards */
+.dn-dashboard .dn-booking-detail-card {
+  position: relative;
+  z-index: 30;
+}
+
+/* Active reschedule form */
+.dn-dashboard [data-booking-reschedule]:not([hidden]) {
+  position: relative;
+  z-index: 40;
+}
+
+/* Calendar must appear above the form and cards */
+.dn-dashboard [data-booking-reschedule]
+:is(
+  .dn-jalali-popup,
+  .dn-jalali-popover,
+  .dn-jalali-calendar,
+  .dn-jalali-panel
+) {
+  z-index: 9999 !important;
+  max-width: min(350px, calc(100vw - 32px));
+}
+
+/* Preserve correct RTL/LTR display */
+.dn-dashboard[dir="rtl"] [data-booking-reschedule] {
+  direction: rtl;
+}
+
+.dn-dashboard[dir="ltr"] [data-booking-reschedule] {
+  direction: ltr;
+}
+

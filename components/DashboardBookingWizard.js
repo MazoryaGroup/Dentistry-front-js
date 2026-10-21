@@ -21,10 +21,7 @@ import {
 
 import { bookingApi } from '../code/bookingApi.js';
 
-import {
-  bookingIdFromResponse,
-  depositGatewayUrl,
-} from '../code/depositCheckout.js';
+import { bookingIdFromResponse } from '../code/depositCheckout.js';
 
 // ============================================
 // LANGUAGE
@@ -1164,11 +1161,36 @@ export function initBookingWizard(
     });
   }
 
+  function resetAfterSuccessfulBooking() {
+    // Payment can still be completed from the appointments list.
+    // Reset only after a confirmed booking ID is known.
+    ++doctorRun;
+    ++scheduleRun;
+    ++slotRun;
+    bookingSubmitted = false;
+    pendingBookingId = null;
+    selectedTime = '';
+    availableSlots = [];
+    form.reset();
+    dateInput.value = '';
+    dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+    form.hidden = false;
+    payment.hidden = true;
+    payButton.hidden = false;
+    setServices([]);
+    schedule.textContent = tr('scheduleEmpty');
+    status.textContent = tr('chooseFirst');
+    resetSlots(tr('chooseFirst'));
+  }
+
   function close() {
     if (creating || paying) return;
-
     wizard.hidden = true;
     clearNotice();
+    if (bookingSubmitted && pendingBookingId) {
+      resetAfterSuccessfulBooking();
+    }
+    // Do not reset submissionUncertain: a booking might exist on the server.
   }
 
   // ==========================================
@@ -1464,9 +1486,12 @@ function startDepositPayment() {
           error
         );
 
+        // Even an HTTP 500 can happen after the booking was committed.
         const ambiguous =
           error?.status === 0 ||
           error?.status === 408 ||
+          error?.status === 409 ||
+          error?.status >= 500 ||
           error?.name === 'AbortError' ||
           /fetch|network|timed out|timeout|load failed/i.test(
             String(error?.message)
