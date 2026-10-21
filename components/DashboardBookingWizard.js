@@ -1,18 +1,17 @@
 
 /**
- * Dentistry — Dashboard Booking Wizard
+ * Dentistry — Booking Wizard
+ * Doctor -> Service -> Date -> Slot -> Booking -> Deposit
  *
- * Doctor -> Service -> Date -> Availability -> Booking
- *
- * Uses:
- * - staffApi
- * - availabilityApi
- * - bookingApi
- *
- * FA / EN supported.
+ * Compatible with:
+ * DashboardBookings.js
+ * JalaliBookingCalendar.js
  */
 
-import { t, getLanguage } from '../code/i18n.js';
+import {
+  t,
+  getLanguage,
+} from '../code/i18n.js';
 
 import {
   staffApi,
@@ -22,6 +21,11 @@ import {
 
 import { bookingApi } from '../code/bookingApi.js';
 
+import {
+  bookingIdFromResponse,
+  depositGatewayUrl,
+} from '../code/depositCheckout.js';
+
 // ============================================
 // LANGUAGE
 // ============================================
@@ -29,10 +33,10 @@ import { bookingApi } from '../code/bookingApi.js';
 const language = () =>
   getLanguage() === 'fa' ? 'fa' : 'en';
 
-const localStrings = {
+const words = {
   en: {
     title: 'Book an appointment',
-    subtitle: 'Choose your doctor, treatment and an available time.',
+    subtitle: 'Choose a doctor, treatment, date and available time.',
     doctor: 'Doctor',
     doctorPrompt: 'Select a doctor',
     treatment: 'Treatment',
@@ -41,35 +45,41 @@ const localStrings = {
     notes: 'Notes (optional)',
     notePlaceholder: 'Anything the clinic should know?',
     slots: 'Available times',
-    chooseFirst: 'Choose a doctor, treatment and date to see available times.',
+    chooseFirst: 'Select a doctor, treatment and date first.',
     loadingDoctors: 'Loading doctors…',
-    emptyDoctors: 'There are no doctors available to book.',
-    doctorsError: 'Doctors could not be loaded. Please try again.',
+    emptyDoctors: 'No doctors are currently available.',
+    doctorsError: 'Could not load the doctors.',
     loadingDoctor: 'Loading doctor details…',
-    doctorError: 'Doctor details could not be loaded.',
-    noServices: 'This doctor has no bookable services in the API response.',
+    doctorError: 'Could not load doctor details.',
+    noServices: 'No bookable services were returned for this doctor.',
     loadingSlots: 'Checking available times…',
-    emptySlots: 'There are no available times for this selection.',
-    slotsError: 'Available times could not be loaded. Check the API parameters and try again.',
+    emptySlots: 'No available times for this selection.',
+    slotsError: 'Could not retrieve available times.',
     schedule: 'Doctor schedule',
-    scheduleEmpty: 'Schedule information is not available.',
-    scheduleError: 'Schedule could not be loaded.',
-    submit: 'Confirm appointment',
-    submitting: 'Creating your booking…',
-    success: 'Your booking request was submitted. Check its status in your appointments.',
-    createError: 'Booking could not be created. Please review your selection.',
-    required: 'Please choose a doctor, a treatment, a date and an available time.',
+    scheduleEmpty: 'Schedule information is unavailable.',
+    scheduleError: 'Could not retrieve the doctor schedule.',
+    submit: 'Continue to deposit payment',
+    submitting: 'Creating your appointment…',
+    createError: 'Could not create the appointment.',
+    required: 'Choose a doctor, treatment, valid date and one available time.',
     back: 'Back to appointments',
     retry: 'Retry',
     close: 'Close',
-    slotHint: 'Each option shows the full appointment time. Start times are offered every 30 minutes; treatment duration may be longer. The clinic confirms availability when booking.',
-    postSubmitHint: 'A booking may require a deposit or payment before confirmation.',
+    slotHint: 'Times represent the full appointment window. Availability is checked again by the clinic at booking.',
+    postSubmitHint: 'A deposit must be paid to confirm your booking.',
     minutes: 'min',
+    paymentTitle: 'Booking created — deposit payment',
+    paymentReady: 'Your appointment is registered. Pay the deposit to continue confirmation.',
+    paymentStarting: 'Connecting to the payment gateway…',
+    paymentButton: 'Continue to checkout',
+    missingBookingId: 'The booking may have been created, but the API did not return a booking ID. Check your appointments; do not create the same booking again.',
+    paymentError: 'The booking exists, but payment could not be started. You can retry here or from your appointment details.',
+    uncertain: 'We could not confirm whether your booking was created. Check your appointments before trying again.',
   },
 
   fa: {
     title: 'رزرو نوبت جدید',
-    subtitle: 'پزشک، خدمت و یکی از ساعت‌های آزاد را انتخاب کنید.',
+    subtitle: 'پزشک، خدمت، تاریخ و ساعت آزاد را انتخاب کنید.',
     doctor: 'پزشک',
     doctorPrompt: 'انتخاب پزشک',
     treatment: 'خدمت',
@@ -78,44 +88,54 @@ const localStrings = {
     notes: 'توضیحات (اختیاری)',
     notePlaceholder: 'اگر نکته‌ای برای کلینیک دارید بنویسید',
     slots: 'ساعت‌های آزاد',
-    chooseFirst: 'برای مشاهده ساعت‌های آزاد، پزشک، خدمت و تاریخ را انتخاب کنید.',
+    chooseFirst: 'ابتدا پزشک، خدمت و تاریخ را انتخاب کنید.',
     loadingDoctors: 'در حال دریافت پزشکان…',
-    emptyDoctors: 'فعلاً پزشک قابل رزروی یافت نشد.',
-    doctorsError: 'دریافت فهرست پزشکان ممکن نشد. دوباره تلاش کنید.',
+    emptyDoctors: 'در حال حاضر پزشک قابل رزروی وجود ندارد.',
+    doctorsError: 'دریافت پزشکان ناموفق بود.',
     loadingDoctor: 'در حال دریافت اطلاعات پزشک…',
-    doctorError: 'دریافت جزئیات پزشک ممکن نشد.',
-    noServices: 'در پاسخ API خدمت قابل رزروی برای این پزشک وجود ندارد.',
+    doctorError: 'دریافت جزئیات پزشک ناموفق بود.',
+    noServices: 'خدمت قابل رزروی برای این پزشک برنگشته است.',
     loadingSlots: 'در حال بررسی ساعت‌های آزاد…',
-    emptySlots: 'برای این انتخاب ساعت آزادی ثبت نشده است.',
-    slotsError: 'دریافت ساعت‌های آزاد ناموفق بود. پارامترهای API را بررسی کنید.',
+    emptySlots: 'برای این انتخاب ساعت آزادی وجود ندارد.',
+    slotsError: 'دریافت ساعت‌های آزاد ناموفق بود.',
     schedule: 'برنامه کاری پزشک',
-    scheduleEmpty: 'اطلاعات برنامه کاری در دسترس نیست.',
-    scheduleError: 'دریافت برنامه کاری پزشک ممکن نشد.',
-    submit: 'تأیید رزرو',
-    submitting: 'در حال ثبت رزرو…',
-    success: 'درخواست رزرو ثبت شد. وضعیت آن را در بخش نوبت‌های خود ببینید.',
-    createError: 'ثبت رزرو انجام نشد. اطلاعات انتخابی را بررسی کنید.',
-    required: 'لطفاً پزشک، خدمت، تاریخ و یک ساعت آزاد را انتخاب کنید.',
+    scheduleEmpty: 'برنامه کاری در دسترس نیست.',
+    scheduleError: 'دریافت برنامه کاری پزشک ناموفق بود.',
+    submit: 'ادامه و پرداخت بیعانه',
+    submitting: 'در حال ثبت نوبت…',
+    createError: 'ثبت نوبت انجام نشد.',
+    required: 'لطفاً پزشک، خدمت، تاریخ معتبر و ساعت آزاد را انتخاب کنید.',
     back: 'بازگشت به نوبت‌ها',
     retry: 'تلاش مجدد',
     close: 'بستن',
-    slotHint: 'هر گزینه بازه کامل نوبت را نشان می‌دهد. شروع نوبت‌ها با فاصله ۳۰ دقیقه ارائه می‌شود، اما مدت خدمت ممکن است بیشتر باشد. تأیید نهایی با کلینیک است.',
-    postSubmitHint: 'ممکن است برای تأیید نوبت نیاز به پرداخت بیعانه باشد.',
+    slotHint: 'هر ساعت بازه کامل نوبت را نشان می‌دهد. هنگام ثبت، ظرفیت دوباره در سرور بررسی می‌شود.',
+    postSubmitHint: 'برای تأیید نوبت باید بیعانه پرداخت شود.',
     minutes: 'دقیقه',
+    paymentTitle: 'نوبت ثبت شد؛ پرداخت بیعانه',
+    paymentReady: 'نوبت شما ثبت شده است. برای ادامه تأیید، بیعانه را پرداخت کنید.',
+    paymentStarting: 'در حال اتصال به درگاه پرداخت…',
+    paymentButton: 'ادامه به صفحه پرداخت',
+    missingBookingId: 'احتمالاً نوبت ثبت شده اما شناسه آن در پاسخ API نیست. ابتدا نوبت‌های خود را بررسی کنید و مجدداً رزرو نکنید.',
+    paymentError: 'نوبت ثبت شده اما شروع پرداخت انجام نشد. می‌توانید همین‌جا یا از جزئیات نوبت دوباره برای پرداخت تلاش کنید.',
+    uncertain: 'مشخص نیست نوبت ثبت شده یا نه. قبل از ثبت دوباره، فهرست نوبت‌های خود را بررسی کنید.',
   },
 };
 
-function tr(key) {
-  const id = `dashboard.wizard.${key}`;
-  const value = t(id);
+// ============================================
+// HELPERS
+// ============================================
 
-  return value && value !== id
-    ? value
-    : localStrings[language()][key] || key;
+function tr(key) {
+  const path = `dashboard.wizard.${key}`;
+  const localized = t(path);
+
+  return localized && localized !== path
+    ? localized
+    : (words[language()][key] ?? key);
 }
 
-function escapeHTML(value) {
-  return String(value ?? '').replace(
+const esc = value =>
+  String(value ?? '').replace(
     /[&<>"']/g,
     char => ({
       '&': '&amp;',
@@ -125,186 +145,149 @@ function escapeHTML(value) {
       "'": '&#39;',
     })[char]
   );
-}
 
-const tx = key => escapeHTML(tr(key));
+const tx = key => esc(tr(key));
 
 const positive = value =>
   Number.isSafeInteger(Number(value)) &&
   Number(value) > 0;
 
-// ============================================
-// API RESPONSE HELPERS
-// ============================================
+function collection(response, names = []) {
+  const value = response?.data ?? response;
 
-function collection(value, names = []) {
-  if (Array.isArray(value)) return value;
-
-  const root = value?.data ?? value;
-
-  if (Array.isArray(root)) return root;
-
-  const fields = [
-    'data',
-    ...names,
-    'items',
-    'results',
+  const candidates = [
+    value,
+    value?.data,
+    ...names.map(key => value?.[key]),
+    ...names.map(key => value?.[key]?.data),
   ];
 
-  for (const field of fields) {
-    if (Array.isArray(root?.[field])) {
-      return root[field];
-    }
-
-    if (Array.isArray(root?.[field]?.data)) {
-      return root[field].data;
-    }
-
-    if (Array.isArray(value?.[field])) {
-      return value[field];
-    }
-  }
-
-  return [];
+  return candidates.find(Array.isArray) ?? [];
 }
 
-function record(value, names = []) {
-  let result = value?.data ?? value;
+function record(response, names = []) {
+  const value = response?.data ?? response;
 
   for (const name of names) {
-    if (result?.[name]) {
-      result = result[name];
+    if (
+      value?.[name] &&
+      typeof value[name] === 'object' &&
+      !Array.isArray(value[name])
+    ) {
+      return value[name];
     }
   }
 
-  if (
-    result?.data &&
-    !Array.isArray(result.data) &&
-    typeof result.data === 'object'
-  ) {
-    return result.data;
-  }
-
-  return result;
+  return value?.data && !Array.isArray(value.data)
+    ? value.data
+    : value;
 }
 
-function translated(item) {
+function translationOf(item) {
   const translations = item?.translations;
 
   if (Array.isArray(translations)) {
-    return translations.find(item =>
+    return translations.find(x =>
       [
-        item.lang,
-        item.locale,
-        item.language,
+        x.lang,
+        x.locale,
+        x.language,
       ].includes(language())
-    ) || {};
+    ) ?? {};
   }
 
   if (
     translations &&
     typeof translations === 'object'
   ) {
-    return translations[language()] || {};
+    return translations[language()] ?? {};
   }
 
-  return item?.translation || {};
+  return item?.translation ?? {};
 }
 
-// ============================================
-// DOCTOR SERVICES
-// ============================================
-
-function serviceList(data) {
-  const raw =
-    data?.services ??
-    data?.staff_services ??
-    data?.staffServices ??
-    data?.provided_services ??
-    data?.service_list ??
+function servicesOf(item) {
+  const rows =
+    item?.services ??
+    item?.staff_services ??
+    item?.staffServices ??
+    item?.provided_services ??
+    item?.service_list ??
     [];
 
-  if (!Array.isArray(raw)) return [];
+  if (!Array.isArray(rows)) return [];
 
-  const seen = new Set();
+  const ids = new Set();
 
-  return raw
+  return rows
     .map(row => {
-      const service = row?.service || row;
-      const translation = translated(service);
+      const service = row?.service ?? row;
+      const locale = translationOf(service);
 
-      const id = Number(
-        service?.id ?? row?.service_id
-      );
+      return {
+        id: Number(
+          row?.service_id ?? service?.id
+        ),
 
-      const name = String(
-        translation.name ||
-        translation.title ||
-        service?.name ||
-        service?.title ||
-        row?.service_name ||
-        ''
-      ).trim();
-
-      return { id, name };
+        name: String(
+          locale?.name ??
+          locale?.title ??
+          service?.name ??
+          service?.title ??
+          row?.service_name ??
+          ''
+        ).trim(),
+      };
     })
     .filter(service => {
       if (
         !positive(service.id) ||
         !service.name ||
-        seen.has(service.id)
+        ids.has(service.id)
       ) {
         return false;
       }
 
-      seen.add(service.id);
+      ids.add(service.id);
+
       return true;
     });
 }
 
 function doctorOf(item) {
-  const translation = translated(item);
-
   const id = Number(
     item?.id ?? item?.staff_id
   );
 
+  const locale = translationOf(item);
+
   const name = String(
-    translation.name ||
-    item?.name ||
-    item?.full_name ||
-    item?.doctor_name ||
+    locale?.name ??
+    item?.name ??
+    item?.full_name ??
+    item?.doctor_name ??
     ''
   ).trim();
 
-  if (!positive(id) || !name) {
-    return null;
-  }
-
-  return {
-    id,
-    name,
-    services: serviceList(item),
-  };
+  return positive(id) && name
+    ? {
+        id,
+        name,
+        services: servicesOf(item),
+      }
+    : null;
 }
 
-// ============================================
-// DATE / TIME HELPERS
-// ============================================
-
 function hhmm(value) {
-  if (typeof value !== 'string') return '';
+  const time = String(value ?? '').trim();
 
-  const time = value.trim();
-
-  return /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/
-    .test(time)
+  return /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(time)
     ? time.slice(0, 5)
     : '';
 }
 
-function dateIsValid(value) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+function validDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value ?? '')) {
     return false;
   }
 
@@ -318,7 +301,7 @@ function dateIsValid(value) {
   );
 }
 
-function todayInClinic() {
+function clinicToday() {
   const parts = Object.fromEntries(
     new Intl.DateTimeFormat('en-US', {
       timeZone: 'Asia/Tehran',
@@ -333,48 +316,42 @@ function todayInClinic() {
   return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
-// ============================================
-// NORMALIZE AVAILABILITY RESPONSE
-// ============================================
+function errorText(error, fallback) {
+  const validation =
+    error?.errors &&
+    typeof error.errors === 'object'
+      ? Object.values(error.errors)
+          .flat()
+          .map(String)
+          .filter(Boolean)
+          .join(' · ')
+      : '';
 
-/**
- * Laravel response:
- *
- * {
- *   success: true,
- *   data: [
- *     {
- *       start_time: "08:00",
- *       end_time: "09:00",
- *       duration: 60,
- *       staff_ids: [3]
- *     }
- *   ]
- * }
- */
+  return validation ||
+    (
+      typeof error?.message === 'string'
+        ? error.message
+        : fallback
+    );
+}
+
+// ============================================
+// AVAILABILITY
+// ============================================
 
 export function normalizeAvailabilitySlots(
   response,
   staffId
 ) {
-  const root = response?.data ?? response;
+  const value = response?.data ?? response;
 
-  const candidates = [
-    root,
-    root?.slots,
-    root?.available_slots,
-    root?.availableSlots,
-    root?.times,
-    root?.availability,
-    root?.data,
-    root?.data?.slots,
-    root?.data?.available_slots,
-  ];
+  const rows = [
+    value,
+    value?.slots,
+    value?.available_slots,
+    value?.data,
+  ].find(Array.isArray) ?? [];
 
-  const rows =
-    candidates.find(Array.isArray) || [];
-
-  const doctorId = Number(staffId);
   const seen = new Set();
 
   return rows
@@ -386,11 +363,11 @@ export function normalizeAvailabilitySlots(
         return null;
       }
 
-      const startTime = hhmm(
+      const start_time = hhmm(
         row.start_time
       );
 
-      const endTime = hhmm(
+      const end_time = hhmm(
         row.end_time
       );
 
@@ -409,32 +386,30 @@ export function normalizeAvailabilitySlots(
         row.is_available !== false &&
         row.booked !== true &&
         ![
-          'unavailable',
-          'booked',
           'blocked',
+          'booked',
+          'unavailable',
         ].includes(
-          String(row.status || '').toLowerCase()
+          String(row.status ?? '').toLowerCase()
         ) &&
         (
-          !staffIds ||
-          staffIds.includes(doctorId)
+          staffIds === null ||
+          staffIds.includes(Number(staffId))
         );
 
-      if (
-        !allowed ||
-        !startTime ||
-        !endTime ||
-        !Number.isFinite(duration) ||
-        duration <= 0
-      ) {
-        return null;
-      }
-
-      return {
-        start_time: startTime,
-        end_time: endTime,
-        duration,
-      };
+      return (
+        allowed &&
+        start_time &&
+        end_time &&
+        Number.isFinite(duration) &&
+        duration > 0
+      )
+        ? {
+            start_time,
+            end_time,
+            duration,
+          }
+        : null;
     })
     .filter(slot => {
       if (
@@ -454,20 +429,18 @@ export function normalizeAvailabilitySlots(
     );
 }
 
-// ============================================
-// DOCTOR SCHEDULE
-// ============================================
-
 function scheduleLines(response) {
-  const rows = collection(response, [
+  return collection(response, [
     'schedules',
     'schedule',
     'staff_schedules',
     'working_hours',
     'days',
-  ]);
-
-  return rows
+  ])
+    .filter(row =>
+      row &&
+      row.is_active !== false
+    )
     .map(row => {
       const day =
         row.day_of_week ??
@@ -476,57 +449,22 @@ function scheduleLines(response) {
         row.date;
 
       const start = hhmm(
-        row.start_time || row.start
+        row.start_time ?? row.start
       );
 
       const end = hhmm(
-        row.end_time || row.end
+        row.end_time ?? row.end
       );
 
-      if (
-        day === undefined ||
-        !start ||
-        !end ||
-        row.is_active === false
-      ) {
-        return '';
-      }
-
-      return `${String(day)}: ${start}–${end}`;
+      return day != null && start && end
+        ? `${day}: ${start}–${end}`
+        : '';
     })
     .filter(Boolean);
 }
 
 // ============================================
-// API ERROR TEXT
-// ============================================
-
-function errorText(error, fallback) {
-  const validations =
-    error?.errors &&
-    typeof error.errors === 'object'
-      ? Object.values(error.errors)
-          .flat()
-          .map(String)
-          .filter(Boolean)
-          .join(' · ')
-      : '';
-
-  if (validations) return validations;
-
-  if (
-    typeof error?.message === 'string' &&
-    error.message &&
-    !/^Failed to fetch$/i.test(error.message)
-  ) {
-    return error.message;
-  }
-
-  return fallback;
-}
-
-// ============================================
-// BOOKING WIZARD HTML
+// WIZARD HTML
 // ============================================
 
 export function bookingWizardHTML() {
@@ -539,21 +477,16 @@ export function bookingWizardHTML() {
     >
 
       <div class="dn-wizard-head">
-
         <div>
-
           <span class="dn-eyebrow">
-            ${tx('date')} · ${tx('doctor')} · ${tx('treatment')}
+            ${tx('doctor')} · ${tx('treatment')} · ${tx('date')}
           </span>
 
           <h2 id="dn-wizard-title">
             ${tx('title')}
           </h2>
 
-          <p>
-            ${tx('subtitle')}
-          </p>
-
+          <p>${tx('subtitle')}</p>
         </div>
 
         <button
@@ -561,21 +494,14 @@ export function bookingWizardHTML() {
           class="dn-wizard-close"
           data-wizard-close
           aria-label="${tx('close')}"
-        >
-          ×
-        </button>
-
+        >×</button>
       </div>
 
       <form data-wizard-form novalidate>
-
         <div class="dn-wizard-form-grid">
 
           <label class="dn-wizard-field">
-
-            <span>
-              ${tx('doctor')}
-            </span>
+            <span>${tx('doctor')}</span>
 
             <select
               name="doctor"
@@ -586,14 +512,10 @@ export function bookingWizardHTML() {
                 ${tx('loadingDoctors')}
               </option>
             </select>
-
           </label>
 
           <label class="dn-wizard-field">
-
-            <span>
-              ${tx('treatment')}
-            </span>
+            <span>${tx('treatment')}</span>
 
             <select
               name="service"
@@ -605,23 +527,18 @@ export function bookingWizardHTML() {
                 ${tx('treatmentPrompt')}
               </option>
             </select>
-
           </label>
 
           <label class="dn-wizard-field">
-
-            <span>
-              ${tx('date')}
-            </span>
+            <span>${tx('date')}</span>
 
             <input
+              type="date"
               name="date"
               data-wizard-date
-              type="date"
-              min="${todayInClinic()}"
+              min="${clinicToday()}"
               required
-            />
-
+            >
           </label>
 
         </div>
@@ -635,60 +552,40 @@ export function bookingWizardHTML() {
         </p>
 
         <details class="dn-wizard-schedule">
-
-          <summary>
-            ${tx('schedule')}
-          </summary>
+          <summary>${tx('schedule')}</summary>
 
           <p data-wizard-schedule>
             ${tx('scheduleEmpty')}
           </p>
-
         </details>
 
         <div class="dn-wizard-times">
-
-          <strong>
-            ${tx('slots')}
-          </strong>
-
-          <p>
-            ${tx('slotHint')}
-          </p>
+          <strong>${tx('slots')}</strong>
+          <p>${tx('slotHint')}</p>
 
           <div
             class="dn-wizard-slot-grid"
             data-wizard-slots
           >
-
             <span class="dn-wizard-muted">
               ${tx('chooseFirst')}
             </span>
-
           </div>
-
         </div>
 
-        <label
-          class="dn-wizard-field dn-wizard-notes"
-        >
-
-          <span>
-            ${tx('notes')}
-          </span>
+        <label class="dn-wizard-field dn-wizard-notes">
+          <span>${tx('notes')}</span>
 
           <textarea
             name="notes"
-            data-wizard-notes
             rows="3"
             maxlength="1000"
+            data-wizard-notes
             placeholder="${tx('notePlaceholder')}"
           ></textarea>
-
         </label>
 
         <div class="dn-wizard-bottom">
-
           <button
             type="button"
             class="dn-booking-secondary"
@@ -705,29 +602,63 @@ export function bookingWizardHTML() {
           >
             ${tx('submit')}
           </button>
-
         </div>
 
         <p
           class="dn-wizard-feedback"
-          role="status"
-          aria-live="polite"
           data-wizard-feedback
           hidden
+          role="status"
+          aria-live="polite"
         ></p>
 
         <p class="dn-wizard-muted dn-wizard-hint">
           ${tx('postSubmitHint')}
         </p>
-
       </form>
+
+      <!-- DEPOSIT PAYMENT STEP -->
+
+      <div
+        class="dn-wizard-payment"
+        data-wizard-payment
+        hidden
+      >
+        <h3 data-wizard-payment-title>
+          ${tx('paymentTitle')}
+        </h3>
+
+        <p
+          data-wizard-payment-message
+          role="status"
+          aria-live="polite"
+        ></p>
+
+        <button
+          type="button"
+          class="dn-button dn-button-primary"
+          data-wizard-pay-deposit
+        >
+          ${tx('paymentButton')}
+        </button>
+
+        <div class="dn-wizard-bottom">
+          <button
+            type="button"
+            class="dn-booking-secondary"
+            data-wizard-close
+          >
+            ${tx('back')}
+          </button>
+        </div>
+      </div>
 
     </section>
   `;
 }
 
 // ============================================
-// INITIALIZE BOOKING WIZARD
+// INITIALIZATION
 // ============================================
 
 export function initBookingWizard(
@@ -739,96 +670,107 @@ export function initBookingWizard(
     '[data-booking-wizard]'
   );
 
-  if (!wizard) {
-    return () => {};
-  }
+  if (!wizard) return () => {};
 
   const $ = selector =>
     wizard.querySelector(selector);
 
   const form = $('[data-wizard-form]');
-  const selectDoctor = $('[data-wizard-doctor]');
-  const selectService = $('[data-wizard-service]');
+  const doctorInput = $('[data-wizard-doctor]');
+  const serviceInput = $('[data-wizard-service]');
   const dateInput = $('[data-wizard-date]');
-  const slotGrid = $('[data-wizard-slots]');
   const status = $('[data-wizard-status]');
   const schedule = $('[data-wizard-schedule]');
+  const slotsNode = $('[data-wizard-slots]');
   const feedback = $('[data-wizard-feedback]');
   const submit = $('[data-wizard-submit]');
+  const payment = $('[data-wizard-payment]');
+  const paymentMessage = $('[data-wizard-payment-message]');
+  const payButton = $('[data-wizard-pay-deposit]');
 
   let doctors = [];
-  let selectedDoctor = null;
+  let doctorsLoaded = false;
+
   let selectedTime = '';
   let availableSlots = [];
 
-  let doctorsLoaded = false;
+  let doctorsRun = 0;
   let doctorRun = 0;
-  let slotsRun = 0;
   let scheduleRun = 0;
+  let slotRun = 0;
+
   let creating = false;
+  let paying = false;
+
+  let bookingSubmitted = false;
+  let pendingBookingId = null;
+  let submissionUncertain = false;
 
   const alive = () =>
-    !signal.aborted && root.isConnected;
+    !signal.aborted &&
+    root.isConnected;
 
   // ==========================================
-  // FEEDBACK
+  // NOTIFICATIONS
   // ==========================================
 
-  function message(text, type = 'note') {
+  const notify = (
+    text,
+    type = 'info'
+  ) => {
     feedback.hidden = false;
     feedback.textContent = text;
     feedback.dataset.state = type;
-  }
+  };
 
-  function clearMessage() {
+  const clearNotice = () => {
     feedback.hidden = true;
     feedback.textContent = '';
-  }
+  };
 
   // ==========================================
-  // SUBMIT VALIDATION
+  // VALIDATION
   // ==========================================
 
   function updateSubmit() {
-    const slotIsSelected =
-      availableSlots.some(
-        slot => slot.start_time === selectedTime
-      );
-
     submit.disabled =
       creating ||
-      !positive(selectDoctor.value) ||
-      !positive(selectService.value) ||
-      !dateIsValid(dateInput.value) ||
-      dateInput.value < todayInClinic() ||
-      !slotIsSelected;
+      bookingSubmitted ||
+      submissionUncertain ||
+      !positive(doctorInput.value) ||
+      !positive(serviceInput.value) ||
+      !validDate(dateInput.value) ||
+      dateInput.value < clinicToday() ||
+      !availableSlots.some(
+        slot => slot.start_time === selectedTime
+      );
   }
 
-  function resetSlots(text) {
+  function resetSlots(message) {
     selectedTime = '';
     availableSlots = [];
 
-    slotGrid.innerHTML = `
+    slotsNode.innerHTML = `
       <span class="dn-wizard-muted">
-        ${escapeHTML(text)}
+        ${esc(message)}
       </span>
     `;
 
     updateSubmit();
   }
 
-  function selectOptions(services) {
-    selectService.innerHTML = `
+  function setServices(services) {
+    serviceInput.innerHTML = `
       <option value="">
         ${tx('treatmentPrompt')}
       </option>
     ` + services.map(service => `
       <option value="${service.id}">
-        ${escapeHTML(service.name)}
+        ${esc(service.name)}
       </option>
     `).join('');
 
-    selectService.disabled =
+    serviceInput.disabled =
       services.length === 0;
   }
 
@@ -837,42 +779,52 @@ export function initBookingWizard(
   // ==========================================
 
   async function loadDoctors() {
-    const run = ++doctorRun;
+    const request = ++doctorsRun;
 
+    doctorInput.disabled = true;
     status.textContent = tr('loadingDoctors');
-    selectDoctor.disabled = true;
 
     try {
-      const result = await staffApi.list(signal);
+      const response = await staffApi.list(
+        signal
+      );
 
       if (
         !alive() ||
-        run !== doctorRun
+        request !== doctorsRun
       ) {
         return;
       }
 
-      doctors = collection(
-        result,
-        ['staff', 'doctors', 'staffs']
-      )
+      if (response?.success === false) {
+        throw new Error(
+          response.message ||
+          tr('doctorsError')
+        );
+      }
+
+      doctors = collection(response, [
+        'staff',
+        'doctors',
+        'staffs',
+      ])
         .map(doctorOf)
         .filter(Boolean);
 
-      doctorsLoaded = true;
-
-      selectDoctor.innerHTML = `
+      doctorInput.innerHTML = `
         <option value="">
           ${tx('doctorPrompt')}
         </option>
       ` + doctors.map(doctor => `
         <option value="${doctor.id}">
-          ${escapeHTML(doctor.name)}
+          ${esc(doctor.name)}
         </option>
       `).join('');
 
-      selectDoctor.disabled =
+      doctorInput.disabled =
         doctors.length === 0;
+
+      doctorsLoaded = true;
 
       status.textContent = doctors.length
         ? tr('chooseFirst')
@@ -881,23 +833,14 @@ export function initBookingWizard(
     } catch (error) {
       if (
         !alive() ||
-        run !== doctorRun
+        request !== doctorsRun
       ) {
         return;
       }
 
-      console.error(
-        'Doctors API:',
-        error
-      );
+      console.error('Doctors API:', error);
 
-      selectDoctor.innerHTML = `
-        <option value="">
-          ${tx('doctorPrompt')}
-        </option>
-      `;
-
-      selectDoctor.disabled = true;
+      doctorInput.disabled = true;
 
       status.innerHTML = `
         ${tx('doctorsError')}
@@ -914,11 +857,11 @@ export function initBookingWizard(
   }
 
   // ==========================================
-  // LOAD DOCTOR DETAILS
+  // DOCTOR DETAILS
   // ==========================================
 
   async function loadDoctor(id) {
-    const run = ++doctorRun;
+    const request = ++doctorRun;
 
     const doctor = doctors.find(
       item => item.id === id
@@ -926,9 +869,7 @@ export function initBookingWizard(
 
     if (!doctor) return;
 
-    selectedDoctor = doctor;
-    selectOptions(doctor.services);
-
+    setServices(doctor.services);
     status.textContent = tr('loadingDoctor');
 
     try {
@@ -939,98 +880,99 @@ export function initBookingWizard(
 
       if (
         !alive() ||
-        run !== doctorRun ||
-        selectDoctor.value !== String(id)
+        request !== doctorRun ||
+        doctorInput.value !== String(id)
       ) {
         return;
       }
 
-      const detail =
-        doctorOf(
-          record(response, ['staff', 'doctor'])
-        ) || doctor;
+      if (response?.success === false) {
+        throw new Error(
+          response.message ||
+          tr('doctorError')
+        );
+      }
 
-      selectedDoctor = {
-        ...doctor,
-        ...detail,
-        services: detail.services.length
-          ? detail.services
-          : doctor.services,
-      };
-
-      const previousService =
-        selectService.value;
-
-      selectOptions(
-        selectedDoctor.services
+      const detail = doctorOf(
+        record(response, ['staff', 'doctor'])
       );
 
+      const previous = serviceInput.value;
+
+      const services = detail?.services?.length
+        ? detail.services
+        : doctor.services;
+
+      setServices(services);
+
       if (
-        selectedDoctor.services.some(
+        services.some(
           service =>
-            String(service.id) === previousService
+            String(service.id) === previous
         )
       ) {
-        selectService.value =
-          previousService;
+        serviceInput.value = previous;
 
         if (dateInput.value) {
           void loadSlots();
         }
       }
 
-      status.textContent =
-        selectedDoctor.services.length
-          ? tr('chooseFirst')
-          : tr('noServices');
+      status.textContent = services.length
+        ? tr('chooseFirst')
+        : tr('noServices');
 
     } catch (error) {
       if (
         !alive() ||
-        run !== doctorRun
+        request !== doctorRun
       ) {
         return;
       }
 
       console.error(
-        'Doctor detail API:',
+        'Doctor details:',
         error
       );
 
-      status.textContent =
-        doctor.services.length
-          ? tr('doctorError')
-          : tr('noServices');
+      status.textContent = doctor.services.length
+        ? tr('doctorError')
+        : tr('noServices');
     }
   }
 
   // ==========================================
-  // LOAD DOCTOR SCHEDULE
+  // DOCTOR SCHEDULE
   // ==========================================
 
   async function loadSchedule(id) {
-    const run = ++scheduleRun;
+    const request = ++scheduleRun;
 
     schedule.textContent =
       tr('loadingDoctor');
 
     try {
-      const response = await staffApi.schedule(
+      const result = await staffApi.schedule(
         id,
         signal
       );
 
       if (
         !alive() ||
-        run !== scheduleRun ||
-        selectDoctor.value !== String(id)
+        request !== scheduleRun ||
+        doctorInput.value !== String(id)
       ) {
         return;
       }
 
-      const lines = scheduleLines(
-        response
-      );
+      if (result?.success === false) {
+        throw new Error(
+          result.message ||
+          tr('scheduleError')
+        );
+      }
+
+      const lines = scheduleLines(result);
 
       schedule.textContent = lines.length
         ? lines.join(' · ')
@@ -1039,7 +981,7 @@ export function initBookingWizard(
     } catch (error) {
       if (
         !alive() ||
-        run !== scheduleRun
+        request !== scheduleRun
       ) {
         return;
       }
@@ -1054,34 +996,40 @@ export function initBookingWizard(
   // ==========================================
 
   async function loadSlots() {
-    const run = ++slotsRun;
+    const request = ++slotRun;
 
-    resetSlots(
-      tr('chooseFirst')
+    resetSlots(tr('chooseFirst'));
+
+    const staffId = Number(
+      doctorInput.value
     );
 
+    const serviceId = Number(
+      serviceInput.value
+    );
+
+    const day = dateInput.value;
+
     if (
-      !positive(selectDoctor.value) ||
-      !positive(selectService.value) ||
-      !dateIsValid(dateInput.value) ||
-      dateInput.value < todayInClinic()
+      !positive(staffId) ||
+      !positive(serviceId) ||
+      !validDate(day) ||
+      day < clinicToday()
     ) {
       return;
     }
 
-    resetSlots(
-      tr('loadingSlots')
-    );
+    resetSlots(tr('loadingSlots'));
 
     status.textContent =
       tr('loadingSlots');
 
     try {
-      const response = await availabilityApi.list(
+      const result = await availabilityApi.list(
         {
-          staff_id: selectDoctor.value,
-          service_id: selectService.value,
-          date: dateInput.value,
+          staff_id: staffId,
+          service_id: serviceId,
+          date: day,
           interval: AVAILABILITY_INTERVAL_MINUTES,
         },
         signal
@@ -1089,54 +1037,62 @@ export function initBookingWizard(
 
       if (
         !alive() ||
-        run !== slotsRun
+        request !== slotRun ||
+        doctorInput.value !== String(staffId) ||
+        serviceInput.value !== String(serviceId) ||
+        dateInput.value !== day
       ) {
         return;
       }
 
-      const slots = normalizeAvailabilitySlots(
-        response,
-        Number(selectDoctor.value)
-      );
-
-      if (!slots.length) {
-        resetSlots(
-          tr('emptySlots')
+      if (result?.success === false) {
+        throw new Error(
+          result.message ||
+          tr('slotsError')
         );
-
-      } else {
-        availableSlots = slots;
-
-        slotGrid.innerHTML = slots.map(slot => `
-          <button
-            type="button"
-            class="dn-wizard-slot"
-            data-wizard-slot="${escapeHTML(slot.start_time)}"
-            aria-pressed="false"
-            aria-label="${escapeHTML(slot.start_time)} – ${escapeHTML(slot.end_time)}, ${escapeHTML(slot.duration)} ${tx('minutes')}"
-          >
-
-            <strong dir="ltr">
-              ${escapeHTML(slot.start_time)}
-              –
-              ${escapeHTML(slot.end_time)}
-            </strong>
-
-            <small>
-              ${escapeHTML(slot.duration)}
-              ${tx('minutes')}
-            </small>
-
-          </button>
-        `).join('');
       }
 
+      const slots = normalizeAvailabilitySlots(
+        result,
+        staffId
+      );
+
+      availableSlots = slots;
+
+      slotsNode.innerHTML = slots.length
+        ? slots.map(slot => `
+            <button
+              type="button"
+              class="dn-wizard-slot"
+              data-wizard-slot="${esc(slot.start_time)}"
+              aria-pressed="false"
+            >
+              <strong dir="ltr">
+                ${esc(slot.start_time)}
+                –
+                ${esc(slot.end_time)}
+              </strong>
+
+              <small>
+                ${esc(slot.duration)}
+                ${tx('minutes')}
+              </small>
+            </button>
+          `).join('')
+        : `
+            <span class="dn-wizard-muted">
+              ${tx('emptySlots')}
+            </span>
+          `;
+
       status.textContent = '';
+
+      updateSubmit();
 
     } catch (error) {
       if (
         !alive() ||
-        run !== slotsRun
+        request !== slotRun
       ) {
         return;
       }
@@ -1146,9 +1102,7 @@ export function initBookingWizard(
         error
       );
 
-      resetSlots(
-        tr('slotsError')
-      );
+      resetSlots(tr('slotsError'));
 
       status.textContent = errorText(
         error,
@@ -1171,30 +1125,83 @@ export function initBookingWizard(
   }
 
   // ==========================================
-  // SHOW / CLOSE WIZARD
+  // SHOW / CLOSE
   // ==========================================
 
   function show() {
     wizard.hidden = false;
 
-    wizard.scrollIntoView({
-      block: 'start',
-      behavior: 'smooth',
-    });
-
-    if (!doctorsLoaded) {
+    if (
+      !bookingSubmitted &&
+      !doctorsLoaded
+    ) {
       void loadDoctors();
     }
 
-    selectDoctor.focus();
+    // Wait until Dashboard switches to Appointments.
+    requestAnimationFrame(() => {
+      if (
+        !alive() ||
+        wizard.hidden
+      ) {
+        return;
+      }
+
+      wizard.scrollIntoView({
+        block: 'start',
+        behavior: 'smooth',
+      });
+
+      if (
+        bookingSubmitted &&
+        pendingBookingId
+      ) {
+        payButton.focus();
+
+      } else if (!bookingSubmitted) {
+        doctorInput.focus();
+      }
+    });
   }
 
   function close() {
-    if (creating) return;
+    if (creating || paying) return;
 
     wizard.hidden = true;
-    clearMessage();
+    clearNotice();
   }
+
+  // ==========================================
+  // DEPOSIT PAYMENT
+  // ==========================================
+
+  
+function startDepositPayment() {
+  if (!pendingBookingId || !alive()) {
+    return;
+  }
+
+  const url = new URL(
+    '/checkout',
+    window.location.origin
+  );
+
+  url.searchParams.set(
+    'booking_id',
+    String(pendingBookingId)
+  );
+
+  url.searchParams.set('mode', 'deposit');
+
+  window.location.assign(url.toString());
+}
+
+
+  payButton.addEventListener(
+    'click',
+    () => void startDepositPayment(),
+    { signal }
+  );
 
   // ==========================================
   // CLICK EVENTS
@@ -1203,7 +1210,6 @@ export function initBookingWizard(
   root.addEventListener(
     'click',
     event => {
-
       if (
         event.target.closest(
           '[data-booking-start]'
@@ -1246,36 +1252,34 @@ export function initBookingWizard(
 
       if (
         button &&
-        slotGrid.contains(button)
+        slotsNode.contains(button) &&
+        !bookingSubmitted
       ) {
-        const selected = availableSlots.find(
-          slot =>
-            slot.start_time ===
+        const slot = availableSlots.find(
+          item =>
+            item.start_time ===
             button.dataset.wizardSlot
         );
 
-        if (!selected) return;
+        if (!slot) return;
 
-        selectedTime = selected.start_time;
+        selectedTime = slot.start_time;
 
-        for (
-          const item
-          of slotGrid.querySelectorAll(
-            '[data-wizard-slot]'
-          )
-        ) {
-          const active = item === button;
+        slotsNode
+          .querySelectorAll('[data-wizard-slot]')
+          .forEach(element => {
+            const active = element === button;
 
-          item.classList.toggle(
-            'is-active',
-            active
-          );
+            element.classList.toggle(
+              'is-active',
+              active
+            );
 
-          item.setAttribute(
-            'aria-pressed',
-            String(active)
-          );
-        }
+            element.setAttribute(
+              'aria-pressed',
+              String(active)
+            );
+          });
 
         updateSubmit();
       }
@@ -1287,22 +1291,18 @@ export function initBookingWizard(
   // DOCTOR CHANGE
   // ==========================================
 
-  selectDoctor.addEventListener(
+  doctorInput.addEventListener(
     'change',
     () => {
-      ++slotsRun;
-      ++scheduleRun;
       ++doctorRun;
+      ++scheduleRun;
+      ++slotRun;
 
-      selectedDoctor = null;
-
-      selectOptions([]);
-      resetSlots(
-        tr('chooseFirst')
-      );
+      setServices([]);
+      resetSlots(tr('chooseFirst'));
 
       const id = Number(
-        selectDoctor.value
+        doctorInput.value
       );
 
       if (!positive(id)) {
@@ -1321,14 +1321,10 @@ export function initBookingWizard(
     { signal }
   );
 
-  // ==========================================
-  // SERVICE / DATE CHANGE
-  // ==========================================
-
-  selectService.addEventListener(
+  serviceInput.addEventListener(
     'change',
     () => {
-      clearMessage();
+      clearNotice();
       void loadSlots();
     },
     { signal }
@@ -1337,23 +1333,8 @@ export function initBookingWizard(
   dateInput.addEventListener(
     'change',
     () => {
-      clearMessage();
+      clearNotice();
       void loadSlots();
-    },
-    { signal }
-  );
-
-  dateInput.addEventListener(
-    'input',
-    () => {
-      if (
-        dateInput.value <
-        todayInClinic()
-      ) {
-        resetSlots(
-          tr('chooseFirst')
-        );
-      }
     },
     { signal }
   );
@@ -1369,28 +1350,25 @@ export function initBookingWizard(
 
       if (
         creating ||
+        bookingSubmitted ||
+        submissionUncertain ||
         !alive()
       ) {
         return;
       }
 
-      const validSlot = availableSlots.some(
-        slot =>
-          slot.start_time === selectedTime
-      );
-
-      if (
-        !validSlot ||
-        !positive(selectDoctor.value) ||
-        !positive(selectService.value) ||
-        !dateIsValid(dateInput.value) ||
-        dateInput.value < todayInClinic()
-      ) {
-        message(
-          tr('required'),
-          'error'
+      const valid =
+        positive(doctorInput.value) &&
+        positive(serviceInput.value) &&
+        validDate(dateInput.value) &&
+        dateInput.value >= clinicToday() &&
+        availableSlots.some(
+          item =>
+            item.start_time === selectedTime
         );
 
+      if (!valid) {
+        notify(tr('required'), 'error');
         return;
       }
 
@@ -1401,13 +1379,10 @@ export function initBookingWizard(
       creating = true;
       updateSubmit();
 
-      const previousLabel =
-        submit.textContent;
-
       submit.textContent =
         tr('submitting');
 
-      clearMessage();
+      clearNotice();
 
       try {
         const result = await bookingApi.create(
@@ -1421,11 +1396,11 @@ export function initBookingWizard(
             services: [
               {
                 service_id: Number(
-                  selectService.value
+                  serviceInput.value
                 ),
 
                 staff_id: Number(
-                  selectDoctor.value
+                  doctorInput.value
                 ),
 
                 start_time: selectedTime,
@@ -1442,75 +1417,101 @@ export function initBookingWizard(
           result?.status === false
         ) {
           throw new Error(
-            String(
-              result?.message ||
-              tr('createError')
-            )
+            result?.message ||
+            tr('createError')
           );
         }
 
-        message(
-          tr('success'),
-          'success'
-        );
+        // Booking was created successfully.
+        // Never send POST /bookings again.
+        bookingSubmitted = true;
 
-        wizard.hidden = true;
+        pendingBookingId =
+          bookingIdFromResponse(result);
 
-        selectDoctor.value = '';
-        selectOptions([]);
+        // Switch to deposit payment.
+        form.hidden = true;
+        payment.hidden = false;
 
-        dateInput.value = '';
+        paymentMessage.textContent =
+          pendingBookingId
+            ? tr('paymentReady')
+            : tr('missingBookingId');
 
-        $(
-          '[data-wizard-notes]'
-        ).value = '';
+        payButton.hidden =
+          !pendingBookingId;
 
-        resetSlots(
-          tr('chooseFirst')
-        );
+        // Refresh appointments without
+        // interrupting the payment step.
+        try {
+          Promise.resolve(
+            onCreated(result)
+          ).catch(console.error);
 
-        selectedDoctor = null;
+        } catch (error) {
+          console.error(
+            'Booking refresh callback:',
+            error
+          );
+        }
 
-        onCreated();
-
+        
       } catch (error) {
         if (!alive()) return;
 
         console.error(
-          'Booking create API:',
+          'Create booking:',
           error
         );
 
-        message(
-          errorText(
-            error,
-            tr('createError')
-          ),
-          'error'
-        );
+        const ambiguous =
+          error?.status === 0 ||
+          error?.status === 408 ||
+          error?.name === 'AbortError' ||
+          /fetch|network|timed out|timeout|load failed/i.test(
+            String(error?.message)
+          );
 
-        // Refresh availability after a failed booking.
-        void loadSlots();
+        if (ambiguous) {
+          submissionUncertain = true;
+
+          notify(
+            tr('uncertain'),
+            'error'
+          );
+
+        } else {
+          notify(
+            errorText(
+              error,
+              tr('createError')
+            ),
+            'error'
+          );
+
+          // Recheck availability after a
+          // rejected booking request.
+          void loadSlots();
+        }
 
       } finally {
         creating = false;
 
-        submit.textContent =
-          previousLabel;
+        if (alive()) {
+          submit.textContent =
+            tr('submit');
 
-        updateSubmit();
+          updateSubmit();
+        }
       }
     },
     { signal }
   );
 
-  // ==========================================
-  // CLEANUP
-  // ==========================================
-
   return () => {
+    ++doctorsRun;
     ++doctorRun;
     ++scheduleRun;
-    ++slotsRun;
+    ++slotRun;
   };
 }

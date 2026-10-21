@@ -536,7 +536,48 @@
   "dashboard.profileTitle": "اطلاعات شخصی",
   "dashboard.profileSubtitle": "مشخصات حساب و اطلاعات تماس خود را مدیریت کنید.",
   "dashboard.badgeSoon": "آماده اتصال",
-  "dashboard.backHome": "بازگشت به سایت"
+  "dashboard.backHome": "بازگشت به سایت",
+
+
+  
+
+ 
+
+
+  "dashboard.treatment.loading": "در حال دریافت طرح‌های درمان…",
+  "dashboard.treatment.empty": "هنوز طرح درمانی برای شما منتشر نشده است.",
+  "dashboard.treatment.error": "دریافت طرح‌های درمان انجام نشد.",
+  "dashboard.treatment.retry": "تلاش مجدد",
+  "dashboard.treatment.details": "جزئیات طرح درمان",
+  "dashboard.treatment.choose": "برای مشاهده جزئیات، یک طرح درمان را انتخاب کنید.",
+  "dashboard.treatment.stages": "مراحل درمان",
+  "dashboard.treatment.progress": "پیشرفت درمان",
+  "dashboard.treatment.noItems": "مرحله درمانی برای نمایش موجود نیست.",
+  "dashboard.treatment.itemsError": "دریافت مراحل درمان ممکن نشد.",
+  "dashboard.treatment.progressError": "اطلاعات پیشرفت درمان فعلاً در دسترس نیست.",
+  "dashboard.treatment.doctor": "پزشک",
+  "dashboard.treatment.tooth": "دندان",
+  "dashboard.treatment.date": "تاریخ ایجاد",
+  "dashboard.treatment.updated": "آخرین تغییر",
+  "dashboard.treatment.unavailable": "ثبت نشده",
+  "dashboard.treatment.total": "طرح‌ها",
+  "dashboard.treatment.page": "صفحه",
+  "dashboard.treatment.previous": "قبلی",
+  "dashboard.treatment.next": "بعدی",
+  "dashboard.treatment.noTitle": "طرح درمان",
+  "dashboard.treatment.stage": "مرحله درمان",
+  "dashboard.treatment.privacy": "فقط اطلاعاتی نمایش داده می‌شود که دسترسی آن برای حساب بیمار مجاز باشد.",
+  "dashboard.treatment.done": "انجام‌شده",
+  "dashboard.treatment.doing": "در حال انجام",
+  "dashboard.treatment.planned": "برنامه‌ریزی‌شده",
+  "dashboard.treatment.approved": "تأییدشده",
+  "dashboard.treatment.pending": "در انتظار",
+  "dashboard.treatment.canceled": "لغوشده",
+  "dashboard.treatment.draft": "پیش‌نویس"
+
+
+
+
 
 
 

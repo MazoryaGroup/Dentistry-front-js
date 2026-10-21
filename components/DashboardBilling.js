@@ -914,91 +914,37 @@ export function initDashboardBilling(
   // ONLINE PAYMENT
   // ==========================================
 
-  async function startPayment(button) {
-    if (paymentInProgress) return;
 
-    const bookingId = Number(
-      button.dataset.financeBooking
-    );
+function startPayment(button) {
+  const bookingId = Number(
+    button.dataset.financeBooking
+  );
 
-    const mode = button.dataset.financePay;
+  const mode = button.dataset.financePay;
 
-    if (
-      !validId(bookingId) ||
-      !['deposit', 'remaining'].includes(mode)
-    ) {
-      return;
-    }
-
-    paymentInProgress = true;
-    button.disabled = true;
-
-    feedbackMessage(tr('starting'));
-
-    try {
-      const response = checkResponse(
-        mode === 'deposit'
-          ? await financeApi.startDeposit(
-              bookingId,
-              signal
-            )
-          : await financeApi.startRemaining(
-              bookingId,
-              signal
-            )
-      );
-
-      if (!alive()) return;
-
-      const result = dataOf(response);
-
-      const rawUrl =
-        result?.payment_url ??
-        result?.gateway_url ??
-        result?.redirect_url ??
-        result?.payment_link ??
-        result?.url ??
-        result?.link;
-
-      if (typeof rawUrl !== 'string' || !rawUrl.trim()) {
-        feedbackMessage(
-          tr('gatewayError'),
-          true
-        );
-
-        return;
-      }
-
-      const url = new URL(
-        rawUrl,
-        window.location.origin
-      );
-
-      // Never redirect to javascript: or other unsafe schemes.
-      if (url.protocol !== 'https:') {
-        throw new Error(tr('gatewayError'));
-      }
-
-      window.location.assign(url.href);
-
-    } catch (error) {
-      if (!alive()) return;
-
-      console.error(
-        'Payment start:',
-        error
-      );
-
-      feedbackMessage(
-        error.message || tr('paymentError'),
-        true
-      );
-
-    } finally {
-      paymentInProgress = false;
-      button.disabled = false;
-    }
+  if (
+    !Number.isSafeInteger(bookingId) ||
+    bookingId < 1 ||
+    !['deposit', 'remaining'].includes(mode)
+  ) {
+    return;
   }
+
+  const url = new URL(
+    '/checkout',
+    window.location.origin
+  );
+
+  url.searchParams.set(
+    'booking_id',
+    String(bookingId)
+  );
+
+  url.searchParams.set('mode', mode);
+
+  window.location.assign(url.toString());
+}
+
 
   // ==========================================
   // EVENTS

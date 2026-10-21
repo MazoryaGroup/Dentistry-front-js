@@ -1,13 +1,8 @@
 
 /**
  * Dentistry — Jalali Booking Calendar
- *
- * Supports:
- * - New appointment
- * - Reschedule appointment
- *
- * UI: Jalali (Shamsi)
- * API value: Gregorian YYYY-MM-DD
+ * UI: Jalali
+ * API: Gregorian YYYY-MM-DD
  */
 
 import {
@@ -18,45 +13,38 @@ import {
 
 import { getLanguage } from '../code/i18n.js';
 
-const monthsFa = [
+const MONTHS_FA = [
   'فروردین', 'اردیبهشت', 'خرداد',
   'تیر', 'مرداد', 'شهریور',
   'مهر', 'آبان', 'آذر',
   'دی', 'بهمن', 'اسفند',
 ];
 
-const monthsEn = [
+const MONTHS_EN = [
   'Farvardin', 'Ordibehesht', 'Khordad',
   'Tir', 'Mordad', 'Shahrivar',
   'Mehr', 'Aban', 'Azar',
   'Dey', 'Bahman', 'Esfand',
 ];
 
-const weekdaysFa = [
-  'ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج',
-];
+const WD_FA = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'];
+const WD_EN = ['Sa', 'Su', 'Mo', 'Tu', 'We', 'Th', 'Fr'];
 
-const weekdaysEn = [
-  'Sa', 'Su', 'Mo', 'Tu',
-  'We', 'Th', 'Fr',
-];
+const fa = () => getLanguage() === 'fa';
 
-const isFa = () => getLanguage() === 'fa';
-
-const faDigits = value =>
-  String(value).replace(
-    /\d/g,
-    digit => '۰۱۲۳۴۵۶۷۸۹'[Number(digit)]
-  );
-
-const digits = value =>
-  isFa() ? faDigits(value) : String(value);
+const numeral = value =>
+  fa()
+    ? String(value).replace(
+        /\d/g,
+        digit => '۰۱۲۳۴۵۶۷۸۹'[Number(digit)]
+      )
+    : String(value);
 
 const pad = number =>
   String(number).padStart(2, '0');
 
 // ============================================
-// TEHRAN TODAY
+// CLINIC DATE
 // ============================================
 
 function clinicToday() {
@@ -74,32 +62,34 @@ function clinicToday() {
   return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
-// ============================================
-// DATE CONVERSION
-// ============================================
-
-function jalaliFromISO(iso) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso || '')) {
-    return null;
+function isISO(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value ?? '')) {
+    return false;
   }
 
   const [year, month, day] =
-    iso.split('-').map(Number);
+    value.split('-').map(Number);
 
   const parsed = new Date(
     Date.UTC(year, month - 1, day)
   );
 
-  if (
-    parsed.toISOString().slice(0, 10) !== iso
-  ) {
-    return null;
-  }
-
-  return toJalaali(year, month, day);
+  return (
+    !Number.isNaN(parsed.getTime()) &&
+    parsed.toISOString().slice(0, 10) === value
+  );
 }
 
-function gregorianISO(jy, jm, jd) {
+function toJ(iso) {
+  if (!isISO(iso)) return null;
+
+  const [gy, gm, gd] =
+    iso.split('-').map(Number);
+
+  return toJalaali(gy, gm, gd);
+}
+
+function toISO(jy, jm, jd) {
   const { gy, gm, gd } = toGregorian(
     jy,
     jm,
@@ -109,14 +99,8 @@ function gregorianISO(jy, jm, jd) {
   return `${gy}-${pad(gm)}-${pad(gd)}`;
 }
 
-function formatJalali(date) {
-  return digits(
-    `${date.jy}/${pad(date.jm)}/${pad(date.jd)}`
-  );
-}
-
 // ============================================
-// INITIALIZE ALL BOOKING DATE FIELDS
+// INITIALIZATION
 // ============================================
 
 export function initJalaliBookingCalendars(
@@ -131,41 +115,37 @@ export function initJalaliBookingCalendars(
   ].join(', ');
 
   function upgrade(input) {
-    if (input.dataset.jalaliReady) {
+    if (input.dataset.jalaliReady === '1') {
       return;
     }
 
     input.dataset.jalaliReady = '1';
 
-    // Replace the label container with a div,
-    // preserving its classes and children.
-    const oldLabel =
+    // Interactive buttons must not be nested
+    // inside a <label>.
+    const label =
       input.parentElement?.tagName === 'LABEL'
         ? input.parentElement
         : null;
 
-    let wrapper;
+    const wrapper = document.createElement('div');
 
-    if (oldLabel) {
-      wrapper = document.createElement('div');
+    if (label) {
+      wrapper.className = label.className;
 
-      wrapper.className = oldLabel.className;
-
-      while (oldLabel.firstChild) {
-        wrapper.append(oldLabel.firstChild);
+      while (label.firstChild) {
+        wrapper.append(label.firstChild);
       }
 
-      oldLabel.replaceWith(wrapper);
+      label.replaceWith(wrapper);
     } else {
-      wrapper = document.createElement('div');
-
       input.before(wrapper);
       wrapper.append(input);
     }
 
     wrapper.classList.add('dn-jalali-field');
 
-    // Keep the original form field for Laravel.
+    // Keep the original input for the booking API.
     input.type = 'hidden';
 
     const trigger = document.createElement('button');
@@ -190,7 +170,7 @@ export function initJalaliBookingCalendars(
 
     popup.setAttribute(
       'aria-label',
-      isFa()
+      fa()
         ? 'انتخاب تاریخ شمسی'
         : 'Choose Jalali date'
     );
@@ -199,135 +179,28 @@ export function initJalaliBookingCalendars(
 
     wrapper.append(trigger, popup);
 
-    // Current selected month or current Tehran month.
     const initial =
-      jalaliFromISO(input.value) ||
-      jalaliFromISO(clinicToday());
+      toJ(input.value) ||
+      toJ(clinicToday());
 
+    // Month state persists independently
+    // from the selected input value.
     let year = initial.jy;
     let month = initial.jm;
 
-    // ========================================
-    // DISPLAY SELECTED DATE
-    // ========================================
-
     function syncLabel() {
-      const selected = jalaliFromISO(
-        input.value
-      );
+      const selected = toJ(input.value);
 
       trigger.textContent = selected
-        ? formatJalali(selected)
+        ? numeral(
+            `${selected.jy}/${pad(selected.jm)}/${pad(selected.jd)}`
+          )
         : (
-          isFa()
-            ? 'انتخاب تاریخ شمسی'
-            : 'Select Jalali date'
-        );
+            fa()
+              ? 'انتخاب تاریخ شمسی'
+              : 'Choose Jalali date'
+          );
     }
-
-    // ========================================
-    // RENDER CALENDAR
-    // ========================================
-
-    function render() {
-      const today = clinicToday();
-
-      const { gy, gm, gd } = toGregorian(
-        year,
-        month,
-        1
-      );
-
-      // Convert Sunday-first JS weekdays
-      // to Saturday-first Persian weekdays.
-      const offset = (
-        new Date(
-          Date.UTC(gy, gm - 1, gd)
-        ).getUTCDay() + 1
-      ) % 7;
-
-      const count = jalaaliMonthLength(
-        year,
-        month
-      );
-
-      const week = isFa()
-        ? weekdaysFa
-        : weekdaysEn;
-
-      const names = isFa()
-        ? monthsFa
-        : monthsEn;
-
-      const title =
-        `${names[month - 1]} ${digits(year)}`;
-
-      let days = '<span></span>'.repeat(offset);
-
-      for (let day = 1; day <= count; day++) {
-        const iso = gregorianISO(
-          year,
-          month,
-          day
-        );
-
-        const selected = iso === input.value;
-
-        const disabled = iso < today;
-
-        days += `
-          <button
-            type="button"
-            class="dn-jalali-day${selected ? ' is-selected' : ''}"
-            data-jalali-day="${iso}"
-            aria-pressed="${selected}"
-            ${disabled ? 'disabled' : ''}
-          >
-            ${digits(day)}
-          </button>
-        `;
-      }
-
-      popup.innerHTML = `
-        <div class="dn-jalali-head">
-
-          <button
-            type="button"
-            data-jalali-nav="prev"
-            aria-label="${isFa() ? 'ماه قبل' : 'Previous month'}"
-          >
-            ‹
-          </button>
-
-          <strong>
-            ${title}
-          </strong>
-
-          <button
-            type="button"
-            data-jalali-nav="next"
-            aria-label="${isFa() ? 'ماه بعد' : 'Next month'}"
-          >
-            ›
-          </button>
-
-        </div>
-
-        <div class="dn-jalali-grid dn-jalali-weekdays">
-          ${week.map(day => `
-            <span>${day}</span>
-          `).join('')}
-        </div>
-
-        <div class="dn-jalali-grid">
-          ${days}
-        </div>
-      `;
-    }
-
-    // ========================================
-    // OPEN / CLOSE
-    // ========================================
 
     function close() {
       popup.hidden = true;
@@ -338,6 +211,111 @@ export function initJalaliBookingCalendars(
       );
     }
 
+    // ========================================
+    // RENDER MONTH
+    // ========================================
+
+    function render() {
+      const { gy, gm, gd } = toGregorian(
+        year,
+        month,
+        1
+      );
+
+      // Saturday-first grid.
+      const offset = (
+        new Date(
+          Date.UTC(gy, gm - 1, gd)
+        ).getUTCDay() + 1
+      ) % 7;
+
+      const daysCount = jalaaliMonthLength(
+        year,
+        month
+      );
+
+      const today = clinicToday();
+
+      const minimum =
+        isISO(input.getAttribute('min')) &&
+        input.min > today
+          ? input.min
+          : today;
+
+      const maximum =
+        isISO(input.getAttribute('max'))
+          ? input.max
+          : null;
+
+      const weekdays = fa() ? WD_FA : WD_EN;
+      const months = fa() ? MONTHS_FA : MONTHS_EN;
+
+      let days = '<span aria-hidden="true"></span>'
+        .repeat(offset);
+
+      for (let day = 1; day <= daysCount; day++) {
+        const iso = toISO(
+          year,
+          month,
+          day
+        );
+
+        const selected = iso === input.value;
+
+        const disabled =
+          iso < minimum ||
+          (maximum && iso > maximum);
+
+        days += `
+          <button
+            type="button"
+            class="dn-jalali-day${selected ? ' is-selected' : ''}"
+            data-jalali-day="${iso}"
+            aria-pressed="${selected}"
+            ${disabled ? 'disabled' : ''}
+          >
+            ${numeral(day)}
+          </button>
+        `;
+      }
+
+      popup.innerHTML = `
+        <div class="dn-jalali-head">
+
+          <button
+            type="button"
+            data-jalali-nav="prev"
+            aria-label="${fa() ? 'ماه قبل' : 'Previous month'}"
+          >
+            ‹
+          </button>
+
+          <strong data-jalali-month>
+            ${months[month - 1]} ${numeral(year)}
+          </strong>
+
+          <button
+            type="button"
+            data-jalali-nav="next"
+            aria-label="${fa() ? 'ماه بعد' : 'Next month'}"
+          >
+            ›
+          </button>
+
+        </div>
+
+        <div class="dn-jalali-grid dn-jalali-weekdays">
+          ${weekdays.map(day => `
+            <span>${day}</span>
+          `).join('')}
+        </div>
+
+        <div class="dn-jalali-grid">
+          ${days}
+        </div>
+      `;
+    }
+
     const picker = {
       wrapper,
       close,
@@ -346,45 +324,48 @@ export function initJalaliBookingCalendars(
 
     pickers.add(picker);
 
+    // ========================================
+    // OPEN CALENDAR
+    // ========================================
+
     trigger.addEventListener(
       'click',
-      () => {
+      event => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (!popup.hidden) {
+          close();
+          return;
+        }
+
         for (const other of pickers) {
           if (other !== picker) {
             other.close();
           }
         }
 
-        syncLabel();
+        const selected =
+          toJ(input.value) ||
+          toJ(clinicToday());
 
-        if (popup.hidden) {
-          const selected = jalaliFromISO(
-            input.value
-          );
+        year = selected.jy;
+        month = selected.jm;
 
-          if (selected) {
-            year = selected.jy;
-            month = selected.jm;
-          }
+        render();
 
-          render();
+        popup.hidden = false;
 
-          popup.hidden = false;
-
-          trigger.setAttribute(
-            'aria-expanded',
-            'true'
-          );
-
-        } else {
-          close();
-        }
+        trigger.setAttribute(
+          'aria-expanded',
+          'true'
+        );
       },
       { signal }
     );
 
     // ========================================
-    // CALENDAR CLICKS
+    // MONTH NAVIGATION AND SELECTION
     // ========================================
 
     popup.addEventListener(
@@ -395,42 +376,54 @@ export function initJalaliBookingCalendars(
         );
 
         if (nav) {
-          month +=
+          event.preventDefault();
+          event.stopPropagation();
+
+          const delta =
             nav.dataset.jalaliNav === 'next'
               ? 1
               : -1;
 
-          if (month > 12) {
-            month = 1;
-            year++;
-          }
+          // Correctly handles Esfand -> Farvardin
+          // and Farvardin -> Esfand.
+          const absoluteMonth =
+            year * 12 + (month - 1) + delta;
 
-          if (month < 1) {
-            month = 12;
-            year--;
-          }
+          year = Math.floor(
+            absoluteMonth / 12
+          );
+
+          month = (
+            (absoluteMonth % 12 + 12) % 12
+          ) + 1;
 
           render();
           return;
         }
 
-        const day = event.target.closest(
+        const button = event.target.closest(
           '[data-jalali-day]'
         );
 
-        if (!day || day.disabled) {
+        if (!button || button.disabled) {
           return;
         }
 
-        // IMPORTANT:
-        // Save the Gregorian ISO value.
-        input.value = day.dataset.jalaliDay;
+        event.preventDefault();
+        event.stopPropagation();
+
+        // Gregorian ISO value for Laravel.
+        input.value = button.dataset.jalaliDay;
 
         syncLabel();
         close();
 
-        // Existing Availability logic will
-        // automatically fetch new slots.
+        input.dispatchEvent(
+          new Event('input', {
+            bubbles: true,
+          })
+        );
+
         input.dispatchEvent(
           new Event('change', {
             bubbles: true,
@@ -451,9 +444,9 @@ export function initJalaliBookingCalendars(
     syncLabel();
   }
 
-  // ============================================
-  // DYNAMIC FORMS
-  // ============================================
+  // ==========================================
+  // DYNAMIC RESCHEDULE FORMS
+  // ==========================================
 
   function upgradeAll() {
     for (const picker of pickers) {
@@ -468,7 +461,6 @@ export function initJalaliBookingCalendars(
 
   upgradeAll();
 
-  // Reschedule forms appear after an API call.
   const observer = new MutationObserver(
     upgradeAll
   );
@@ -478,16 +470,11 @@ export function initJalaliBookingCalendars(
     subtree: true,
   });
 
-  // Close by clicking outside.
   document.addEventListener(
     'click',
     event => {
       for (const picker of pickers) {
-        if (
-          !picker.wrapper.contains(
-            event.target
-          )
-        ) {
+        if (!picker.wrapper.contains(event.target)) {
           picker.close();
         }
       }
@@ -495,41 +482,20 @@ export function initJalaliBookingCalendars(
     { signal }
   );
 
-  // Close by pressing Escape.
   document.addEventListener(
     'keydown',
     event => {
-      if (event.key !== 'Escape') {
-        return;
-      }
-
-      for (const picker of pickers) {
-        picker.close();
-      }
-    },
-    { signal }
-  );
-
-  // Refresh displayed value when reopening
-  // the booking form after a previous booking.
-  root.addEventListener(
-    'click',
-    event => {
-      if (
-        event.target.closest(
-          '[data-booking-start]'
-        )
-      ) {
+      if (event.key === 'Escape') {
         for (const picker of pickers) {
-          picker.syncLabel();
+          picker.close();
         }
       }
     },
     { signal }
   );
 
-  // Hidden inputs are not natively
-  // constraint-validated. Check rescheduling.
+  // Hidden inputs are not validated by
+  // native form.reportValidity().
   root.addEventListener(
     'submit',
     event => {
@@ -537,19 +503,14 @@ export function initJalaliBookingCalendars(
         '[data-booking-reschedule]'
       );
 
-      if (!form) {
-        return;
-      }
+      if (!form) return;
 
-      const field = form.elements.namedItem(
-        'booking_date'
-      );
-
-      const value = field?.value || '';
+      const dateInput =
+        form.elements.namedItem('booking_date');
 
       if (
-        jalaliFromISO(value) &&
-        value >= clinicToday()
+        isISO(dateInput?.value) &&
+        dateInput.value >= clinicToday()
       ) {
         return;
       }
@@ -563,31 +524,21 @@ export function initJalaliBookingCalendars(
 
       if (!error) {
         error = document.createElement('p');
-
-        error.dataset.jalaliError = '1';
         error.className = 'dn-jalali-error';
-
-        error.setAttribute(
-          'role',
-          'alert'
-        );
-
+        error.dataset.jalaliError = '1';
+        error.setAttribute('role', 'alert');
         form.append(error);
       }
 
-      error.textContent = isFa()
-        ? 'لطفاً یک تاریخ شمسی معتبر از امروز به بعد انتخاب کنید.'
-        : 'Please select a valid Jalali date from today onward.';
+      error.textContent = fa()
+        ? 'یک تاریخ شمسی معتبر انتخاب کنید.'
+        : 'Choose a valid Jalali date.';
     },
     {
       capture: true,
       signal,
     }
   );
-
-  // ============================================
-  // CLEANUP
-  // ============================================
 
   return () => {
     observer.disconnect();

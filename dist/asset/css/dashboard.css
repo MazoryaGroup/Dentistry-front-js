@@ -284,3 +284,150 @@
 @media (prefers-reduced-motion: reduce) {
   .dn-dashboard * { scroll-behavior:auto !important; animation:none !important; transition:none !important; }
 }
+
+/* --------------------------------------------------------
+   REAL APPOINTMENTS (bookings API)
+   Scoped to premium dashboard. No changes to other panels.
+   -------------------------------------------------------- */
+.dn-dashboard .dn-booking-header {display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;margin:0 0 21px}
+.dn-dashboard .dn-booking-header p {color:var(--dn-muted);font-size:13px;line-height:1.7;margin:0}
+.dn-dashboard .dn-booking-notice {padding:13px 16px;border:1px solid #d9ecf9;background:#edf7fe;border-radius:12px;color:#266996;font-size:13px;margin:0 0 18px;line-height:1.8}
+.dn-dashboard .dn-booking-notice[data-state="success"] {border-color:#c8e8d6;background:#f0fbf5;color:#297344}
+.dn-dashboard .dn-booking-notice[data-state="error"] {border-color:#f2cccc;background:#fff3f2;color:#ad4444}
+.dn-dashboard .dn-booking-message {padding:38px 20px;text-align:center;color:var(--dn-muted);border:1px solid var(--dn-border);border-radius:17px;background:white;font-size:13px}
+.dn-dashboard .dn-booking-error {color:#ad4444}
+.dn-dashboard .dn-booking-message p {margin:0 0 18px}
+.dn-dashboard .dn-booking-columns {display:grid;grid-template-columns:minmax(260px,.95fr) minmax(330px,1.05fr);gap:18px;align-items:start}
+.dn-dashboard .dn-booking-list-card,.dn-dashboard .dn-booking-detail-card {min-width:0;border:1px solid var(--dn-border);border-radius:18px;background:#fff;overflow:hidden}
+.dn-dashboard .dn-booking-list {list-style:none;margin:0;padding:8px}
+.dn-dashboard .dn-booking-list-item + .dn-booking-list-item {border-top:1px solid #f0f4f7}
+.dn-dashboard .dn-booking-row {width:100%;display:grid;grid-template-columns:minmax(125px,.72fr) minmax(0,1.28fr) auto;align-items:center;gap:14px;padding:18px 14px;text-align:start;color:var(--dn-text);background:transparent;border:0;cursor:pointer;border-radius:11px;font:inherit}
+.dn-dashboard .dn-booking-row:hover,.dn-dashboard .dn-booking-row:focus-visible {background:#f3f9fd;outline-offset:-3px}
+.dn-dashboard .dn-booking-date,.dn-dashboard .dn-booking-desc {display:flex;flex-direction:column;gap:7px;min-width:0}
+.dn-dashboard .dn-booking-date strong,.dn-dashboard .dn-booking-desc strong {font-size:12px;font-weight:800;line-height:1.6;overflow-wrap:anywhere}
+.dn-dashboard .dn-booking-date small,.dn-dashboard .dn-booking-desc small {font-size:11px;color:#8294a0;line-height:1.5}
+.dn-dashboard .dn-booking-row-arrow {color:#69a7ce;font-size:17px;line-height:1}
+.dn-dashboard .dn-booking-detail-card {padding:25px}
+.dn-dashboard .dn-booking-hint {font-size:13px;line-height:1.85;color:var(--dn-muted);margin:0}
+.dn-dashboard .dn-booking-detail-head {display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:20px}
+.dn-dashboard .dn-booking-detail-head h2 {font-size:19px;font-weight:800;margin:8px 0 0}
+.dn-dashboard .dn-booking-pill {font-size:11px;background:#edf6fc;color:#3c7ba6;border-radius:100px;padding:7px 10px;white-space:nowrap}
+.dn-dashboard .dn-booking-details {display:grid;gap:0;margin:0}
+.dn-dashboard .dn-booking-details>div {display:grid;grid-template-columns:minmax(100px,.4fr) minmax(0,.6fr);align-items:start;gap:12px;padding:13px 0;border-top:1px solid #f0f3f6}
+.dn-dashboard .dn-booking-details dt {color:#80919d;font-size:12px}
+.dn-dashboard .dn-booking-details dd {margin:0;font-size:12px;font-weight:750;line-height:1.65;color:#23394b;overflow-wrap:anywhere}
+.dn-dashboard .dn-booking-actions {display:flex;flex-wrap:wrap;gap:9px;margin-top:22px}
+.dn-dashboard .dn-booking-secondary,.dn-dashboard .dn-booking-danger-link {min-height:40px;padding:9px 14px;border-radius:10px;border:1px solid #dceaf3;background:#f5fafe;color:#2e719c;font:inherit;font-size:12px;font-weight:750;cursor:pointer}
+.dn-dashboard .dn-booking-secondary:hover {background:#e9f5fd}
+.dn-dashboard .dn-booking-danger-link {background:#fff;color:#ab4f4f;border-color:#f1d9d9}
+.dn-dashboard .dn-booking-form {margin-top:19px;padding:16px;background:#f7fafc;border:1px solid var(--dn-border);border-radius:12px;display:grid;gap:13px}
+.dn-dashboard .dn-booking-form label:not(.dn-booking-check) {display:grid;gap:7px;color:#485f70;font-size:12px;font-weight:700}
+.dn-dashboard .dn-booking-form :is(input[type="date"],input[type="time"],textarea) {display:block;min-width:0;width:100%;border-radius:9px;border:1px solid #dce6ed;background:#fff;padding:10px 12px;font:inherit;font-size:13px;color:#263b4d}
+.dn-dashboard .dn-booking-form :is(input,textarea):focus {outline:2px solid #74adda;outline-offset:1px}
+.dn-dashboard .dn-booking-check {display:flex;align-items:flex-start;gap:8px;font-size:12px;line-height:1.7;color:#576b7a}
+.dn-dashboard .dn-booking-check input {margin-top:4px;accent-color:#74adda}
+.dn-dashboard .dn-booking-form-buttons {display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dn-dashboard .dn-booking-form-buttons>button:not(.dn-button):not(.dn-booking-danger) {border:0;background:none;font:inherit;color:#768996;font-size:12px;cursor:pointer}
+.dn-dashboard .dn-booking-danger {border:0;background:#c95c5c;color:white;border-radius:10px;padding:12px 15px;font:inherit;font-size:12px;font-weight:800;cursor:pointer}
+.dn-dashboard .dn-booking-policy {font-size:11px;line-height:1.8;color:var(--dn-muted);margin:17px 0 0}
+.dn-dashboard [hidden] {display:none !important}
+.dn-dashboard :is(.dn-booking-row,.dn-booking-secondary,.dn-booking-danger,.dn-booking-danger-link):disabled {opacity:.6;cursor:wait}
+@media(max-width:900px) {.dn-dashboard .dn-booking-columns {grid-template-columns:1fr}}
+@media(max-width:520px) {
+ .dn-dashboard .dn-booking-header .dn-button {width:100%}
+ .dn-dashboard .dn-booking-row {grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr) auto;gap:8px;padding:13px 7px}
+ .dn-dashboard .dn-booking-detail-card {padding:18px}
+ .dn-dashboard .dn-booking-details>div {grid-template-columns:95px minmax(0,1fr)}
+}
+.dn-dashboard .dn-booking-pagination {display:flex;align-items:center;justify-content:center;gap:14px;border-top:1px solid var(--dn-border);padding:14px}
+.dn-dashboard .dn-booking-pagination button {border:1px solid #dceaf3;border-radius:9px;background:#f5fafe;padding:9px 12px;color:#377ba5;font:inherit;font-size:11px;font-weight:750;cursor:pointer}
+.dn-dashboard .dn-booking-pagination button:disabled {opacity:.45;cursor:default}
+.dn-dashboard .dn-booking-pagination span {font-size:11px;color:#738794}
+
+
+/* =======================================================
+   CREATE BOOKING — doctor + service + availability wizard
+   Scoped to premium patient dashboard, FA/EN and mobile
+   ======================================================= */
+.dn-dashboard .dn-wizard{background:#fff;border:1px solid var(--dn-border);border-radius:20px;padding:26px;margin:0 0 22px;box-shadow:0 10px 40px rgba(20,48,70,.035);scroll-margin-top:90px}
+.dn-dashboard .dn-wizard[hidden],.dn-dashboard .dn-wizard [hidden]{display:none!important}
+.dn-dashboard .dn-wizard-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding-bottom:18px;margin-bottom:22px;border-bottom:1px solid var(--dn-border)}
+.dn-dashboard .dn-wizard-head h2{font-size:23px;font-weight:750;margin:5px 0 8px;letter-spacing:-.025em;color:#192e40}
+.dn-dashboard .dn-wizard-head p{font-size:13px;color:var(--dn-muted);margin:0;line-height:1.7}
+.dn-dashboard .dn-wizard-close{display:grid;place-items:center;width:33px;height:33px;min-width:33px;border:1px solid var(--dn-border);border-radius:50%;background:#fff;color:#647786;cursor:pointer;font-size:22px;line-height:1}
+.dn-dashboard .dn-wizard-form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}
+.dn-dashboard .dn-wizard-field{display:grid;gap:8px;min-width:0;font-size:13px;font-weight:650;color:#283b49}
+.dn-dashboard .dn-wizard-field select,.dn-dashboard .dn-wizard-field input,.dn-dashboard .dn-wizard-field textarea{width:100%;min-width:0;height:47px;border:1px solid #dce7ee;border-radius:11px;padding:0 13px;background:#fff;color:#263e4e;font:inherit;font-size:13px;outline:0;transition:border-color .2s,box-shadow .2s}
+.dn-dashboard .dn-wizard-field select:disabled{opacity:.65;background:#f6f9fb}
+.dn-dashboard .dn-wizard-field :is(select,input,textarea):focus{border-color:#74ADDA;box-shadow:0 0 0 3px rgba(116,173,218,.15)}
+.dn-dashboard .dn-wizard-field textarea{height:auto;padding:12px 13px;resize:vertical;font-weight:400;line-height:1.7}
+.dn-dashboard .dn-wizard-muted{font-size:12px;color:#81919b;line-height:1.9}
+.dn-dashboard [data-wizard-status]{min-height:22px;margin:11px 0 14px}
+.dn-dashboard .dn-wizard-schedule{padding:12px 15px;border:1px solid #edf1f5;border-radius:12px;background:#f9fbfd;color:#40596c;margin-bottom:22px}
+.dn-dashboard .dn-wizard-schedule summary{font-size:13px;font-weight:650;cursor:pointer}
+.dn-dashboard .dn-wizard-schedule p{font-size:12px;line-height:1.8;margin:10px 0 0;color:#718395}
+.dn-dashboard .dn-wizard-times{padding:18px;border:1px solid #edf1f5;border-radius:15px;margin:0 0 21px}
+.dn-dashboard .dn-wizard-times>strong{font-size:15px;color:#203747}
+.dn-dashboard .dn-wizard-times>p{font-size:12px;color:#82919c;margin:7px 0 17px;line-height:1.8}
+.dn-dashboard .dn-wizard-slot-grid{display:flex;flex-wrap:wrap;gap:10px;min-height:30px;align-items:center}
+.dn-dashboard .dn-wizard-slot{border:1px solid #d9e6f0;border-radius:10px;background:#fff;padding:10px 15px;font-size:13px;color:#2b4e65;font-variant-numeric:tabular-nums;cursor:pointer;transition:background .15s,border-color .15s}
+.dn-dashboard .dn-wizard-slot:hover{background:#eff7fd;border-color:#74ADDA}
+.dn-dashboard .dn-wizard-slot.is-active{border-color:#74ADDA;background:#e5f2fc;color:#245d82;box-shadow:inset 0 0 0 1px #74ADDA}
+.dn-dashboard .dn-wizard-notes{margin:0 0 22px}
+.dn-dashboard .dn-wizard-bottom{display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap;gap:12px}
+.dn-dashboard .dn-wizard-feedback{padding:12px 15px;border-radius:11px;font-size:13px;line-height:1.8;background:#eef6fc;color:#266996;margin:14px 0 0}
+.dn-dashboard .dn-wizard-feedback[data-state="error"]{background:#fff3f2;color:#ad4444}
+.dn-dashboard .dn-wizard-feedback[data-state="success"]{background:#f0fbf5;color:#297344}
+.dn-dashboard .dn-wizard-hint{margin:16px 0 0!important}
+.dn-dashboard .dn-wizard-inline{margin-inline-start:8px;border:0;background:none;padding:2px;color:#266996;text-decoration:underline;cursor:pointer;font-size:inherit}
+.dn-dashboard .dn-wizard :is(button,select,input,textarea):focus-visible{outline:2px solid #74ADDA;outline-offset:3px}
+@media(max-width:940px){.dn-dashboard .dn-wizard-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.dn-dashboard .dn-wizard{padding:18px 14px;border-radius:15px;margin-bottom:17px}.dn-dashboard .dn-wizard-form-grid{grid-template-columns:1fr}.dn-dashboard .dn-wizard-head h2{font-size:20px}.dn-dashboard .dn-wizard-bottom{justify-content:stretch}.dn-dashboard .dn-wizard-bottom button{flex:1}}
+
+/* ============================================
+   DENTISTRY — BOOKING AVAILABILITY SLOTS
+============================================ */
+
+.dn-dashboard .dn-wizard-slot {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+
+  min-width: 124px;
+  line-height: 1.35;
+}
+
+.dn-dashboard .dn-wizard-slot strong {
+  font-size: 13px;
+  font-weight: 700;
+  direction: ltr;
+  unicode-bidi: isolate;
+  white-space: nowrap;
+}
+
+.dn-dashboard .dn-wizard-slot small {
+  font-size: 11px;
+  color: #6b8495;
+  font-weight: 450;
+}
+
+.dn-dashboard .dn-wizard-slot.is-active small {
+  color: #245d82;
+}
+
+/* MOBILE */
+
+@media (max-width: 560px) {
+  .dn-dashboard .dn-wizard-slot-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dn-dashboard .dn-wizard-slot {
+    min-width: 0;
+    width: 100%;
+    padding: 11px 8px;
+  }
+}
