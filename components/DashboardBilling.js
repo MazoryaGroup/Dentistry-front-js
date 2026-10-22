@@ -13,7 +13,7 @@ const isFa = () => getLanguage() === 'fa';
 const words = {
   en: {
     summary: 'Financial overview',
-    invoiced: 'Total invoiced',
+   invoiced: 'Total appointment value',
     paid: 'Total paid',
     due: 'Amount due',
     invoices: 'Invoices',
@@ -49,10 +49,23 @@ const words = {
     cancelled: 'Cancelled',
     paidStatus: 'Paid',
     close: 'Close details',
+    unpaid: 'Unpaid',
+    booking: 'Booking',
+time: 'Time',
+subtotal: 'Subtotal',
+doctor: 'Doctor',
+duration: 'Duration',
+minutes: 'minutes',
+refund: 'Refunded',
+type: 'Payment type',
+gateway: 'Payment gateway',
+paidAt: 'Payment date',
+
+partiallyPaid: 'Partially paid',
   },
   fa: {
     summary: 'خلاصه وضعیت مالی',
-    invoiced: 'مجموع فاکتورها',
+    invoiced: 'مجموع مبلغ نوبت‌ها',
     paid: 'مجموع پرداخت‌ها',
     due: 'مانده قابل پرداخت',
     invoices: 'فاکتورهای من',
@@ -88,6 +101,19 @@ const words = {
     cancelled: 'لغوشده',
     paidStatus: 'پرداخت‌شده',
     close: 'بستن جزئیات',
+    unpaid: 'پرداخت‌نشده',
+    booking: 'شماره رزرو',
+    time: 'ساعت',
+    subtotal: 'مبلغ قبل از تخفیف',
+    doctor: 'پزشک',
+    duration: 'مدت زمان',
+    minutes: 'دقیقه',
+    refund: 'مبلغ بازگشتی',
+    type: 'نوع پرداخت',
+    gateway: 'درگاه پرداخت',
+    paidAt: 'تاریخ پرداخت',
+    partiallyPaid: 'پرداخت بخشی از مبلغ',
+
   },
 };
 
@@ -162,31 +188,54 @@ function firstValue(object, keys) {
   return null;
 }
 
+
 function money(value, currency = '') {
-  if (value === null || value === undefined || value === '') {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ''
+  ) {
     return '—';
   }
 
   const number = Number(value);
 
-  const formatted = Number.isFinite(number)
-    ? number.toLocaleString(isFa() ? 'fa-IR' : 'en-US')
-    : String(value);
+  if (!Number.isFinite(number)) {
+    return '—';
+  }
 
-  return `${formatted}${currency ? ` ${currency}` : ''}`;
+  const formatted = number.toLocaleString(
+    isFa() ? 'fa-IR' : 'en-US'
+  );
+
+  const unit = ['IRT', 'TOMAN'].includes(
+    String(currency).toUpperCase()
+  )
+    ? (isFa() ? 'تومان' : 'Toman')
+    : currency;
+
+  return `${formatted}${unit ? ` ${unit}` : ''}`;
 }
+
+
 
 function dateText(value) {
   if (!value) return '';
 
-  const parsed = new Date(value);
+  const raw = String(value).trim();
+
+  const parsed = /^\d{4}-\d{2}-\d{2}$/.test(raw)
+    ? new Date(`${raw}T12:00:00Z`)
+    : new Date(raw);
 
   if (Number.isNaN(parsed.getTime())) {
     return '';
   }
 
   return new Intl.DateTimeFormat(
-    isFa() ? 'fa-IR' : 'en-GB',
+    isFa()
+      ? 'fa-IR-u-ca-persian'
+      : 'en-US-u-ca-persian',
     {
       year: 'numeric',
       month: 'short',
@@ -195,6 +244,7 @@ function dateText(value) {
     }
   ).format(parsed);
 }
+
 
 function statusText(value) {
   const raw = String(value ?? '').toLowerCase();
@@ -209,6 +259,8 @@ function statusText(value) {
     failed: 'failed',
     canceled: 'cancelled',
     cancelled: 'cancelled',
+    unpaid: 'unpaid',
+partially_paid: 'partiallyPaid',
   };
 
   return keys[raw]
@@ -234,10 +286,11 @@ function summaryHTML(response) {
   const summary = dataOf(response);
 
   const invoiced = amountOf(summary, [
-    'total_invoiced',
-    'total_invoice_amount',
-    'total_invoices_amount',
-  ]);
+  'total_invoiced',
+  'total_invoice_amount',
+  'total_invoices_amount',
+  'total_amount',
+]);
 
   const paid = amountOf(summary, [
     'total_paid',
@@ -279,96 +332,209 @@ function summaryHTML(response) {
 // INVOICES
 // ============================================
 
+
 function invoiceHTML(row) {
   const id = Number(row?.id);
+
   if (!validId(id)) return '';
+
+  // ========================================
+  // BOOKING INFORMATION
+  // ========================================
 
   const bookingId = Number(
     row.booking_id ?? row.booking?.id
   );
 
-  const total = amountOf(row, [
-    'total_amount',
-    'grand_total',
-    'total',
-    'amount',
-  ]);
-
-  const due = amountOf(row, [
-    'remaining_amount',
-    'balance_due',
-    'amount_due',
-  ]);
-
-  const currency = currencyOf(row);
-
-  /*
-   * Payment buttons require an explicit backend
-   * permission flag or a positive payable amount.
-   */
-
-  const depositDue = Number(
-    row.deposit_due ?? row.deposit_remaining
-  );
-
-  const remainingDue = Number(
-    row.remaining_due ?? row.remaining_amount
-  );
-
-  const canDeposit =
-    row.can_pay_deposit === true ||
-    (
-      row.can_pay_deposit !== false &&
-      Number.isFinite(depositDue) &&
-      depositDue > 0
-    );
-
-  const canRemaining =
-    row.can_pay_remaining === true ||
-    (
-      row.can_pay_remaining !== false &&
-      Number.isFinite(remainingDue) &&
-      remainingDue > 0
-    );
-
-  const status = String(
-    row.payment_status ?? row.status ?? ''
+  const bookingStatus = String(
+    row.booking_status ?? ''
   ).toLowerCase();
 
-  const alreadyPaid = [
-    'paid',
-    'completed',
-    'fully_paid',
-  ].includes(status);
+  const status = String(
+    row.status ?? row.payment_status ?? ''
+  ).toLowerCase();
+
+  // ========================================
+  // FINANCIAL VALUES
+  // ========================================
+
+  const toNumber = value => {
+    if (
+      value === null ||
+      value === undefined ||
+      value === ''
+    ) {
+      return null;
+    }
+
+    const number = Number(value);
+
+    return Number.isFinite(number)
+      ? number
+      : null;
+  };
+
+  const total = toNumber(
+    row.total_amount ??
+    row.grand_total ??
+    row.total ??
+    row.amount
+  );
+
+  const depositAmount = toNumber(
+    row.deposit_amount
+  );
+
+  const paidAmount = toNumber(
+    row.paid_amount
+  );
+
+  const remainingAmount = toNumber(
+    row.remaining_amount ??
+    row.balance_due ??
+    row.amount_due
+  );
+
+  // Prefer an explicit value from Laravel.
+  const explicitDepositDue = toNumber(
+    row.deposit_due ??
+    row.deposit_remaining
+  );
+
+  const depositDue =
+    explicitDepositDue !== null
+      ? Math.max(0, explicitDepositDue)
+      : depositAmount !== null &&
+        paidAmount !== null
+        ? Math.max(
+            0,
+            depositAmount - paidAmount
+          )
+        : null;
+
+  const remainingDue =
+    remainingAmount !== null
+      ? Math.max(0, remainingAmount)
+      : null;
+
+  // Invoices API currently returns currency
+  // at data.currency = "IRT".
+  const currency = currencyOf(row) || 'IRT';
+
+  // ========================================
+  // PAYMENT PERMISSIONS
+  // ========================================
+
+  const closed = [
+    'cancelled',
+    'canceled',
+    'expired',
+    'rejected',
+  ].includes(bookingStatus);
+
+  const alreadyPaid =
+    [
+      'paid',
+      'completed',
+      'fully_paid',
+    ].includes(status) ||
+    remainingDue === 0;
+
+  const hasBooking = validId(bookingId);
+
+  // Deposit:
+  // Only for bookings awaiting payment.
+  const canDeposit =
+    hasBooking &&
+    !closed &&
+    !alreadyPaid &&
+    row.can_pay_deposit !== false &&
+    bookingStatus === 'awaiting_payment' &&
+    depositDue !== null &&
+    depositDue > 0;
+
+  // Remaining:
+  // Deposit must already be covered.
+  const canRemaining =
+    hasBooking &&
+    !closed &&
+    !alreadyPaid &&
+    row.can_pay_remaining !== false &&
+    ['confirmed', 'completed'].includes(
+      bookingStatus
+    ) &&
+    depositDue !== null &&
+    depositDue <= 0 &&
+    remainingDue !== null &&
+    remainingDue > 0;
+
+  // ========================================
+  // DISPLAY
+  // ========================================
+
+  const invoiceDate = dateText(
+    row.issued_at ?? row.created_at
+  );
+
+  const bookingDate = row.booking_date
+    ? dateText(row.booking_date)
+    : '';
 
   return `
     <article class="dn-finance-entry">
 
+      <!-- INVOICE INFORMATION -->
+
       <div class="dn-finance-entry-main">
+
         <strong>
           ${tx('invoice')} #${id}
         </strong>
 
         <small>
-          ${esc(dateText(
-            row.issued_at ?? row.created_at
-          ))}
+          ${esc(invoiceDate || tr('unavailable'))}
         </small>
+
+        ${
+          bookingDate
+            ? `
+              <small>
+                ${tx('date')}: ${esc(bookingDate)}
+              </small>
+            `
+            : ''
+        }
 
         <span class="dn-finance-status">
           ${esc(statusText(status))}
         </span>
+
       </div>
+
+      <!-- FINANCIAL AMOUNTS -->
 
       <div class="dn-finance-amount">
-        <strong>${esc(money(total, currency))}</strong>
+
+        <strong>
+          ${esc(money(total, currency))}
+        </strong>
+
+        <small>
+          ${tx('paid')}:
+          ${esc(money(paidAmount, currency))}
+        </small>
+
         <small>
           ${tx('remaining')}:
-          ${esc(money(due, currency))}
+          ${esc(money(remainingDue, currency))}
         </small>
+
       </div>
 
+      <!-- ACTION BUTTONS -->
+
       <div class="dn-finance-actions">
+
         <button
           type="button"
           data-finance-invoice="${id}"
@@ -377,8 +543,6 @@ function invoiceHTML(row) {
         </button>
 
         ${
-          validId(bookingId) &&
-          !alreadyPaid &&
           canDeposit
             ? `
               <button
@@ -394,8 +558,6 @@ function invoiceHTML(row) {
         }
 
         ${
-          validId(bookingId) &&
-          !alreadyPaid &&
           canRemaining
             ? `
               <button
@@ -409,10 +571,13 @@ function invoiceHTML(row) {
             `
             : ''
         }
+
       </div>
+
     </article>
   `;
 }
+
 
 // ============================================
 // PAYMENTS
@@ -753,117 +918,356 @@ export function initDashboardBilling(
   // DETAILS
   // ==========================================
 
-  async function showDetails(type, id) {
-    if (!alive() || !validId(id)) return;
+  
+async function showDetails(type, id) {
+  if (
+    !alive() ||
+    !validId(id) ||
+    !['invoice', 'payment'].includes(type)
+  ) {
+    return;
+  }
 
-    detailController?.abort();
-    detailController = new AbortController();
+  detailController?.abort();
+  detailController = new AbortController();
 
-    const local = detailController;
+  const local = detailController;
 
-    details.hidden = false;
-    detailBody.textContent = tr('loading');
+  details.hidden = false;
+  detailBody.textContent = tr('loading');
 
-    try {
-      const result = checkResponse(
-        type === 'invoice'
-          ? await financeApi.invoice(
-              id,
-              local.signal
-            )
-          : await financeApi.payment(
-              id,
-              local.signal
-            )
+  // Safe detail field renderer
+  const detailField = (label, value) => {
+    if (
+      value === undefined ||
+      value === null ||
+      value === ''
+    ) {
+      return '';
+    }
+
+    return `
+      <div>
+        <dt>${esc(label)}</dt>
+        <dd>${esc(value)}</dd>
+      </div>
+    `;
+  };
+
+  const formatTime = value =>
+    String(value ?? '').slice(0, 5);
+
+  try {
+    const response = checkResponse(
+      type === 'invoice'
+        ? await financeApi.invoice(
+            id,
+            local.signal
+          )
+        : await financeApi.payment(
+            id,
+            local.signal
+          )
+    );
+
+    if (!alive() || local.signal.aborted) {
+      return;
+    }
+
+    const data = dataOf(response);
+
+    const record =
+      type === 'payment'
+        ? data?.payment ?? data
+        : data?.invoice ?? data;
+
+    if (!record || typeof record !== 'object') {
+      throw new Error(tr('error'));
+    }
+
+    const currency = currencyOf(record) || 'IRT';
+
+    // ======================================
+    // INVOICE DETAILS
+    // ======================================
+
+    if (type === 'invoice') {
+      const financial =
+        record.financial &&
+        typeof record.financial === 'object'
+          ? record.financial
+          : record;
+
+      const services = [
+        record.services,
+        record.items,
+        record.invoice_items,
+      ].find(Array.isArray) ?? [];
+
+      const subtotal =
+        financial.subtotal;
+
+      const discount =
+        financial.discount_amount;
+
+      const total =
+        financial.total_amount;
+
+      const deposit =
+        financial.deposit_amount;
+
+      const paid =
+        financial.paid_amount;
+
+      const refunded =
+        financial.refunded_amount;
+
+      const remaining =
+        financial.remaining_amount;
+
+      const bookingDate = dateText(
+        record.booking_date
       );
 
-      if (!alive() || local.signal.aborted) {
-        return;
-      }
+      const appointmentTime = [
+        formatTime(record.start_time),
+        formatTime(record.end_time),
+      ].filter(Boolean).join(' – ');
 
-      const record = dataOf(result);
-
-      const title = type === 'invoice'
-        ? tr('invoice')
-        : tr('payment');
-
-      const fields = [
-        [tr('status'), record.status ?? record.payment_status],
-        [tr('total'), record.total_amount ?? record.amount],
-        [tr('paid'), record.paid_amount],
-        [tr('discount'), record.discount_amount],
-        [tr('remaining'), record.remaining_amount],
-        [tr('method'), record.method],
-        [tr('reference'),
-          record.reference_number ?? record.transaction_id],
-        [tr('date'),
-          dateText(record.created_at ?? record.paid_at)],
+      const financeFields = [
+        [tr('total'), money(total, currency)],
+        [tr('discount'), money(discount, currency)],
+        [tr('deposit'), money(deposit, currency)],
+        [tr('paid'), money(paid, currency)],
+        [tr('refund'), money(refunded, currency)],
+        [tr('remaining'), money(remaining, currency)],
       ];
 
-      const items = Array.isArray(record.items)
-        ? record.items
-        : Array.isArray(record.invoice_items)
-          ? record.invoice_items
-          : [];
-
       detailBody.innerHTML = `
-        <h3>${esc(title)} #${Number(id)}</h3>
+        <div class="dn-finance-detail-content">
 
-        <dl class="dn-finance-detail-grid">
-          ${fields
-            .filter(([, value]) =>
-              value !== null &&
-              value !== undefined &&
-              value !== ''
-            )
-            .map(([label, value]) => `
-              <div>
-                <dt>${esc(label)}</dt>
-                <dd>${esc(value)}</dd>
-              </div>
-            `)
-            .join('')}
-        </dl>
+          <h3>
+            ${tx('invoice')} #${Number(id)}
+          </h3>
 
-        ${
-          items.length
-            ? `
-              <h3>${tx('items')}</h3>
+          <dl class="dn-finance-detail-grid">
 
-              <ul class="dn-finance-item-list">
-                ${items.map(item => `
-                  <li>
-                    <span>
-                      ${esc(
-                        item.service?.name ??
-                        item.name ??
-                        item.title ??
-                        tr('service')
-                      )}
-                    </span>
+            ${detailField(
+              tr('booking'),
+              record.booking_id != null
+                ? `#${record.booking_id}`
+                : null
+            )}
 
-                    <strong>
-                      ${esc(money(
-                        item.amount ??
-                        item.price ??
-                        item.total
-                      ))}
-                    </strong>
-                  </li>
-                `).join('')}
-              </ul>
-            `
-            : ''
-        }
+            ${detailField(
+              tr('date'),
+              bookingDate
+            )}
+
+            ${detailField(
+              tr('time'),
+              appointmentTime
+            )}
+
+            ${detailField(
+              tr('status'),
+              statusText(record.status)
+            )}
+
+            ${detailField(
+              tr('subtotal'),
+              money(subtotal, currency)
+            )}
+
+            ${financeFields.map(([label, value]) =>
+              detailField(label, value)
+            ).join('')}
+
+          </dl>
+
+          <h3>${tx('items')}</h3>
+
+          ${
+            services.length
+              ? `
+                <ul class="dn-finance-item-list">
+
+                  ${services.map(service => {
+                    const serviceName = String(
+                      service.service_name ??
+                      service.service?.name ??
+                      service.name ??
+                      service.title ??
+                      tr('service')
+                    ).trim();
+
+                    const doctorName =
+                      service.doctor?.name ??
+                      service.staff?.name ??
+                      service.doctor_name ??
+                      '';
+
+                    const duration =
+                      service.duration;
+
+                    const price =
+                      service.price ??
+                      service.amount ??
+                      service.total;
+
+                    const time = [
+                      formatTime(service.start_time),
+                      formatTime(service.end_time),
+                    ].filter(Boolean).join(' – ');
+
+                    return `
+                      <li>
+                        <div>
+                          <strong>
+                            ${esc(serviceName)}
+                          </strong>
+
+                          ${
+                            doctorName
+                              ? `
+                                <small>
+                                  ${tx('doctor')}:
+                                  ${esc(doctorName)}
+                                </small>
+                              `
+                              : ''
+                          }
+
+                          ${
+                            duration != null
+                              ? `
+                                <small>
+                                  ${tx('duration')}:
+                                  ${esc(duration)}
+                                  ${tx('minutes')}
+                                </small>
+                              `
+                              : ''
+                          }
+
+                          ${
+                            time
+                              ? `
+                                <small>
+                                  ${tx('time')}: ${esc(time)}
+                                </small>
+                              `
+                              : ''
+                          }
+                        </div>
+
+                        <strong>
+                          ${esc(money(price, currency))}
+                        </strong>
+                      </li>
+                    `;
+                  }).join('')}
+
+                </ul>
+              `
+              : `
+                <p class="dn-finance-muted">
+                  ${tx('unavailable')}
+                </p>
+              `
+          }
+
+        </div>
       `;
 
-    } catch (error) {
-      if (local.signal.aborted) return;
-
-      detailBody.textContent =
-        error.message || tr('error');
+      return;
     }
+
+    // ======================================
+    // PAYMENT DETAILS
+    // ======================================
+
+    const paymentFields = [
+      [
+        tr('booking'),
+        record.booking_id != null
+          ? `#${record.booking_id}`
+          : null,
+      ],
+      [
+        tr('amount'),
+        money(
+          record.amount ?? record.paid_amount,
+          currency
+        ),
+      ],
+      [
+        tr('status'),
+        statusText(
+          record.status ?? record.payment_status
+        ),
+      ],
+      [
+        tr('type'),
+        record.type,
+      ],
+      [
+        tr('method'),
+        record.payment_method ?? record.method,
+      ],
+      [
+        tr('gateway'),
+        record.gateway,
+      ],
+      [
+        tr('reference'),
+        record.transaction_id ??
+        record.reference_number ??
+        record.ref_id,
+      ],
+      [
+        tr('date'),
+        dateText(record.created_at),
+      ],
+      [
+        tr('paidAt'),
+        dateText(record.paid_at),
+      ],
+    ];
+
+    detailBody.innerHTML = `
+      <div class="dn-finance-detail-content">
+
+        <h3>
+          ${tx('payment')} #${Number(id)}
+        </h3>
+
+        <dl class="dn-finance-detail-grid">
+
+          ${paymentFields.map(([label, value]) =>
+            detailField(label, value)
+          ).join('')}
+
+        </dl>
+
+      </div>
+    `;
+
+  } catch (error) {
+    if (!alive() || local.signal.aborted) {
+      return;
+    }
+
+    console.error(
+      'Finance details:',
+      error
+    );
+
+    detailBody.textContent =
+      error.message || tr('error');
   }
+}
+
 
   // ==========================================
   // PAYMENT STATUS

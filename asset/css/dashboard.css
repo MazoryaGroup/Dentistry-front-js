@@ -533,3 +533,94 @@
   direction: ltr;
 }
 
+/* ==========================================
+   DENTISTRY — LIVE CARE TIMELINE
+   ========================================== */
+
+.dn-overview-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 6px 0;
+}
+
+.dn-overview-timeline-item {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 0 0 25px;
+}
+
+.dn-overview-timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+.dn-overview-timeline-item:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  top: 14px;
+  bottom: -2px;
+  inset-inline-start: 6px;
+  width: 1px;
+  background: #dce8f2;
+}
+
+.dn-overview-timeline-dot {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 13px;
+  width: 13px;
+  height: 13px;
+  margin-top: 4px;
+  border: 3px solid #74ADDA;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.dn-overview-timeline-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.dn-overview-timeline-date {
+  font-size: 12px;
+  font-weight: 600;
+  color: #568eb9;
+}
+
+.dn-overview-timeline-body strong {
+  font-size: 14px;
+  font-weight: 650;
+  color: #17191d;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.dn-overview-timeline-body small {
+  font-size: 12px;
+  color: #747c86;
+  line-height: 1.7;
+}
+
+.dn-overview-timeline-empty {
+  margin: 0;
+  padding: 20px;
+  border: 1px dashed #dce8f2;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.9;
+  color: #747c86;
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .dn-overview-timeline-item {
+    gap: 12px;
+    padding-bottom: 20px;
+  }
+}
+

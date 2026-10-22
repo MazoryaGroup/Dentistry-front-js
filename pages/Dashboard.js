@@ -49,6 +49,9 @@ import {
   clearAuthToken,
   getAuthToken,
 } from '../code/auth.js';
+import {
+  initDashboardOverview,
+} from '../components/DashboardOverview.js';
 
 // ============================================
 // STYLES
@@ -706,25 +709,17 @@ function overview() {
             <p>${tx('journeyCopy')}</p>
           </div>
 
-          <div class="dn-journey-placeholder">
-
-            <div class="dn-journey-track">
-              <span>${icon('calendar')}</span>
-              <i></i>
-              <span>${icon('tooth')}</span>
-              <i></i>
-              <span>${icon('shield')}</span>
-            </div>
-
-            <div class="dn-journey-note">
-              ${icon('shield')}
-
-              <span>
-                ${tx('gentleReminderCopy')}
-              </span>
-            </div>
-
-          </div>
+          <div
+  class="dn-journey-placeholder"
+  data-dashboard-timeline
+  aria-live="polite"
+>
+  <p class="dn-overview-timeline-empty">
+    ${lang() === 'fa'
+      ? 'در حال دریافت مسیر درمان…'
+      : 'Loading your care timeline…'}
+  </p>
+</div>
         </section>
 
       </div>
@@ -1077,7 +1072,10 @@ export function initDashboard() {
       root,
       signal
     );
-
+const overviewCleanup = initDashboardOverview(
+  root,
+  signal
+);
   // ==========================================
   // MOBILE SIDEBAR
   // ==========================================
@@ -1425,5 +1423,8 @@ export function initDashboard() {
     ) {
       profileCleanup();
     }
+    if (typeof overviewCleanup === 'function') {
+  overviewCleanup();
+}
   };
 }

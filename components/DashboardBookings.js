@@ -1111,7 +1111,7 @@ export function initDashboardBookings(
 
       loading.hidden = true;
 
-      updateOverview();
+      
 
       if (!bookings.length) {
         if (currentPage > 1) {
@@ -1459,6 +1459,9 @@ const result = await apiPut(
       const id = currentId;
 
       await loadList();
+      root.dispatchEvent(
+  new Event('dentistry:overview-refresh')
+);
 
       if (active()) {
         message(
@@ -1723,6 +1726,9 @@ function payExistingDeposit(button) {
         bookingIdFromResponse(result);
 
       await loadList();
+      root.dispatchEvent(
+  new Event('dentistry:overview-refresh')
+);
 
       if (active()) {
         message(
